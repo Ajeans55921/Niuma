@@ -24,9 +24,9 @@ html,body{margin:0;height:100%;background:#1c2a38;color:#fff;font-family:-apple-
 #bar{position:absolute;left:0;right:0;bottom:max(8px,env(safe-area-inset-bottom));display:flex;justify-content:center;gap:5px;padding:0 6px}
 .tb{flex:1;max-width:66px;height:50px;border-radius:9px;background:rgba(20,28,40,.88);border:2px solid #0d141c;color:#fff;font-size:13px;font-weight:600;line-height:1.15;padding:0}
 .tb.on{border-color:#f6c744;background:rgba(90,70,20,.92)}.tb.no{opacity:.4}
-#gbar{position:absolute;left:8px;right:8px;bottom:calc(max(8px,env(safe-area-inset-bottom)) + 58px);display:none;gap:6px;justify-content:center}
-#gbar button{flex:1;max-width:150px;height:46px;border-radius:10px;border:2px solid #0d141c;font-size:15px;font-weight:700}
-#gok{background:#7ed957;color:#143} #gno{background:#f0f0f0;color:#333}
+#gbar{z-index:7;position:absolute;left:8px;right:8px;bottom:calc(max(8px,env(safe-area-inset-bottom)) + 58px);display:none;gap:6px;justify-content:center}
+#gbar button{touch-action:manipulation;flex:1;max-width:150px;height:46px;border-radius:10px;border:2px solid #0d141c;font-size:15px;font-weight:700}
+#gbar button.press{transform:scale(.94);filter:brightness(1.15)} #gok{background:#7ed957;color:#143} #gno{background:#f0f0f0;color:#333}
 #dlg{position:absolute;left:10px;right:10px;bottom:calc(max(8px,env(safe-area-inset-bottom)) + 62px);background:#fffaf0;color:#1c2a38;border:3px solid #1c2a38;border-radius:10px;padding:10px 12px;font-size:15px;line-height:1.5;display:none;box-shadow:0 4px 0 rgba(0,0,0,.35)}
 #dlg b{display:block;font-size:13px;color:#a05a00;margin-bottom:2px}#dlg small{display:block;text-align:right;color:#8a8a8a;font-size:11px}
 #toast{position:absolute;left:50%;top:calc(max(6px,env(safe-area-inset-top)) + 150px);transform:translateX(-50%);background:rgba(20,28,40,.92);border:2px solid #0d141c;border-radius:10px;padding:6px 12px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%;text-align:center}
@@ -52,7 +52,7 @@ textarea{width:100%;height:90px;font-size:16px;user-select:text;-webkit-user-sel
 <div id="bar"></div>
 <div id="menu"><div id="mbox"></div></div>
 <script>
-var NMBUILD='0.26'; /* 版本号：每次改游戏都要改这里 */
+var NMBUILD='0.27'; /* 版本号：每次改游戏都要改这里 */
 /* 游戏代码文件，按这个顺序加载。顺序不能乱：后面的文件会用到、甚至改写前面文件里的东西 */
 var NMJS=[];
 </script>
@@ -787,8 +787,9 @@ function moveB(b,x,y){var e=canPlace(b.t,x,y,bw(b),b);if(e){toast(e);return fals
   var px=Math.floor(PL.x/TS),py=Math.floor(PL.y/TS);if(!walkable(px,py)){for(var r=1;r<=8;r++){var done=0;for(var dy=-r;dy<=r&&!done;dy++)for(var dx=-r;dx<=r;dx++){if(walkable(px+dx,py+dy)){PL.x=(px+dx)*TS+8;PL.y=(py+dy)*TS+10;PL.path=[];done=1;break}}if(done)break}}
   toast(BD[b.t].n+'搬好了');save();return true}
 function endGhost(){ghost=null;$('#gbar').style.display='none';mode='pan';setBar()}
-$('#gno').onclick=endGhost;
-$('#gok').onclick=function(){if(!ghost)return;if(ghost.mv?moveB(ghost.mv,ghost.x,ghost.y):place(ghost.t,ghost.x,ghost.y))endGhost()};
+/* 用 tapBind：手指一抬起就生效（onclick 在手机上有时要等、有时会被吞掉） */
+tapBind($('#gno'),endGhost);
+tapBind($('#gok'),function(){if(!ghost)return;if(ghost.mv?moveB(ghost.mv,ghost.x,ghost.y):place(ghost.t,ghost.x,ghost.y))endGhost()});
 var pointers={},pdown=null;
 function wpos(e){var r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)/scaleCss+camx,y:(e.clientY-r.top)/scaleCss+camy}}
 cv.addEventListener('pointerdown',function(e){
@@ -916,7 +917,7 @@ function wander(e,dt){
 var scale=2,scaleCss=2,VW=0,VH=0,camx=0,camy=0,tAnim=0;
 /* 缩放：右边 ＋/－ 按钮只放大缩小村子地图，进建筑、学校、探险时用原来的大小（不然房间装不下） */
 var baseCss=2,zoomN=0;try{zoomN=+localStorage.getItem('niumagu-zoom')||0}catch(e){}
-function zoomLim(){return[Math.max(1.5,baseCss-1),baseCss+1.5]}
+function zoomLim(){return[Math.max(1,baseCss-1.5),baseCss+1.5]}
 function zoomCss(){var l=zoomLim();return Math.max(l[0],Math.min(l[1],baseCss+zoomN*0.5))}
 function setScale(sc){var d=Math.min(devicePixelRatio||1,2);scaleCss=sc;scale=sc*d;VW=cv.width/scale;VH=cv.height/scale;cx.imageSmoothingEnabled=false}
 function fitScale(){var want=(typeof SC!=='undefined'&&SC)?baseCss:zoomCss();if(want!==scaleCss)setScale(want)}

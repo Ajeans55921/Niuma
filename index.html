@@ -52,7 +52,7 @@ textarea{width:100%;height:90px;font-size:16px;user-select:text;-webkit-user-sel
 <div id="bar"></div>
 <div id="menu"><div id="mbox"></div></div>
 <script>
-var NMBUILD='0.30'; /* 版本号：每次改游戏都要改这里 */
+var NMBUILD='0.31'; /* 版本号：每次改游戏都要改这里 */
 /* 游戏代码文件，按这个顺序加载。顺序不能乱：后面的文件会用到、甚至改写前面文件里的东西 */
 var NMJS=[];
 </script>
@@ -477,20 +477,32 @@ function acceptB(b,item){
   if(d.all&&d.all[item]!==undefined)return (b.inb[item]||0)<(b.t==='power'?pwCoalCap(b):12);
   return false;
 }
-/* 顺着传送带走到头：通到哪个建筑的入口？路上已经有哪些货？ */
-function beltDest(k){var seen={},tr={},cur=k,n=0;
-  while(n++<600){if(seen[cur])return null;seen[cur]=1;var bl=S.belt[cur];if(!bl)return null;if(bl.item)tr[bl.item]=(tr[bl.item]||0)+1;
-    var x=cur%W,y=Math.floor(cur/W),tx=x+DX[bl.d],ty=y+DY[bl.d];if(tx<0||ty<0||tx>=W||ty>=H)return null;var nk=gi(tx,ty),nb=S.belt[nk],t=BLG[nk];
-    if(nb){if((nb.d+2)%4===bl.d)return null;cur=nk;continue}
-    if(t&&(PORTS[cur]||[]).some(function(p){return p.b===t&&p.io==='in'}))return{b:t,tr:tr};return null}
-  return null}
+/* ============ 传送带分岔 ============
+   一格传送带往外可以有好几条路：正前方，以及左右两边“方向朝外”的传送带（从这格分出去的支线）。
+   货物会挑能收这种货的那条支线；几条都能收就轮流送；都不收就轮流往空的那条送。 */
+function beltOuts(k){var bl=S.belt[k],x=k%W,y=Math.floor(k/W),r=[];
+  [bl.d,(bl.d+1)%4,(bl.d+3)%4].forEach(function(d,i){var tx=x+DX[d],ty=y+DY[d];if(tx<0||ty<0||tx>=W||ty>=H)return;var nk=gi(tx,ty),nb=S.belt[nk];
+    if(i===0){if(nb){if((nb.d+2)%4!==d)r.push({k:nk})}else{var t=BLG[nk];if(t&&(PORTS[k]||[]).some(function(p){return p.b===t&&p.io==='in'}))r.push({k:nk,b:t})}}
+    else if(nb&&nb.d===d)r.push({k:nk})});
+  return r}
+/* 从某格传送带出发，所有支线最后通到哪些建筑入口；路上有哪些货 */
+function beltTree(k){var c=runtime.btc||(runtime.btc={});if(c[k])return c[k];
+  var seen={},q=[k],dests=[],tr={},n=0;seen[k]=1;
+  while(q.length&&n++<3000){var cur=q.shift(),bl=S.belt[cur];if(!bl)continue;if(bl.item)tr[bl.item]=(tr[bl.item]||0)+1;
+    beltOuts(cur).forEach(function(o){if(o.b){if(dests.indexOf(o.b)<0)dests.push(o.b)}else if(!seen[o.k]){seen[o.k]=1;q.push(o.k)}})}
+  return c[k]={dests:dests,tr:tr}}
+function takesType(b,item){if(b.t==='warehouse')return true;var a=BD[b.t].all;return!!(a&&a[item]!==undefined)}
+/* 兼容旧代码：只要第一个终点 */
+function beltDest(k){var t=beltTree(k);return t.dests.length?{b:t.dests[0],tr:t.tr}:null}
 /* 某个工坊现在最缺什么（按“已有+路上的”比例，最少的先送） */
 function needPick(t,tr,from){var d=BD[t.t];if(!d.all)return null;var best=null,bs=1e9,lim=t.t==='power'?pwCoalCap(t):12;
   Object.keys(d.all).forEach(function(it){if(from(it)<=0)return;var hv=(t.inb[it]||0)+(tr[it]||0);if(hv>=lim)return;var need=(d.inp&&d.inp[it])||1,sc=hv/need;if(sc<bs){bs=sc;best=it}});return best}
 function whBeltOut(b,dt){b.ot=(b.ot||0)-dt;if(b.ot>0)return;b.ot=0.35;
   portsOf(b).forEach(function(p){if(p.io!=='out')return;var x=p.t[0],y=p.t[1];if(x<0||y<0||x>=W||y>=H)return;var k=gi(x,y),bl=S.belt[k];if(!bl||bl.item)return;
-    var tx=x+DX[bl.d],ty=y+DY[bl.d];if(BLG[gi(tx,ty)]===b)return;var ds=beltDest(k);if(!ds||ds.b.t==='warehouse')return;
-    var it=needPick(ds.b,ds.tr,have);if(!it)return;add(it,-1);bl.item=it;bl.p=0})}
+    var tx=x+DX[bl.d],ty=y+DY[bl.d];if(BLG[gi(tx,ty)]===b)return;var tree=beltTree(k),best=null,bs=1e9;
+    tree.dests.forEach(function(t){if(t.t==='warehouse')return;var share={};for(var q in tree.tr){var nd=tree.dests.filter(function(d){return d.t!=='warehouse'&&takesType(d,q)}).length||1;share[q]=tree.tr[q]/nd}
+      var it=needPick(t,share,have);if(!it)return;var sc=((t.inb[it]||0)+(share[it]||0))/(((BD[t.t].inp||{})[it])||1);if(sc<bs){bs=sc;best=it}});
+    if(!best)return;add(best,-1);bl.item=best;bl.p=0})}
 function pwCoalCap(b){return 20+10*(lvl(b)-1)}
 function putB(b,item){if(b.t==='warehouse')add(item,1);else b.inb[item]=(b.inb[item]||0)+1}
 /* ============ 电网（按千瓦算） ============
@@ -540,15 +552,18 @@ function step(dt){
       if(bl&&!bl.item){var tx=x+DX[bl.d],ty=y+DY[bl.d];if(BLG[gi(tx,ty)]===b)return;bl.item=oc[0];bl.p=0;b.out[oc[0]]--}});
   });
   /* 传送带 */
-  var keys=Object.keys(S.belt);
+  runtime.btc={};var keys=Object.keys(S.belt);
   keys.forEach(function(k){
     var bl=S.belt[k];if(!bl.item)return;
     bl.p+=dt*2.2;if(bl.p<1)return;bl.p=1;
     var x=k%W,y=Math.floor(k/W),tx=x+DX[bl.d],ty=y+DY[bl.d];
     if(tx<0||ty<0||tx>=W||ty>=H)return;
-    var nk=gi(tx,ty),nb=S.belt[nk],t=BLG[nk];
-    if(nb){if(!nb.item&&(nb.d+2)%4!==bl.d){nb.item=bl.item;nb.p=0;bl.item=null}}
-    else if(t&&acceptB(t,bl.item)&&(PORTS[k]||[]).some(function(p){return p.b===t&&p.io==='in'})){putB(t,bl.item);bl.item=null}
+    var outs=beltOuts(+k);if(!outs.length)return;var item=bl.item;
+    if(outs.length>1){var pref=outs.filter(function(o){return o.b?takesType(o.b,item):beltTree(o.k).dests.some(function(d){return takesType(d,item)})});if(pref.length)outs=pref}
+    var st=bl.rr||0;
+    for(var oi=0;oi<outs.length;oi++){var o=outs[(st+oi)%outs.length];
+      if(o.b){if(acceptB(o.b,item)){putB(o.b,item);bl.item=null;bl.rr=st+oi+1;break}}
+      else{var nb=S.belt[o.k];if(!nb.item){nb.item=item;nb.p=0;bl.item=null;bl.rr=st+oi+1;break}}}
   });
   /* 小卖部 */
   if(countB('market')){
@@ -826,7 +841,7 @@ function wpos(e){var r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)/sc
 cv.addEventListener('pointerdown',function(e){
   if(busy())return;cv.setPointerCapture(e.pointerId);
   pdown={x:e.clientX,y:e.clientY,t:Date.now(),cx:S.cx,cy:S.cy,moved:false};
-  if(mode==='belt'){painting=true;lastBelt=null;beltAt(wpos(e),true)}
+  if(mode==='belt'){painting=true;lastBelt=null;newBelt={};pendRot=null;beltAt(wpos(e),true)}
   if(mode==='road'){painting=true;lastRoad=null;roadAt(wpos(e))}
 });
 cv.addEventListener('pointermove',function(e){
@@ -838,7 +853,7 @@ cv.addEventListener('pointermove',function(e){
   if(pdown.moved){S.cx=pdown.cx-dx/scaleCss;S.cy=pdown.cy-dy/scaleCss;runtime.noFollow=4}
 });
 cv.addEventListener('pointerup',function(e){
-  if(!pdown)return;var p=pdown;pdown=null;painting=false;lastBelt=null;lastRoad=null;
+  if(!pdown)return;if(mode==='belt'&&pendRot!==null&&lastBelt===pendRot&&S.belt[pendRot]){/* 点一下已有的传送带（没拖动）：转向 */S.belt[pendRot].d=(S.belt[pendRot].d+1)%4;beltDir=S.belt[pendRot].d}pendRot=null;var p=pdown;pdown=null;painting=false;lastBelt=null;lastRoad=null;
   if(p.moved)return;
   var w=wpos(e),tx=Math.floor(w.x/TS),ty=Math.floor(w.y/TS);
   tapTile(tx,ty,w);
@@ -863,13 +878,15 @@ function roadAt(w){
   else roadOne(tx,ty,null);
   lastRoad=[tx,ty];
 }
+var newBelt={},pendRot=null;
 function beltOne(k,first,dir){
   /* dir：手指是从哪个方向走进这一格的（null 表示刚按下） */
-  if(lastBelt!==null&&dir!==null&&S.belt[lastBelt])S.belt[lastBelt].d=dir;
+  /* 只改这次新铺的格子；已有的传送带不动（从它旁边拖出去就是分岔支线） */
+  if(lastBelt!==null&&dir!==null&&S.belt[lastBelt]&&newBelt[lastBelt])S.belt[lastBelt].d=dir;
   if(dir!==null)beltDir=dir;
   if(!BLG[k]&&G[k]!==2&&OB[k]!=='B'&&(!OB[k]||OB[k]==='g'||OB[k]==='f')){
-    if(!S.belt[k]){if(S.money>=3){S.money-=3;delete S.road[k];S.belt[k]={d:beltDir,item:null,p:0};if(OB[k]==='g'||OB[k]==='f')OB[k]=0}else{toast('银币不够');painting=false;return false}}
-    else if(first){S.belt[k].d=(S.belt[k].d+1)%4;beltDir=S.belt[k].d}
+    if(!S.belt[k]){if(S.money>=3){S.money-=3;delete S.road[k];S.belt[k]={d:beltDir,item:null,p:0};newBelt[k]=1;if(OB[k]==='g'||OB[k]==='f')OB[k]=0}else{toast('银币不够');painting=false;return false}}
+    else if(first){pendRot=k}
   }
   lastBelt=k;return true;
 }
@@ -1218,12 +1235,12 @@ function emitParts(dt){
   var i;for(i=runtime.parts.length-1;i>=0;i--){var p=runtime.parts[i];p.l-=dt;if(p.l<=0){runtime.parts.splice(i,1);continue}p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=p.g*dt}
 }
 /* ============ 传送带：两边铁轨、滚动的履带、首尾滚筒；货物是小图标 ============ */
-function beltFeeds(k,d){/* 旁边 d 方向那格的传送带是不是往这格送 */var x=k%W,y=Math.floor(k/W),nx=x+DX[d],ny=y+DY[d];if(nx<0||ny<0||nx>=W||ny>=H)return false;var nb=S.belt[gi(nx,ny)];return !!(nb&&(nb.d+2)%4===d)}
+function beltFeeds(k,d,noBr){/* 旁边 d 方向那格的传送带是不是往这格送，或者是从这格分出去的支线 */var x=k%W,y=Math.floor(k/W),nx=x+DX[d],ny=y+DY[d];if(nx<0||ny<0||nx>=W||ny>=H)return false;var nb=S.belt[gi(nx,ny)];return !!(nb&&((nb.d+2)%4===d||(!noBr&&nb.d===d)))}
 function drawBelts(){
   var ks=Object.keys(S.belt),vis=[],ph=(tAnim*2.2*16)%4;
   ks.forEach(function(k){var x=k%W,y=Math.floor(k/W),px=x*TS-camx,py=y*TS-camy;if(px<-TS||py<-TS||px>VW||py>VH)return;vis.push([+k,px,py])});
   vis.forEach(function(v){var k=v[0],bl=S.belt[k],d=bl.d,x=k%W,y=Math.floor(k/W);
-    var back=(d+2)%4,lt=(d+3)%4,rt=(d+1)%4,fb=beltFeeds(k,back),fl=beltFeeds(k,lt),fr=beltFeeds(k,rt);
+    var back=(d+2)%4,lt=(d+3)%4,rt=(d+1)%4,fb=beltFeeds(k,back,1),fl=beltFeeds(k,lt),fr=beltFeeds(k,rt);
     var nx=x+DX[d],ny=y+DY[d],nb=S.belt[gi(nx,ny)],fe=!!(nb&&(nb.d+2)%4!==d);
     cx.save();cx.translate(v[1]+8,v[2]+8);cx.rotate((d-1)*Math.PI/2);
     rect(-8,-8,16,16,'#00000030');
@@ -1235,6 +1252,7 @@ function drawBelts(){
     if(!fr){rect(-8,6,16,2,'#2f323a');rect(-8,7,16,1,'#1e2026');rect(-5,7,1,1,'#6a707c');rect(3,7,1,1,'#6a707c')}
     if(!fb){rect(-8,-6,2,12,'#3a3d46');rect(-7,-6,1,12,'#6e7482')}
     if(!fe){rect(6,-6,2,12,'#3a3d46');rect(6,-6,1,12,'#6e7482')}
+    var sl=S.belt[gi(x+DX[lt],y+DY[lt])],sr=S.belt[gi(x+DX[rt],y+DY[rt])];if((sl&&sl.d===lt)||(sr&&sr.d===rt)){rect(-3,-3,6,6,'#1c1a22');rect(-2,-2,4,4,'#f6c744');rect(-2,-2,4,1,'#fff3b0')}
     cx.restore()});
   vis.forEach(function(v){var bl=S.belt[v[0]];if(!bl.item)return;var q=bl.p,ix=v[1]+8+DX[bl.d]*(q-0.5)*TS,iy=v[2]+8+DY[bl.d]*(q-0.5)*TS;
     rect(Math.round(ix)-3,Math.round(iy)+2,7,2,'#00000045');drawItemPx(bl.item,Math.round(ix),Math.round(iy)-1)});

@@ -52,7 +52,7 @@ textarea{width:100%;height:90px;font-size:16px;user-select:text;-webkit-user-sel
 <div id="bar"></div>
 <div id="menu"><div id="mbox"></div></div>
 <script>
-var NMBUILD='0.36'; /* 版本号：每次改游戏都要改这里 */
+var NMBUILD='0.37'; /* 版本号：每次改游戏都要改这里 */
 /* 游戏代码文件，按这个顺序加载。顺序不能乱：后面的文件会用到、甚至改写前面文件里的东西 */
 var NMJS=[];
 </script>
@@ -410,7 +410,7 @@ function talkNPC(id){
   var q=S.q[id];if(!q.cur)newQuest(id);var c=q.cur,N=NAM[id];
   if(qDone(c)){
     /* 先把货收下、奖励发了再聊天：聊到一半关掉游戏也不会吃亏 */
-    for(var k in c.need)take(k,c.need[k]);S.money+=c.rw;q.n++;q.cur=null;giveBonus(id,q.n);save();
+    runtime.lastNeedN=Object.keys(c.need).length;for(var k in c.need)take(k,c.need[k]);S.money+=c.rw;q.n++;q.cur=null;giveBonus(id,q.n);save();
     var n=q.n,H=HAND[id]||HAND.jiang,pr=Math.random()<0.65?ppick(H.p):[ppick(TANGR),ppick(H.b)],
       seq=[[N,handFill(ppick(H.a),c,n)],['唐老师',handFill(pr[0],c,n)],[N,handFill(pr[1],c,n)]];
     if(n%5===0&&H.m)seq.push([N,handFill(H.m,c,n)]);
@@ -869,7 +869,7 @@ cv.addEventListener('pointermove',function(e){
   if(pdown.moved){S.cx=pdown.cx-dx/scaleCss;S.cy=pdown.cy-dy/scaleCss;runtime.noFollow=4}
 });
 cv.addEventListener('pointerup',function(e){
-  if(!pdown)return;if(mode==='belt'&&pendRot!==null&&lastBelt===pendRot&&S.belt[pendRot]){/* 点一下已有的传送带（没拖动）：转向 */S.belt[pendRot].d=(S.belt[pendRot].d+1)%4;beltDir=S.belt[pendRot].d}pendRot=null;var p=pdown;pdown=null;painting=false;lastBelt=null;lastRoad=null;
+  if(!pdown)return;if(mode==='belt'&&typeof fixPortBelts==='function')setTimeout(fixPortBelts,0);if(mode==='belt'&&pendRot!==null&&lastBelt===pendRot&&S.belt[pendRot]){/* 点一下已有的传送带（没拖动）：转向 */S.belt[pendRot].d=(S.belt[pendRot].d+1)%4;beltDir=S.belt[pendRot].d}pendRot=null;var p=pdown;pdown=null;painting=false;lastBelt=null;lastRoad=null;
   if(p.moved)return;
   var w=wpos(e),tx=Math.floor(w.x/TS),ty=Math.floor(w.y/TS);
   tapTile(tx,ty,w);
@@ -1049,12 +1049,12 @@ function drawObj(o,x,y){
   else if(o==='g'){var sw2=Math.sin(tAnim*3+x)>0?1:0;rect(px+3,py+13,10,2,'#00000020');rect(px+4+sw2,py+6,1,8,'#3f8a2e');rect(px+5+sw2,py+5,1,3,'#3f8a2e');rect(px+7,py+3,1,11,'#5aad44');rect(px+8,py+3,1,2,'#8ad06a');rect(px+10-sw2,py+6,1,8,'#3f8a2e');rect(px+11-sw2,py+5,1,2,'#6cc050')}
   else if(o==='f'){rect(px+6,py+13,4,1,'#00000020');rect(px+7,py+9,1,5,'#3f8a2e');rect(px+8,py+11,2,1,'#4f9a3a');var fc=(x*7+y)%2?['#f27aa6','#c94a7a']:['#f6e04a','#c9a51a'];rect(px+6,py+7,3,3,fc[0]);rect(px+8,py+8,1,2,fc[1]);rect(px+7,py+8,1,1,'#fff6d0')}
 }
-/* 学校窗户亮不亮：18 点上晚自习开灯，每间教室在 22:00~22:40 之间熄灯；6:30 早读开灯 */
-function schoolLit(hr,off){return (hr>=18&&hr<off)||(hr>=6.5&&hr<7)}
+/* 学校窗户亮不亮：18 点上晚自习开灯，21:10 起每间教室陆续熄灯（到 21:50）；早上 7 点早读亮 40 分钟 */
+function schoolLit(hr,off){return (hr>=18&&hr<off)||(hr>=7&&hr<7.67)}
 function drawSchool(){
   var X=17*TS-camx,Y=18*TS-camy,w=11*TS,h=5*TS,hr=(S.t/60)%24,night=hr>=18||hr<7,gl=night?'#ffe58a':'#8fd0f5',wi=0;
   rect(X+3,Y+h-3,w+2,6,'#00000028');
-  function win(x,y,ww,hh){var g=gl;if(night){var off=22+(wi*7%11)/16;g=schoolLit(hr,off)?'#ffe58a':'#2a3550'}wi++;rect(X+x-1,Y+y-1,ww+2,hh+2,'#fffaf0');rect(X+x,Y+y,ww,hh,g);if(!night){rect(X+x,Y+y,ww,2,'#b8e6fa')}rect(X+x+ww/2,Y+y,1,hh,'#fffaf0');rect(X+x,Y+y+hh/2,ww,1,'#fffaf0');rect(X+x-2,Y+y+hh+1,ww+4,2,'#cfc2a4')}
+  function win(x,y,ww,hh){var off=21.17+(wi*7%11)/16,g=schoolLit(hr,off)?'#ffe58a':night?'#2a3550':gl;wi++;rect(X+x-1,Y+y-1,ww+2,hh+2,'#fffaf0');rect(X+x,Y+y,ww,hh,g);if(g===gl&&!night){rect(X+x,Y+y,ww,2,'#b8e6fa')}rect(X+x+ww/2,Y+y,1,hh,'#fffaf0');rect(X+x,Y+y+hh/2,ww,1,'#fffaf0');rect(X+x-2,Y+y+hh+1,ww+4,2,'#cfc2a4')}
   [0,w-48].forEach(function(ox){
     rect(X+ox,Y+34,48,h-34,'#efe3c8');
     for(var j=0;j<8;j+=3){rect(X+ox,Y+h-8+j,48,1,'#9a6644')}rect(X+ox,Y+h-8,48,8,'#b9805a');for(var j2=0;j2<8;j2+=3)for(var i2=(j2/3%2)*4;i2<48;i2+=8)rect(X+ox+i2,Y+h-8+j2,1,3,'#9a6644');
@@ -1399,7 +1399,7 @@ function nightLights(){
   (S.hl||[]).forEach(function(h,i){L.push({x:h.x-camx,y:h.y-camy-8,r:30*fl(i+3),i:0.8,w:0.16})});
   S.bld.forEach(function(b,i){var n=bw(b),Z=n*TS,cxx=(b.x+n/2)*TS-camx,cyy=(b.y+n*0.62)*TS-camy;if(cxx<-Z*2||cxx>VW+Z*2||cyy<-Z*2||cyy>VH+Z*2)return;
     var tg=(b.wk||b.pw||(BD[b.t].slots&&occOf(b)>0))?0.85:(b.t==='warehouse'||b.t==='house'||b.t==='market')?0.7:0;b.lt=(b.lt===undefined?tg:b.lt+(tg-b.lt)*0.04);if(b.lt<0.03)return;L.push({x:cxx,y:cyy,r:(Z*0.9+18)*fl(i+7),i:b.lt,w:0.2})});
-  var sx=17*TS-camx,sy=18*TS-camy,shr=(S.t/60)%24;[[2.5,5.2,22.1],[5.5,5.2,22.6],[8.5,5.2,22.35]].forEach(function(q,i){if(schoolLit(shr,q[2]))L.push({x:sx+q[0]*TS,y:sy+q[1]*TS,r:52*fl(i+20),i:0.8,w:0.2})});
+  var sx=17*TS-camx,sy=18*TS-camy,shr=(S.t/60)%24;[[2.5,5.2,21.3],[5.5,5.2,21.8],[8.5,5.2,21.55]].forEach(function(q,i){if(schoolLit(shr,q[2]))L.push({x:sx+q[0]*TS,y:sy+q[1]*TS,r:52*fl(i+20),i:0.8,w:0.2})});
   if(runtime.grid&&runtime.grid.cap>0)(runtime.lampL||[]).forEach(function(q,i){L.push({x:q.x-camx,y:q.y-camy-13,r:50*fl(i+40),i:0.9,w:0.22})});
   for(var id in NPCP){if(!npcOn(id))continue;var N=NPCP[id];L.push({x:N.x-camx,y:N.y-camy-8,r:24,i:0.5,w:0.06})}
   return L}
@@ -2285,6 +2285,30 @@ function endCredits(){
   for(var q=0;q<40;q++)runtime.parts.push({x:PL.x+rnd(-90,90),y:PL.y-rnd(40,140),vx:rnd(-20,20),vy:rnd(-10,10),g:30,l:3,c:pick(['#ffd34a','#e8553a','#3a8ad6','#3aa04d','#ff7aa8']),s:3,pop:1});
 }
 ACH.push({n:'转正了',d:'召开转正大会',rw:1000,c:function(){return!!S.end}});
+
+/* ============ 指令变难（0.37）：越往后要的种类越多，奖励封顶 ============
+   第 1~2 条：1~2 种；第 3~5 条：2~3 种；第 6 条以后：3~4 种。
+   农牧渔的货（鸡蛋、牛奶、羊毛、鱼、水果、蔬菜）只有你已经能产出时才会要。
+   奖励：最多 500 银币；金币、宝石见 giveBonus（每单最多 3 金币、1 宝石）。 */
+function canMake(k){if(have(k)>0||(S.made&&S.made[k]>0))return true;return S.bld.some(function(b){var d=BD[b.t];return d.out===k||(b.t==='pasture'&&((k==='milk'&&b.w.dairy)||(k==='egg'&&b.w.hen)||(k==='wool'&&b.w.sheep)))})}
+function farmPool(n){return[['egg',10+n*3],['milk',8+n*3],['wool',6+n*2],['fish',6+n*2],['fruit',6+n*2],['veg',8+n*3]].filter(function(q){return IT[q[0]]&&canMake(q[0])})}
+var _nq3=newQuest;newQuest=function(id){_nq3(id);var q=S.q[id],c=q&&q.cur;if(!c)return;var n=q.n;
+  if(n>0){var want=n>=6?3+(Math.random()<0.5?1:0):n>=3?2+(Math.random()<0.5?1:0):1+(Math.random()<0.4?1:0);
+    var pool=qPool(id).concat(farmPool(n)).filter(function(p){return IT[p[0]]&&canMake(p[0])});
+    for(var i=pool.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=pool[i];pool[i]=pool[j];pool[j]=t}
+    pool.forEach(function(p){if(Object.keys(c.need).length>=want||c.need[p[0]])return;c.need[p[0]]=Math.ceil(p[1]*0.7)});
+    for(var k in c.need)c.need[k]=Math.min(Math.ceil(c.need[k]*1.2),Math.floor(cap()*0.8))}
+  var val=0;for(var k2 in c.need)val+=IT[k2][1]*c.need[k2];
+  c.rw=Math.min(500,Math.round(val*0.5+40+n*8))};
+var _gb2=giveBonus;giveBonus=function(id,n){
+  var c0=runtime.lastNeedN||1;
+  if(id==='jl'){S.gold+=1;toast('获得金币 ×1');return}
+  if(id==='ds'){var g=Math.min(3,1+(c0>=3?1:0)+(c0>=4?1:0));S.gold+=g;toast('获得金币 ×'+g);return}
+  if(id==='jiang'){if(n%3===0){S.gems++;toast('姜主任赏了你 1 颗宝石')}return}
+  if(id==='xz'){var g2=Math.min(3,1+(c0>=3?1:0));S.gold+=g2;if(n%3===0){S.gems++;toast('姜校长赏了你 1 颗宝石和 '+g2+' 金币')}else toast('获得金币 ×'+g2);return}
+  _gb2(id,n)};
+/* 老存档里已经领到的指令：奖励也封顶 500 */
+(function(){for(var id in S.q){var c=S.q[id]&&S.q[id].cur;if(c&&c.rw>500)c.rw=500}})();
 </script>
 <script>
 /* 牛马谷 · 16-transport.js — 进出料口、铺路运输、牛马运货、A/B/C 分支 */
@@ -2327,7 +2351,10 @@ function sideTile(b,s){var n=bw(b),m=Math.floor(n/2)-(n%2?0:0);if(n===2)m=1;
   return s===0?[b.x-1,b.y+m]:s===1?[b.x+m,b.y-1]:s===2?[b.x+n,b.y+m]:[b.x+m,b.y+n]}
 function portsOf(b){var r=b.pr||0,o=[];if(b.t==='warehouse'){[[r,'in'],[(r+1)%4,'in'],[(r+2)%4,'out'],[(r+3)%4,'out']].forEach(function(q){o.push({io:q[1],s:q[0],t:sideTile(b,q[0])})});return o}if(hasIn(b))o.push({io:'in',s:r,t:sideTile(b,r)});if(hasOut(b))o.push({io:'out',s:(r+2)%4,t:sideTile(b,(r+2)%4)});return o}
 function rebuildPorts(){PORTS={};S.bld.forEach(function(b){portsOf(b).forEach(function(p){var x=p.t[0],y=p.t[1];if(x<0||y<0||x>=W||y>=H)return;var k=gi(x,y);(PORTS[k]=PORTS[k]||[]).push({b:b,io:p.io})})})}
-var _rg=rebuildGrid;rebuildGrid=function(){_rg();rebuildPorts()};rebuildPorts();
+/* 铺在入口格上的传送带一律朝建筑里送；铺在出口格上的不能朝建筑里 */
+function fixPortBelts(){S.bld.forEach(function(b){portsOf(b).forEach(function(p){var x=p.t[0],y=p.t[1];if(x<0||y<0||x>=W||y>=H)return;var bl=S.belt[gi(x,y)];if(!bl)return;
+  /* 边 s：0 左 1 上 2 右 3 下；朝建筑里的方向 =(s+1)%4，朝外 =(s+3)%4 */if(p.io==='in')bl.d=(p.s+1)%4;else if(bl.d===(p.s+1)%4)bl.d=(p.s+3)%4})})}
+var _rg=rebuildGrid;rebuildGrid=function(){_rg();rebuildPorts();fixPortBelts()};rebuildPorts();fixPortBelts();
 function obst(k){var o=OB[k];return!!(o&&o!=='g'&&o!=='f')}
 function portOK(k){return!(BLG[k]||G[k]===2||obst(k))}
 function isNode(x,y){if(x<0||y<0||x>=W||y>=H)return false;var k=gi(x,y);if(BLG[k]||G[k]===2||obst(k))return false;if(PORTS[k])return!S.belt[k];return isHaulR(k)}
@@ -2510,7 +2537,8 @@ var UPDT='<b>进出口和路上运输</b>取代了运输队；<b>牛马市场</b
 /* ============ 更新公告：每次发新版本，在最上面加一条（v 要和 NMBUILD 一样） ============
    by：这次是听谁的指导；add 新增、chg 调整、fix 修复 */
 var NMLOG=[
- {v:'0.36',d:'11月14日',by:'姜主任',w:'「艰苦奋斗、勤俭办学」',chg:['资源<b>来得慢了</b>：采矿、伐木、牧草这类采集慢了约 40%，加工慢了约 20%。姜主任说：“来得太容易的东西，大家不珍惜。”','学校晚上 6 点开灯上<b>晚自习</b>，10 点到 10 点 40 一间间<b>熄灯</b>，早上 6 点半早读再亮'],add:['姜家四位领导<b>新台词</b>，包括唐老师当年在办公室门口绊倒姜主任、写了三份检讨的往事','新随机事件：<b>办公室门口事件</b>、<b>姜组长要周报</b>、<b>姜经理组织团建</b>、<b>姜董事年会抽奖</b>，还有一个你最好别细想的发现']},
+ {v:'0.37',d:'11月14日',by:'姜董事',w:'「严抓落实、精打细算」',chg:['领导的<b>指令变难</b>：越往后要的东西种类越多，后期一次要 3~4 种，鸡蛋、牛奶、羊毛、鱼、水果、蔬菜都可能要（只要你已经能产出）','指令<b>奖励变少</b>：每单最多 500 银币、3 金币、1 宝石','学校晚自习 <b>21:10 起陆续熄灯</b>，早上 7 点早读亮灯一会儿'],fix:['传送带接到工坊入口时，最后一格方向不对，<b>仓库不往齿轮坊送货</b>（现在接到入口的那格会自动朝里）']},
+ {v:'0.36',d:'11月14日',by:'姜主任',w:'「降本增效」',chg:['资源<b>来得慢了</b>：采矿、伐木、牧草这类采集慢了约 40%，加工慢了约 20%','学校晚上 6 点开灯上<b>晚自习</b>，到点一间间<b>熄灯</b>，早上早读再亮']},
  {v:'0.35',d:'11月14日',by:'姜主任',w:'「客户至上、体验为王」',chg:['仓库卖货列表<b>不再乱跳</b>：卖光的货也留在原位，显示 0','从建筑里出来，唐老师会<b>站在那个建筑门口</b>，不会还在原地'],fix:['传送带上一种货在仓库满了，<b>整条带子堵住</b>，别的货也进不去（现在满了的那种会半价卖掉）']},
  {v:'0.34',d:'11月14日',by:'姜董事',w:'「公开透明」',add:['💡 里加了<b>更新公告</b>：每次更新写清楚加了什么、改了什么','可以翻看<b>历次更新</b>']},
  {v:'0.33',d:'11月14日',by:'姜主任',w:'「降本增效」',add:['白天牧场里的奶牛、鸡、羊会在围栏里<b>走来走去</b>，晚上回屋'],chg:['<b>升级要材料</b>：Lv2 木板+石头，Lv3 木板+铁锭，Lv4 铁锭+齿轮，Lv5 齿轮+金锭','小卖部<b>同一种货卖多了会降价</b>，过几个小时慢慢恢复'],fix:['牧场出一个货，夜里的灯就闪一下']},

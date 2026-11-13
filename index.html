@@ -56,7 +56,7 @@ window.addEventListener('error',function(e){try{if(window.__nmErr)return;window.
   d.innerHTML='<b>游戏出错了</b>（存档还在，不会丢）<br>请截图发给开发者：<br><small style="word-break:break-all">'+String(e.message||e).slice(0,160)+'<br>'+String(e.filename||'').split('/').pop()+':'+(e.lineno||'')+'</small><br><button type="button" style="margin-top:8px;font-size:15px;padding:6px 12px;border-radius:8px;border:2px solid #5a2a1a;background:#ffe28a">检查有没有修好的新版本</button>';document.body.appendChild(d);
   d.querySelector('button').onclick=function(){var t=this,sw=navigator.serviceWorker;if(!sw||!sw.controller){location.reload();return}t.textContent='正在检查…';
     sw.addEventListener('message',function(m){var x=m.data||{};if(x.type==='nm-update')location.reload();else if(x.type==='nm-none')t.textContent='还没有新版本，过一会儿再点';else if(x.type==='nm-fail')t.textContent='连不上网，检查网络后再点'});sw.controller.postMessage({type:'nm-check'})}}catch(_){}});
-var NMBUILD='0.39'; /* 版本号：每次改游戏都要改这里 */
+var NMBUILD='0.40'; /* 版本号：每次改游戏都要改这里 */
 /* 游戏代码文件，按这个顺序加载。顺序不能乱：后面的文件会用到、甚至改写前面文件里的东西 */
 var NMJS=[];
 </script>
@@ -99,7 +99,8 @@ var BD={
 };
 Object.keys(BD).forEach(function(k){BD[k].w=BD[k].w||2;BD[k].h=BD[k].h||2;BD[k].id=k});
 BD.canteen={n:'食堂',ch:'食',col:'#e8a24a',cost:800,w:3,h:3,slots:2,un:'jiang6',all:{fish:1,fruit:1,veg:1,egg:1,milk:1},
-  desc:'学生和毕业生 11:30、17:30 在这吃饭；要毕业生当厨师；把仓库接到它唯一的入口送食材'};
+  desc:'学生和毕业生 8:00、11:30、17:30 在这吃饭；要毕业生当厨师；把仓库接到它唯一的入口送食材'};
+BD.dorm={n:'学生宿舍',ch:'宿',col:'#7a6ad6',cost:900,w:3,h:3,un:'jiang6',desc:'住 12 个学生；晚上要有电才有灯（每栋 15 千瓦）'};
 var BORD=['woodcutter','quarry','hayfield','sawmill','warehouse','market','coalmine','ironmine','furnace','power','house','pasture','gearshop','coppermine','goldmine','goldfurnace'];
 var HC=[0,1,2,3];var DX=[0,1,0,-1],DY=[-1,0,1,0];
 /* ============ 状态 ============ */
@@ -1555,17 +1556,17 @@ function extraRows(o){
 }
 /* 学校 */
 function schoolMenu(){
-  var slots=2+2*(S.sch-1),gc=4+4*S.sch,full=S.stu.length>=slots||S.grad+S.stu.length>=gc,o=[];
-  var can=S.money>=60&&have('egg')>=3&&have('milk')>=1,lock=S.q.tang.n+S.q.jiang.n<6;
+  var slots=2*S.sch,gc=4+4*S.sch,full=S.stu.length>=slots||S.grad+S.stu.length>=gc,o=[];
+  var can=true,lock=S.q.tang.n+S.q.jiang.n<6;
   o.push({l:'进入学校',s:'参观教室、办公室',r:'进入',pri:true,f:function(){enterSchool()}});
   if(lock){menu('牛马谷学校','学校暂未招生：先帮姜组长和姜主任办 6 件事。你可以先进去参观。',o);return}
-  o.push({l:'招收一名学生',s:'学费：60 币 + 3 鸡蛋 + 1 牛奶（营养餐）· 读 10 天毕业',r:'招生',dis:full||!can,pri:!full&&can,keep:1,f:function(){
-    S.money-=60;add('egg',-3);add('milk',-1);var g=Math.random()<0.5?'g':'b',nm=(Math.random()<0.8?pick(g==='g'?['紫涵','子涵','紫萱','梓萱','欣怡','雨涵','诗涵','梓涵','一诺','可馨']:['沐辰','子轩','梓轩','浩宇','宇轩','俊熙','皓轩','奕辰','子墨','沐阳']):pick(g==='g'?['翠花','丫丫','甜甜']:['铁柱','二狗','豆豆']))+'同学';
+  o.push({l:'招收一名学生',s:full?(S.stu.length>=slots?'教室坐满了，扩建学校能多收':'毕业生太多了，扩建学校能多容纳'):'上学免费（以后都是你的牛马）· 读 10 天毕业',r:'招生',dis:full||!can,pri:!full&&can,keep:1,f:function(){
+    var g=Math.random()<0.5?'g':'b',nm=(Math.random()<0.8?pick(g==='g'?['紫涵','子涵','紫萱','梓萱','欣怡','雨涵','诗涵','梓涵','一诺','可馨']:['沐辰','子轩','梓轩','浩宇','宇轩','俊熙','皓轩','奕辰','子墨','沐阳']):pick(g==='g'?['翠花','丫丫','甜甜']:['铁柱','二狗','豆豆']))+'同学';
     S.stu.push({t:0,d:STUD,nm:nm,g:g});toast(nm+'入学了');schoolMenu()}});
-  var uc=S.sch===1?400:1200;
-  o.push({l:'扩建学校 Lv'+S.sch,s:S.sch>=3?'已是最大规模':'同时在读 +2，毕业生上限 +4',r:S.sch>=3?'':uc+'币',dis:S.sch>=3||S.money<uc,keep:1,f:function(){S.money-=uc;S.sch++;toast('学校扩建到 Lv'+S.sch);schoolMenu()}});
+  var uc=[400,1200,2500,4000,6000][S.sch-1]||0;
+  o.push({l:'扩建学校 Lv'+S.sch,s:S.sch>=6?'已是最大规模（12 名学生）':'同时在读 +2（Lv'+(S.sch+1)+' 收 '+2*(S.sch+1)+' 人），毕业生上限 +4',r:S.sch>=6?'':uc+'币',dis:S.sch>=6||S.money<uc,keep:1,f:function(){S.money-=uc;S.sch++;toast('学校扩建到 Lv'+S.sch+'，能收 '+2*S.sch+' 名学生');schoolMenu()}});
   S.stu.forEach(function(st){o.push({l:(st.g==='g'?'👧 ':'👦 ')+st.nm+'（在读）',s:'第 '+Math.min(10,Math.floor(st.t/st.d*10)+1)+'/10 天'+(S.hungry?' · 饿着肚子学得慢':''),r:'',keep:1,f:function(){}})});
-  menu('牛马谷学校 Lv'+S.sch,'在读 '+S.stu.length+'/'+slots+' · 毕业生 '+S.grad+'/'+gc+'（累计毕业 '+S.gtot+'）<br>毕业生在建筑菜单里派工，机器上效率是牛的约 1.8 倍。<br>学生和毕业生每天 11:30、17:30 吃饭：有食堂吃食堂，没有就花钱在外面买。',o);
+  menu('牛马谷学校 Lv'+S.sch,'在读 '+S.stu.length+'/'+slots+' · 毕业生 '+S.grad+'/'+gc+'（累计毕业 '+S.gtot+'）<br>毕业生在建筑菜单里派工，机器上效率是牛的约 1.8 倍。<br>学生和毕业生每天 8:00、11:30、17:30 吃饭：有食堂吃食堂，没有就花钱在外面买。',o);
 }
 /* 宝箱与地点 */
 var SPL=[];
@@ -1616,11 +1617,9 @@ function openSpecial(id){
   if(p.t==='sign'){if(!S.found[id]){S.found[id]=1;toast('已找到 '+Object.keys(S.found).length+' 处')}say(p.nm,[p.tx]);}
 }
 /* 学生小人 */
-var KIDL=['老师好！','作业写完了吗？','我长大要当牛马。','食堂的鸡蛋真香。','我想当姜董事。','毕业后就有工牌吗？','今天又迟到了。','别点我，我在背书。','中午吃什么呀？','姜主任来了，快跑！','我的橡皮被牛吃了。','唐老师今天好帅。','我要回家找妈妈。','下课了！'];
+var KIDL=['姜老师好美！','姜老师好温柔～','我长大要像姜老师一样！','姜老师今天的头发好好看。','姜老师笑起来真好看。','姜老师讲课最好听了。','我最喜欢姜老师了！','姜老师是全校最漂亮的老师。','姜老师连批评人都好温柔。','姜老师的字写得真好看。','今天姜老师夸我了！','姜老师是仙女吧？','唐老师好帅！'];
 function drawG2(ents,x0,x1,y0,y1){
-  var kd=runtime.kids=runtime.kids||[];while(kd.length<Math.min(S.stu.length,9))kd.push({x:(17+Math.random()*11)*TS,y:(23.3+Math.random()*2.2)*TS,vx:0,vy:0,t:0,sh:pick(['#3d8a5a','#8a4a9a','#c4742a','#2c7ab8']),hr:pick(['#23232e','#6a4a2a','#3a2622'])});
-  while(kd.length>Math.min(S.stu.length,9))kd.pop();kd.forEach(function(k,i){k.g=(S.stu[i]&&S.stu[i].g)||(i%2?'g':'b')});
-  kd.forEach(function(k){ents.push({y:k.y,f:function(){kidSprite(k,k.vx||k.vy?1:0);if(k.bub)drawBub(k,k.y-camy-24)}})});
+  if(typeof kidsDraw==='function')kidsDraw(ents);
   allSP().forEach(function(p){
     if(p.t==='chest'&&S.found[p.id]&&!(runtime.copen&&runtime.copen[p.id]>0))return;if(p.x<x0-1||p.x>x1+1||p.y<y0-1||p.y>y1+1)return;
     ents.push({y:(p.y+1)*TS,f:function(){var px=p.x*TS-camx,py=p.y*TS-camy;
@@ -1664,9 +1663,6 @@ function game2Step(dt){
   S.ord=S.ord.filter(function(d){return d.exp>=S.day});
   S.stu.forEach(function(st){st.t+=dt*(S.hungry?0.3:1)});
   for(var i=S.stu.length-1;i>=0;i--){var st=S.stu[i];if(st.t>=st.d){S.stu.splice(i,1);S.grad++;S.gtot++;toast(st.nm+'毕业了！获得毕业证：“牛马（合格）”');if(S.gtot===1)say('姜主任',['“学校的第一位毕业生！”','毕业生可以在建筑菜单里派工，比牛还能干，还不吃草。'])}}
-  (runtime.kids||[]).forEach(function(k){k.t-=dt;if(k.t<=0){k.t=1+Math.random()*3;if(Math.random()<0.4){k.vx=0;k.vy=0}else{var a=Math.random()*6.28;k.vx=Math.cos(a)*10;k.vy=Math.sin(a)*8}}
-    var nx=k.x+k.vx*dt,ny=k.y+k.vy*dt;if(nx<17*TS||nx>28*TS||ny<23.3*TS||ny>25.6*TS){k.vx=-k.vx;k.vy=-k.vy}else{k.x=nx;k.y=ny}
-    if(k.bub){k.bub.l-=dt;if(k.bub.l<=0)k.bub=null}else if(Math.random()<0.002)k.bub={t:ppick(KIDL),l:3}});
   runtime.achT=(runtime.achT||0)-dt;if(runtime.achT<=0){runtime.achT=2;ACH.forEach(function(a,i){if(!S.ach[i]&&a.c()){S.ach[i]=1;S.money+=a.rw;toast('成就达成：'+a.n+' +'+a.rw+' 银币')}})}
   S.evT-=dt;if(S.evT<=0&&!busy()&&!runtime.offline){S.evT=110+Math.random()*90;fireEvent()}
 }
@@ -2552,6 +2548,7 @@ var UPDT='<b>进出口和路上运输</b>取代了运输队；<b>牛马市场</b
 /* ============ 更新公告：每次发新版本，在最上面加一条（v 要和 NMBUILD 一样） ============
    by：这次是听谁的指导；add 新增、chg 调整、fix 修复 */
 var NMLOG=[
+ {v:'0.40',d:'11月14日',by:'姜主任',w:'「以生为本、全面发展」',add:['新建筑<b>学生宿舍</b>：每栋住 12 人；晚上要用电才有灯（每栋 15 千瓦），没电学生会抱怨','学生有了<b>作息</b>：早上从宿舍去学校早读，<b>8:00 早饭</b>、11:30 午饭、17:30 晚饭都会从学校门口走去食堂、吃完走回来，课间在操场玩，晚自习下课后回宿舍','<b>学校会损坏</b>：大约 20 天一次，要花至少 500 银币维修，修好前学生学习慢 30%'],chg:['学校最高扩建到 <b>Lv6</b>，最多同时收 <b>12 名学生</b>','<b>上学免费</b>（反正以后都是你的牛马）','食堂食材不够时，每人每顿采购费改成 <b>15 银币</b>']},
  {v:'0.39',d:'11月14日',by:'姜主任',w:'「稳字当头、安全第一」',fix:['建了<b>食堂</b>（或果园、菜园、渔场）以后，再打开游戏<b>画面空白</b>、什么都没有'],add:['万一游戏出错，会显示出错提示，不会再是一片空白（存档不会丢）']},
  {v:'0.38',d:'11月14日',by:'姜主任',w:'「立德树人、吃饱饭才能读好书」',add:['新建筑<b>食堂</b>（姜主任第 6 条指令后解锁）：学生和毕业生每天 <b>11:30、17:30</b> 吃饭；要派毕业生当<b>厨师</b>；仓库用路或传送带接到它唯一的<b>入口</b>，送鱼、水果、蔬菜、鸡蛋、牛奶','没有食堂、没人做饭或者断粮：差的饭<b>花钱在外面采购</b>（每份 25 银币）；钱也不够就饿肚子，学生学得慢、毕业生干活慢一半','食堂可以<b>进去看</b>：饭点孩子们坐着吃饭','<b>牛马可以出售</b>：牛马菜单里，空闲的可以半价卖掉','学校<b>随机事件</b>：学生打架、发烧、作业被牛吃了、家长来访、晚自习说话，可以唐老师处理，也可以请姜主任处理'],chg:['学生读 <b>10 天</b>才毕业','学生画成了<b>小孩</b>，有男孩有女孩','没工作的毕业生不再在学校附近闲逛']},
  {v:'0.37',d:'11月14日',by:'姜董事',w:'「严抓落实、精打细算」',chg:['领导的<b>指令变难</b>：越往后要的东西种类越多，后期一次要 3~4 种，鸡蛋、牛奶、羊毛、鱼、水果、蔬菜都可能要（只要你已经能产出）','指令<b>奖励变少</b>：每单最多 500 银币、3 金币、1 宝石','学校晚自习 <b>21:10 起陆续熄灯</b>，早上 7 点早读亮灯一会儿'],fix:['传送带接到工坊入口时，最后一格方向不对，<b>仓库不往齿轮坊送货</b>（现在接到入口的那格会自动朝里）']},
@@ -2614,9 +2611,9 @@ var STUD=6000; /* 一天 = 600 秒（游戏里 6:00 到第二天 2:00），10 �
 /* ============ 食堂 ============
    学生 + 毕业生每天 11:30、17:30 各吃一顿，每人一份。
    食堂要有毕业生当厨师才开伙；食材从唯一的入口送进来（鱼、水果、蔬菜、鸡蛋、牛奶）。
-   没有食堂、没人做饭、或者食材不够：差的份数花钱在外面采购（每份 25 银币）。
+   没有食堂、没人做饭、或者食材不够：差的份数花钱在外面采购（每份 15 银币）。
    钱也不够：饿肚子到下一顿——学生学得慢，毕业生干活慢一半。 */
-var FOOD=['fish','fruit','veg','egg','milk'],MEALP=25;
+var FOOD=['fish','fruit','veg','egg','milk'],MEALP=15;
 /* BD.canteen 定义在 01-core.js（别的文件加载时就要认识它，不然老存档里有食堂会打不开） */
 BD.canteen.all={fish:1,fruit:1,veg:1,egg:1,milk:1}; /* 01-core 会按 inp/opt 重算 all，这里补回来 */
 if(S.bld.some(function(b){return b.t==='canteen'}))rebuildGrid(); /* 老存档里的食堂：补上它的入口 */
@@ -2624,7 +2621,7 @@ BORD.push('canteen');SZT.canteen=[3,3,4,4,4];SLT.canteen=[2,3,4,5,6];
 function diners(){return (S.stu||[]).length+(S.grad||0)}
 function cooksOK(b){return (b.w.grad||0)>0}
 function foodIn(b){var n=0;FOOD.forEach(function(k){n+=b.inb[k]||0});return n}
-function mealName(sl){return sl===0?'午饭':'晚饭'}
+function mealName(sl){return ['午饭','晚饭','早饭'][sl]}
 function doMeal(sl){var n=diners();if(!n)return;
   var cs=S.bld.filter(function(b){return b.t==='canteen'&&cooksOK(b)}),left=n,served=0,guard=0;
   while(left>0&&guard++<999){var got=false;cs.forEach(function(b){if(left<=0)return;for(var i=0;i<FOOD.length;i++){var k=FOOD[i];if((b.inb[k]||0)>0){b.inb[k]--;left--;served++;got=true;return}}});if(!got)break}
@@ -2635,7 +2632,7 @@ function doMeal(sl){var n=diners();if(!n)return;
   toast(msg);
   if(!cs.length&&bought&&!S.mealTip){S.mealTip=1;say('姜主任',['“唐老师，孩子们天天吃外卖，学校的钱都花在外卖上了。”','“建个食堂吧，派个毕业生当厨师，从仓库送鱼、水果、蔬菜过去。”'])}}
 var _g9=game2Step;game2Step=function(dt){_g9(dt);
-  var hr=(S.t/60)%24,sl=(hr>=11.5&&hr<12.5)?0:(hr>=17.5&&hr<18.5)?1:-1;
+  var hr=(S.t/60)%24,sl=(hr>=11.5&&hr<12.5)?0:(hr>=17.5&&hr<18.5)?1:(hr>=8&&hr<9)?2:-1;
   if(sl>=0){var key=S.day+'-'+sl;if(S.mealK!==key){S.mealK=key;doMeal(sl)}}};
 
 /* ---- 食堂菜单 ---- */
@@ -2661,7 +2658,7 @@ var _up9=upEff;upEff=function(b){if(b.t!=='canteen')return _up9(b);return '食�
 var _ho9=hasOut;hasOut=function(b){if(b.t==='canteen')return false;return _ho9(b)};
 
 /* ---- 地图上的食堂 ---- */
-function mealSoon(){var hr=(S.t/60)%24;return (hr>=10.5&&hr<12.5)||(hr>=16.5&&hr<18.5)}
+function mealSoon(){var hr=(S.t/60)%24;return (hr>=7.5&&hr<8.6)||(hr>=10.9&&hr<12.3)||(hr>=16.9&&hr<18.3)}
 var _dbs9=drawBsprite;drawBsprite=function(b,px,py,wk,A){if(b.t!=='canteen')return _dbs9(b,px,py,wk,A);
   var on=mealSoon()&&cooksOK(b),nt=nightK((S.t/60)%24)>0.3;
   rect(px+2,py+12,28,17,'#f2e2c2');rect(px+2,py+27,28,2,'#00000025');gable(px,py,0,32,4,11,'#d65a3a','#9a3a24');
@@ -2675,7 +2672,7 @@ var _dbs9=drawBsprite;drawBsprite=function(b,px,py,wk,A){if(b.t!=='canteen')retu
 /* ---- 食堂内部 ---- */
 var _eb9=enterBuilding;enterBuilding=function(b){if(!b||b.t!=='canteen')return _eb9(b);
   var sc=newSC('in','canteen',11,11,'食堂'+(lvl(b)>1?' Lv'+lvl(b):'')+' · 内部');sc.bld=b;var W2=11*TS;
-  sc.hint=function(){var hr=(S.t/60)%24;return mealSoon()?(cooksOK(b)?'开饭时间到！':'没有厨师，孩子们只能吃外卖'):'还没到饭点（11:30、17:30）'};
+  sc.hint=function(){var hr=(S.t/60)%24;return mealSoon()?(cooksOK(b)?'开饭时间到！':'没有厨师，孩子们只能吃外卖'):'还没到饭点（8:00、11:30、17:30）'};
   /* 打饭窗口 */
   addProp(sc,{x:1,y:2,w:9,h:1,solid:true,up:14,tap:function(){bldMenu(b)},stand:[5,3],draw:function(px,py){
     rect(px,py-14,9*TS,30,'#c9b08a');rect(px,py-14,9*TS,3,'#e8d4b0');rect(px,py+8,9*TS,8,'#9a7a54');
@@ -2724,6 +2721,98 @@ EV.push(
    {l:'唐老师讲个笑话镇住全场',s:'讲完大家都安静了（因为不好笑）',f:function(){say('全班',['（安静了三秒）','“唐老师，这个笑话姜主任上周讲过了。”'])}},
    {l:'请姜主任来巡堂',f:function(){say('',['姜主任出现在教室门口，什么都没说。','全班瞬间安静，连牛都不嚼草了。'])}}])}}
 );
+</script>
+<script>
+/* 牛马谷 · 20-dorm.js — 学生作息（在地图上走来走去）、学生宿舍、学校损坏 */
+'use strict';
+/* ============ 学生宿舍 ============
+   每栋住 12 个学生，没有升级。晚上有学生住的宿舍要用电（每栋 15 千瓦）才有灯，没电学生会抱怨。 */
+var DORMCAP=12,DORMKW=15;
+BORD.push('dorm');
+function dorms(){return S.bld.filter(function(b){return b.t==='dorm'})}
+function dormOf(i){var ds=dorms();return ds[Math.floor(i/DORMCAP)]||null}
+function dormPeople(b){var ds=dorms(),j=ds.indexOf(b),n=(S.stu||[]).length;return Math.max(0,Math.min(DORMCAP,n-j*DORMCAP))}
+function isNight(hr){return hr>=18||hr<7}
+/* 宿舍用电：排在工坊后面，有剩余电才亮 */
+var _ps20=powerStep;powerStep=function(){_ps20();var g=runtime.grid||{cap:0,used:0,n:0},hr=(S.t/60)%24;
+  dorms().forEach(function(b){b.pw=0;b.pwShort=0;if(!isNight(hr)||dormPeople(b)<1)return;if(g.cap-g.used>=DORMKW){b.pw=1;g.used+=DORMKW}else b.pwShort=1});
+  runtime.grid=g;S.bld.forEach(function(p){if(p.t==='power')p.load=p.on&&g.cap?Math.round(g.used*kwOf(p)/g.cap):0})};
+var _bm20=bldMenu;bldMenu=function(b){if(b.t!=='dorm')return _bm20(b);
+  var n=dormPeople(b),hr=(S.t/60)%24,g=runtime.grid||{cap:0,used:0},o=[];
+  var st=!countB('power')?'没有发电厂：晚上黑灯瞎火，学生会抱怨':b.pw?'⚡ 有电，灯亮着（'+DORMKW+' 千瓦）':isNight(hr)&&n?'⚡ 电不够，宿舍没灯':'白天不用电（晚上有人住时用 '+DORMKW+' 千瓦）';
+  var tot=(S.stu||[]).length,cap0=dorms().length*DORMCAP;
+  o.push({l:'搬家',s:'换个位置 · 搬家费 '+moveFee(b)+' 币',r:'迁移',f:function(){startMove(b)}});
+  o.push({l:'拆除',s:'会再问你一遍',f:function(){removeB(b)}});
+  menu('学生宿舍',st+'<br>这栋住 '+n+'/'+DORMCAP+' 人 · 全校学生 '+tot+' 人，宿舍床位 '+cap0+(tot>cap0?'<br><b style="color:#c4442a">床位不够：'+(tot-cap0)+' 个学生晚上只能睡教室</b>':'')+'<br><small>学生 21:10 下晚自习后回宿舍，早上 7 点去学校早读。</small>',o);
+  runtime.liveMenu={fn:function(){if(S.bld.indexOf(b)>=0)bldMenu(b)},sig:liveSig()}};
+var _st20=statusTxt;statusTxt=function(b){if(b.t!=='dorm')return _st20(b);return b.pw?'有电':b.pwShort?'没电':''};
+/* 地图上的宿舍 */
+var _dbs20=drawBsprite;drawBsprite=function(b,px,py,wk,A){if(b.t!=='dorm')return _dbs20(b,px,py,wk,A);
+  var hr=(S.t/60)%24,nt=isNight(hr),lit=b.pw;
+  rect(px+2,py+11,28,18,'#e8dcc8');rect(px+2,py+27,28,2,'#00000025');gable(px,py,0,32,3,10,'#5a6ad6','#3a4aa6');
+  rect(px+9,py+12,14,5,'#3a4aa6');rect(px+10,py+13,12,3,'#fff3d8');cx.fillStyle='#3a4aa6';cx.font='bold 3.5px sans-serif';cx.textAlign='center';cx.fillText('学生宿舍',px+16,py+15.6);
+  for(var r=0;r<2;r++)for(var c=0;c<3;c++){var wc=nt?(lit?'#ffe58a':'#2a3550'):'#8fd0f5';if(c===1&&r===1)continue;rect(px+4+c*9,py+18+r*5,5,4,wc);rect(px+6+c*9,py+18+r*5,1,4,'#fffaf0')}
+  rect(px+13,py+22,6,7,'#6b4426');rect(px+14,py+23,4,6,'#8a5a35');
+  rect(px+27,py+20,2,9,'#d9d0c0');for(var q=0;q<2;q++)rect(px+26,py+21+q*3,4,1,['#ff9ab0','#8fd0f5'][q])};
+
+/* ============ 学生作息：在学校、食堂、宿舍之间走 ============
+   6:50 宿舍 → 学校（7:00 早读）→ 7:50 去食堂（8:00 早饭）→ 回学校上课 → 10:00 课间在操场 → 11:20 去食堂（11:30 午饭）
+   → 12:15 操场玩 → 13:30 上课 → 15:30 课间 → 17:20 去食堂（17:30 晚饭）→ 操场 → 18:50 晚自习 → 21:10 起陆续下课回宿舍。
+   没有食堂：在教室吃外卖。没有宿舍或床位不够：睡教室。 */
+var SCHDOOR=[22,23];
+function doorOf(b){var n=bw(b),cxT=b.x+Math.floor(n/2),best=null,bd=1e9;
+  for(var r=1;r<=3&&!best;r++)for(var y=b.y-r;y<b.y+n+r;y++)for(var x=b.x-r;x<b.x+n+r;x++){if(x>=b.x&&x<b.x+n&&y>=b.y&&y<b.y+n)continue;if(!walkable(x,y))continue;
+    var d=Math.abs(x-cxT)+Math.abs(y-(b.y+n))*0.6+(y<b.y+n?3:0);if(d<bd){bd=d;best=[x,y]}}return best||[cxT,b.y+n]}
+function kidPlan(i){var hr=(S.t/60)%24,o=(i%12)*0.02,h=hr-o,cn=S.bld.filter(function(b){return b.t==='canteen'})[0],dm=dormOf(i);
+  var eat=cn?{w:'canteen',b:cn}:{w:'school'},sch={w:'school'},yard={w:'yard'},off=21.17+(i%12)*0.06;
+  if(h<2||h>=off)return dm?{w:'dorm',b:dm}:sch;
+  if(h<6.8)return dm?{w:'dorm',b:dm}:sch;
+  if(h<7.85)return sch;if(h<8.5)return eat;if(h<10)return sch;if(h<10.3)return yard;if(h<11.3)return sch;if(h<12.2)return eat;
+  if(h<13.5)return yard;if(h<15.5)return sch;if(h<15.8)return yard;if(h<17.3)return sch;if(h<18.2)return eat;if(h<18.85)return yard;return sch}
+function planKey(p){return p.w+(p.b?p.b.id:'')}
+function planDoor(p){return p.w==='school'?SCHDOOR:p.w==='yard'?[17+Math.floor(Math.random()*11),24+Math.floor(Math.random()*2)]:doorOf(p.b)}
+var KPATH={};
+function kidRoute(a,b){var key=a.join(',')+'>'+b.join(',');if(KPATH[key]&&KPATH[key].t>Date.now()-60000)return KPATH[key].p;
+  var p=route(a[0],a[1],function(x,y){return x===b[0]&&y===b[1]},walkable)||[[b[0],b[1]]];KPATH[key]={p:p,t:Date.now()};return p}
+var KIDNIGHT=['宿舍没电，好黑啊……','姜老师，我怕黑！','没有灯怎么看书呀','黑漆漆的，我要找姜老师','又停电了……'];
+function kidsStep(dt){var kd=runtime.kids=runtime.kids||[],n=(S.stu||[]).length;
+  while(kd.length<n){var i0=kd.length;kd.push({at:null,x:SCHDOOR[0]*TS+8,y:SCHDOOR[1]*TS+12,path:[],sh:['#3d8a5a','#8a4a9a','#c4742a','#2c7ab8','#d6587a','#3a9a9a'][i0%6],hr:['#23232e','#6a4a2a','#3a2622'][i0%3],fx:1})}
+  if(kd.length>n)kd.length=n;
+  kd.forEach(function(k,i){k.g=(S.stu[i]&&S.stu[i].g)||'b';var p=kidPlan(i),key=planKey(p);
+    if(k.at===null){k.at=key;k.dest=key;if(p.w==='yard'){k.x=(17+Math.random()*11)*TS;k.y=(24+Math.random()*1.6)*TS}return}
+    if(k.dest!==key){/* 要换地方：从现在的门（或操场上的位置）走到新地方的门 */
+      var from=k.at==='yard'||k.path.length?[Math.floor(k.x/TS),Math.floor(k.y/TS)]:planDoor(k.atP||{w:'school'});
+      if(!k.path.length&&k.at!=='yard'){k.x=from[0]*TS+8;k.y=from[1]*TS+12}
+      var to=planDoor(p);k.path=kidRoute(from,to).slice();k.dest=key;k.destP=p;k.at='walk';
+      if(p.w==='dorm'&&!p.b.pw&&isNight((S.t/60)%24)&&Math.random()<0.5)k.bub={t:ppick(KIDNIGHT),l:3}}
+    if(k.at==='walk'){k.mv=0;if(!k.path.length){k.at=k.dest;k.atP=k.destP;return}
+      var nx=k.path[0],tx=nx[0]*TS+8,ty=nx[1]*TS+12,dx=tx-k.x,dy=ty-k.y,m=Math.hypot(dx,dy),sp=36*spdAt(Math.floor(k.x/TS),Math.floor(k.y/TS))*dt;
+      if(m<=sp){k.x=tx;k.y=ty;k.path.shift()}else{k.x+=dx/m*sp;k.y+=dy/m*sp;k.mv=1;if(Math.abs(dx)>0.5)k.fx=dx>0?1:-1}}
+    else if(k.at==='yard'){k.t=(k.t||0)-dt;if(k.t<=0){k.t=1+Math.random()*3;if(Math.random()<0.4){k.vx=0;k.vy=0}else{var an=Math.random()*6.28;k.vx=Math.cos(an)*10;k.vy=Math.sin(an)*8}}
+      var nx2=k.x+(k.vx||0)*dt,ny2=k.y+(k.vy||0)*dt;if(nx2<17*TS||nx2>28*TS||ny2<23.6*TS||ny2>25.8*TS){k.vx=-(k.vx||0);k.vy=-(k.vy||0)}else{k.x=nx2;k.y=ny2}k.mv=(k.vx||k.vy)?1:0;if(k.vx)k.fx=k.vx>0?1:-1}
+    if(k.bub){k.bub.l-=dt;if(k.bub.l<=0)k.bub=null}else if((k.at==='yard'||k.at==='walk')&&Math.random()<0.0015)k.bub={t:ppick(KIDL),l:3}});
+  /* 宿舍没电：晚上第一次有人回宿舍时提醒一次 */
+  var hr=(S.t/60)%24;if(hr>=21.5&&hr<22&&dorms().some(function(b){return !b.pw&&dormPeople(b)>0})&&S.darkTip!==S.day&&!runtime.offline){S.darkTip=S.day;toast('宿舍没电，孩子们在抱怨：“姜老师，我们怕黑！”')}}
+function kidsDraw(ents){(runtime.kids||[]).forEach(function(k){if(k.at!=='walk'&&k.at!=='yard')return;ents.push({y:k.y,f:function(){kidSprite(k,k.mv);if(k.bub)drawBub(k,k.y-camy-20)}})})}
+var _g20=game2Step;game2Step=function(dt){_g20(dt);kidsStep(dt);damageStep()};
+
+/* ============ 学校损坏：大约 20 天一次，要花钱修 ============
+   没修好之前：学生学习慢 30%，每天早上提醒一次。 */
+var DMGL=[['教室屋顶漏水','下雨天学生要撑伞上课'],['黑板裂了','姜老师的粉笔字都写歪了'],['课桌椅坏了一排','学生只能站着听课'],['窗户玻璃碎了','冷风嗖嗖地往里灌'],['操场围墙倒了一段','牛跑进来吃了学生的作业'],['厕所堵了','这个就不细说了']];
+function damageStep(){if(runtime.offline)return;if(!S.dmgNext){S.dmgNext=S.day+18+Math.floor(Math.random()*5);return}
+  if(!S.dmg&&S.day>=S.dmgNext&&(S.stu||[]).length+S.grad>0){var d=pick(DMGL);S.dmg={n:d[0],x:d[1],c:500+100*((S.sch||1)-1)+Math.floor(Math.random()*4)*100,day:S.day};runtime.dmgPop=1}
+  if(runtime.dmgPop&&!busy()){runtime.dmgPop=0;dmgMenu()}
+  var hr=(S.t/60)%24;if(S.dmg&&hr>=7&&hr<7.5&&S.dmgTip!==S.day&&S.dmg.day!==S.day){S.dmgTip=S.day;toast('学校的'+S.dmg.n+'还没修，学生学习变慢了')}}
+function dmgMenu(){if(!S.dmg)return;var d=S.dmg;menu('🔧 学校需要维修','<b>'+d.n+'</b>：'+d.x+'。<br>修好之前，学生学习慢 30%。<br>维修费 '+d.c+' 银币。',[
+  {l:'马上修',s:'花 '+d.c+' 银币',r:d.c+'币',pri:1,dis:S.money<d.c,why:'银币不够，要 '+d.c+' 币',f:function(){repairSchool()}},
+  {l:'先放着',s:'可以在学校菜单或任务里再修',f:function(){}}],true)}
+function repairSchool(){var d=S.dmg;if(!d||S.money<d.c)return;S.money-=d.c;S.dmg=null;S.dmgNext=S.day+18+Math.floor(Math.random()*5);
+  say('姜主任',['“'+d.n+'修好了。唐老师，钱花在孩子身上，值。”'])}
+/* 学习速度：损坏时 ×0.7 */
+var _g20b=game2Step;game2Step=function(dt){if(S.dmg)(S.stu||[]).forEach(function(st){st.t-=dt*0.3*(S.hungry?0.3:1)});_g20b(dt)};
+/* 学校菜单、任务面板里也能修 */
+var _sm20=schoolMenu;schoolMenu=function(){_sm20();if(!S.dmg)return;var box=$('#mbox');if(!box)return;var bt=document.createElement('button');bt.type='button';bt.className='mb pri';bt.innerHTML='🔧 修学校：'+S.dmg.n+'<small>'+S.dmg.c+' 银币 · 修好前学习慢 30%</small>';bt.onclick=function(){closeMenu();dmgMenu()};var f=box.querySelector('button');if(f)box.insertBefore(bt,f.nextSibling);else box.appendChild(bt)};
+var _xr20=extraRows;extraRows=function(o){_xr20(o);if(S.dmg)o.unshift({l:'🔧 学校需要维修',s:S.dmg.n+' · '+S.dmg.c+' 银币',r:'修理',pri:1,keep:1,f:function(){closeMenu();dmgMenu()}})};
 </script>
 <script>
 /* 牛马谷 · 18-main.js — 仓库详情、主循环、存档导出导入、网页应用更新、启动 */

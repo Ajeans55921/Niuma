@@ -52,7 +52,7 @@ textarea{width:100%;height:90px;font-size:16px;user-select:text;-webkit-user-sel
 <div id="bar"></div>
 <div id="menu"><div id="mbox"></div></div>
 <script>
-var NMBUILD='0.31'; /* 版本号：每次改游戏都要改这里 */
+var NMBUILD='0.34'; /* 版本号：每次改游戏都要改这里 */
 /* 游戏代码文件，按这个顺序加载。顺序不能乱：后面的文件会用到、甚至改写前面文件里的东西 */
 var NMJS=[];
 </script>
@@ -252,7 +252,14 @@ function slotsOf(b){var d=BD[b.t];if(!d.slots)return 0;if(b.t==='depot')return 4
 function growsB(b){var d=BD[b.t];return !!((d.slots&&b.t!=='depot')||b.t==='power')}
 function sumLv(t){var n=0;S.bld.forEach(function(b){if(b.t===t)n+=lvl(b)});return n}
 function aniCap(){return 8+4*sumLv('house')}
-function upCost(b){return Math.round(Math.max(BD[b.t].cost,100)*[1.6,2.8,4.5,7][lvl(b)-1])}
+/* 升级除了银币还要材料：Lv2 木板+石头，Lv3 木板+铁锭，Lv4 铁锭+齿轮，Lv5 齿轮+金锭；建筑越贵要得越多 */
+var UPM=[{plank:8,stone:12},{plank:15,ingot:6},{ingot:15,gear:4},{gear:10,goldbar:3}];
+function upMat(b){var f=Math.max(1,Math.min(5,Math.round(BD[b.t].cost/150))),m=UPM[lvl(b)-1],o={};if(!m)return o;for(var k in m)o[k]=m[k]*f;return o}
+function matOK(m){for(var k in m)if(have(k)<m[k])return false;return true}
+function matTxt(m){return Object.keys(m).map(function(k){var ok=have(k)>=m[k];return (ok?'':'<b style="color:#c4442a">')+IT[k][0]+' '+Math.min(have(k),m[k])+'/'+m[k]+(ok?'':'</b>')}).join('、')}
+function upCost(b){return Math.round(Math.max(BD[b.t].cost,100)*[2.4,4.2,6.8,10.5][lvl(b)-1])}
+/* 同一种建筑，每多一座贵 25%（第 1 座原价，第 5 座是 2 倍） */
+function costOf(t){return Math.round(BD[t].cost*(1+0.25*countB(t)))}
 function upEff(b){var t=b.t;return t==='house'?'牛马上限再 +4':t==='market'?'卖货更快':t==='depot'?'运输位置 +1':t==='power'?'发电 '+PWKW[lvl(b)-1]+' → '+PWKW[lvl(b)]+' 千瓦'+((SZT.power[lvl(b)]>bw(b))?'，占地变成 '+SZT.power[lvl(b)]+'×'+SZT.power[lvl(b)]:'')+'，煤仓 +10':(growsB(b)?'占地变成 '+(SZT[b.t]||SZT.d)[lvl(b)]+'×'+(SZT[b.t]||SZT.d)[lvl(b)]+'，位置 '+slotsOf(b)+'→'+(SLT[b.t]||SLT.d)[lvl(b)]+'，牛马干活速度 +40%':'牛马干活速度 +40%，位置 +1，仓储 +12')}
 function growSpot(b,n){
   var o=bw(b),best=null,bs=1e9,sp=allSP();
@@ -270,7 +277,8 @@ function growSpot(b,n){
 function upRow(b){var c=upCost(b),L=lvl(b);if(L>=MAXLV)return{l:'已满级 Lv'+MAXLV,s:'再也升不动了（建筑也有天花板）',r:'',dis:true,keep:1,f:function(){}};
   var nsz=growsB(b)?(SZT[b.t]||SZT.d)[L]:bw(b),spot=nsz>bw(b)?growSpot(b,nsz):[b.x,b.y];
   if(!spot)return{l:'升级到 Lv'+(L+1),s:'需要 '+nsz+'×'+nsz+' 的空地，周围被建筑、传送带、路或水挡住了',r:c+'币',dis:true,keep:1,f:function(){}};
-  return{l:'升级到 Lv'+(L+1),s:upEff(b),r:c+'币',dis:S.money<c,keep:1,f:function(){if(S.money<c)return;S.money-=c;b.lv=L+1;b.sp=(b.sp||0)+c;
+  var um=upMat(b),mok=matOK(um);
+  return{l:'升级到 Lv'+(L+1),s:upEff(b)+'<br>材料：'+matTxt(um),r:c+'币',dis:S.money<c||!mok,why:!mok?'材料不够：'+matTxt(um).replace(/<[^>]+>/g,''):'银币不够，要 '+c+' 币',keep:1,f:function(){if(S.money<c||!matOK(um))return;S.money-=c;for(var mk in um)add(mk,-um[mk]);b.lv=L+1;b.sp=(b.sp||0)+c;
     if(nsz>bw(b)){b.x=spot[0];b.y=spot[1];b.sz=nsz;for(var j=0;j<nsz;j++)for(var i=0;i<nsz;i++){var k=gi(b.x+i,b.y+j);if(OB[k]&&OB[k]!=='B')OB[k]=0}rebuildGrid();
       var px=Math.floor(PL.x/TS),py=Math.floor(PL.y/TS);if(!walkable(px,py)){for(var r=1;r<=8;r++){var done=0;for(var dy=-r;dy<=r&&!done;dy++)for(var dx=-r;dx<=r;dx++){if(walkable(px+dx,py+dy)){PL.x=(px+dx)*TS+8;PL.y=(py+dy)*TS+10;PL.path=[];done=1;break}}if(done)break}}}
     toast(BD[b.t].n+' 升到 Lv'+b.lv+(nsz>2?'，占地 '+nsz+'×'+nsz:'')+'！');save();bldMenu(b)}}}
@@ -491,6 +499,9 @@ function beltTree(k){var c=runtime.btc||(runtime.btc={});if(c[k])return c[k];
   while(q.length&&n++<3000){var cur=q.shift(),bl=S.belt[cur];if(!bl)continue;if(bl.item)tr[bl.item]=(tr[bl.item]||0)+1;
     beltOuts(cur).forEach(function(o){if(o.b){if(dests.indexOf(o.b)<0)dests.push(o.b)}else if(!seen[o.k]){seen[o.k]=1;q.push(o.k)}})}
   return c[k]={dests:dests,tr:tr}}
+/* 除了 me 以外，还有没有别的传送带的货已经到头、正等着进 k 这格 */
+function beltWaiting(k,me){var x=k%W,y=Math.floor(k/W);for(var d=0;d<4;d++){var nx=x-DX[d],ny=y-DY[d];if(nx<0||ny<0||nx>=W||ny>=H)continue;var sk=gi(nx,ny);if(sk===me)continue;var sb=S.belt[sk];
+    if(sb&&sb.item&&sb.p>=1&&beltOuts(sk).some(function(o){return o.k===k&&!o.b}))return true}return false}
 function takesType(b,item){if(b.t==='warehouse')return true;var a=BD[b.t].all;return!!(a&&a[item]!==undefined)}
 /* 兼容旧代码：只要第一个终点 */
 function beltDest(k){var t=beltTree(k);return t.dests.length?{b:t.dests[0],tr:t.tr}:null}
@@ -535,13 +546,16 @@ function step(dt){
     if(spd<=0){b.state='noworker';return}
     var rc=d.inf||1;if(d.res){var n=resCount(d.res,b.x,b.y,bw(b),bw(b));rc=Math.min(n,8)/3;if(n<2){b.state='noresource';return}}
     var oc=0;for(var k in b.out)oc+=b.out[k];
-    if(oc>=outCap(b)){b.state='full';return}
+    if(b.t==='pasture'){/* 每种动物的产品单独算库存：牛奶满了，鸡照样下蛋 */
+      var pcap=outCap(b),pok=[['milk',b.w.dairy||0],['egg',b.w.hen||0],['wool',b.w.sheep||0]].filter(function(q){return q[1]>0&&(b.out[q[0]]||0)<pcap});
+      if(!pok.length){b.state='full';return}}
+    else if(oc>=outCap(b)){b.state='full';return}
     if(d.inp){for(var r in d.inp)if((b.inb[r]||0)<d.inp[r]){b.state='noinput';return}}
     var fb=d.opt&&(b.inb[Object.keys(d.opt)[0]]||0)>0;b.p+=spd*rc*dt/d.t;b.wk=1;
     if(b.p>=1){
       b.p=0;if(d.inp)for(var r2 in d.inp)b.inb[r2]-=d.inp[r2];
-      var o=d.out;if(b.t==='pasture'){var pw0=[['milk',b.w.dairy||0],['egg',b.w.hen||0],['wool',b.w.sheep||0]],pt=(b.w.dairy||0)+(b.w.hen||0)+(b.w.sheep||0),pr0=Math.random()*pt;o='egg';for(var pi=0;pi<3;pi++){pr0-=pw0[pi][1];if(pr0<0&&pw0[pi][1]>0){o=pw0[pi][0];break}}}
-      var ny=b.pw&&!d.inp?2:1;if(d.opt){var ok0=Object.keys(d.opt)[0];if((b.inb[ok0]||0)>0){b.inb[ok0]--;ny=2}}b.out[o]=(b.out[o]||0)+ny;S.made[o]=(S.made[o]||0)+ny;var cc0=bcenter(b);runtime.parts.push({x:cc0.x,y:b.y*TS+2,vx:rnd(-3,3),vy:-20,g:0,l:1.1,c:ICOL[o]||'#fff',s:3,pop:1});
+      var o=d.out;if(b.t==='pasture'){var pw0=[['milk',b.w.dairy||0],['egg',b.w.hen||0],['wool',b.w.sheep||0]].filter(function(q){return q[1]>0&&(b.out[q[0]]||0)<outCap(b)}),pt=0;pw0.forEach(function(q){pt+=q[1]});var pr0=Math.random()*pt;o=pw0.length?pw0[0][0]:'egg';for(var pi=0;pi<pw0.length;pi++){pr0-=pw0[pi][1];if(pr0<0){o=pw0[pi][0];break}}}
+      var ny=b.pw&&!d.inp?2:1;if(d.opt){var ok0=Object.keys(d.opt)[0];if((b.inb[ok0]||0)>0){b.inb[ok0]--;ny=2}}b.out[o]=(b.out[o]||0)+ny;S.made[o]=(S.made[o]||0)+ny;var cc0=bcenter(b);if(!(nightK((S.t/60)%24)>0.3))runtime.parts.push({x:cc0.x,y:b.y*TS+2,vx:rnd(-3,3),vy:-20,g:0,l:1.1,c:ICOL[o]||'#fff',s:3,pop:1});
     }
   });
   /* 机器输出：只能从出口上传送带 */
@@ -549,7 +563,7 @@ function step(dt){
     if(b.t==='warehouse'){whBeltOut(b,dt);return}var oc=Object.keys(b.out).filter(function(k){return b.out[k]>0});if(!oc.length)return;
     b.ot=(b.ot||0)-dt;if(b.ot>0)return;b.ot=0.25;
     portsOf(b).forEach(function(p){if(p.io!=='out')return;var x=p.t[0],y=p.t[1];if(x<0||y<0||x>=W||y>=H)return;var bl=S.belt[gi(x,y)];
-      if(bl&&!bl.item){var tx=x+DX[bl.d],ty=y+DY[bl.d];if(BLG[gi(tx,ty)]===b)return;bl.item=oc[0];bl.p=0;b.out[oc[0]]--}});
+      if(bl&&!bl.item){var tx=x+DX[bl.d],ty=y+DY[bl.d];if(BLG[gi(tx,ty)]===b)return;var ok=oc.filter(function(q){return b.out[q]>0});if(!ok.length)return;b.oi=((b.oi||0)+1)%ok.length;var it=ok[b.oi];bl.item=it;bl.p=0;b.out[it]--}});
   });
   /* 传送带 */
   runtime.btc={};var keys=Object.keys(S.belt);
@@ -563,13 +577,13 @@ function step(dt){
     var st=bl.rr||0;
     for(var oi=0;oi<outs.length;oi++){var o=outs[(st+oi)%outs.length];
       if(o.b){if(acceptB(o.b,item)){putB(o.b,item);bl.item=null;bl.rr=st+oi+1;break}}
-      else{var nb=S.belt[o.k];if(!nb.item){nb.item=item;nb.p=0;bl.item=null;bl.rr=st+oi+1;break}}}
+      else{var nb=S.belt[o.k];if(!nb.item){if(nb.lf===+k&&beltWaiting(o.k,+k))continue;nb.item=item;nb.p=0;nb.lf=+k;bl.item=null;bl.rr=st+oi+1;break}}}
   });
   /* 小卖部 */
   if(countB('market')){
     runtime.mk=(runtime.mk||0)-dt;
     if(runtime.mk<=0){runtime.mk=1.2;var n=sumLv('market');
-      Object.keys(S.sell).forEach(function(k){if(S.sell[k]&&have(k)>0){var c=Math.min(have(k),n);add(k,-c);S.money+=c*pr(k)}})}
+      Object.keys(S.sell).forEach(function(k){if(S.sell[k]&&have(k)>0){var c=Math.min(have(k),n);add(k,-c);S.money+=c*pr(k);S.sold=S.sold||{};S.sold[k]=(S.sold[k]||0)+c}})}
   }
   /* 运输队 */
   haulStep(dt);game2Step(dt);
@@ -579,8 +593,8 @@ function step(dt){
 /* ============ 建造 / 拆除 ============ */
 function place(t,x,y){
   var d=BD[t],e=canPlace(t,x,y);if(e){toast(e);return false}
-  if(S.money<d.cost){toast('银币不够');return false}
-  S.money-=d.cost;var b={id:S.uid++,t:t,x:x,y:y,sz:d.w,w:{cow:0,horse:0},inb:{},out:{},p:0};
+  var pc=costOf(t);if(S.money<pc){toast('银币不够（要 '+pc+' 币）');return false}
+  S.money-=pc;var b={id:S.uid++,t:t,x:x,y:y,sz:d.w,w:{cow:0,horse:0},inb:{},out:{},p:0,pc:pc};
   /* 自动安排空闲牛马 */
   
   S.bld.push(b);rebuildGrid();
@@ -591,7 +605,7 @@ function place(t,x,y){
 }
 function removeB(b,sure){
   if(b.t==='warehouse'&&S.bld.filter(function(x){return x.t==='warehouse'}).length<=1){toast('最后一个仓库不能拆');return}
-  if(!sure){var rf=Math.floor(BD[b.t].cost*0.5)+Math.floor((b.sp||0)*0.5),gn=0;for(var k0 in b.out)gn+=b.out[k0]||0;for(var k1 in b.inb)gn+=b.inb[k1]||0;
+  if(!sure){var rf=Math.floor((b.pc||BD[b.t].cost)*0.5)+Math.floor((b.sp||0)*0.5),gn=0;for(var k0 in b.out)gn+=b.out[k0]||0;for(var k1 in b.inb)gn+=b.inb[k1]||0;
     setTimeout(function(){menu('确定拆除'+bName(b)+'？','退回 '+rf+' 银币。'+(occOf(b)?'里面的牛马会回到空闲。':'')+(gn?'里面的 '+gn+' 件货物会搬回仓库（装得下的话）。':'')+'<br><b>拆了就没了，升级也白升了。</b>',[
       {l:'确定拆除',s:'不后悔',r:'拆',f:function(){removeB(b,true);toast('已拆除，退回 '+rf+' 银币')}},
       {l:'算了，不拆',s:'手滑了',f:function(){}}],true)},0);return}
@@ -599,7 +613,7 @@ function removeB(b,sure){
   for(var k2 in b.out)if(b.out[k2]>0)addCap(k2,b.out[k2]);for(var k3 in b.inb)if(b.inb[k3]>0)addCap(k3,b.inb[k3]);
   S.bld.forEach(function(x){if(x.rt&&(x.rt.f===b.id||x.rt.t===b.id))x.rt=null});
   (b.cf||[]).forEach(function(c){S[CNT[c.k]]++});b.cf=[];
-  S.money+=Math.floor(BD[b.t].cost*0.5)+Math.floor((b.sp||0)*0.5);S.bld=S.bld.filter(function(x){return x!==b});rebuildGrid();save()
+  S.money+=Math.floor((b.pc||BD[b.t].cost)*0.5)+Math.floor((b.sp||0)*0.5);S.bld=S.bld.filter(function(x){return x!==b});rebuildGrid();save()
 }
 </script>
 <script>
@@ -681,17 +695,17 @@ function whMenu(wb,tab){
 }
 function marketMenu(b){
   var o=[];IORD.forEach(function(k){if(have(k)||S.sell[k])o.push({l:IT[k][0]+' '+have(k),s:'每个 '+pr(k)+' 银币'+trend(k)+' · 自动卖出：'+(S.sell[k]?'开':'关'),r:S.sell[k]?'开':'关',pri:!!S.sell[k],keep:1,f:function(){S.sell[k]=!S.sell[k];marketMenu(b)}})});
-  if(b)o.unshift({l:'进去看看',s:'逛逛小卖部',r:'进入',f:function(){enterBuilding(b)}});if(b)o.push(upRow(b));o.push({l:'兑换柜台',s:'金锭换金币、扩仓库、延长离线时间',r:'打开',keep:1,f:function(){shopMenu()}});menu('小卖部'+(b?' Lv'+lvl(b):''),'勾选的货物会自动从仓库卖掉，小卖部越多、等级越高卖得越快。',o);
+  if(b)o.unshift({l:'进去看看',s:'逛逛小卖部',r:'进入',f:function(){enterBuilding(b)}});if(b)o.push(upRow(b));o.push({l:'兑换柜台',s:'金锭换金币、扩仓库、延长离线时间',r:'打开',keep:1,f:function(){shopMenu()}});menu('小卖部'+(b?' Lv'+lvl(b):''),'勾选的货物会自动从仓库卖掉，小卖部越多、等级越高卖得越快。<br><small>同一种货卖多了会降价，过几个小时慢慢回来；多种货换着卖、多接订单更赚。</small>',o);
 }
 function buildMenu(){
   var o=[];
   BORD.forEach(function(t){
     var d=BD[t],ok=unlocked(t);
     if(!ok)return;
-    o.push({l:d.n,s:(d.desc||(d.inp?Object.keys(d.inp).map(function(k){return IT[k][0]+'x'+d.inp[k]}).join('+')+' → '+IT[d.out][0]:d.out?'产出 '+IT[d.out][0]:'')),r:d.cost+'币',dis:S.money<d.cost,f:function(){startGhost(t)}});
+    o.push({l:d.n,s:(d.desc||(d.inp?Object.keys(d.inp).map(function(k){return IT[k][0]+'x'+d.inp[k]}).join('+')+' → '+IT[d.out][0]:d.out?'产出 '+IT[d.out][0]:'')),r:costOf(t)+'币',dis:S.money<costOf(t),why:'银币不够，要 '+costOf(t)+' 币',f:function(){startGhost(t)}});
   });
   var lk=BORD.filter(function(t){return!unlocked(t)}).map(function(t){return BD[t].n+'（'+({tang:'姜组长',jiang:'姜主任'})[BD[t].un.slice(0,4)==='tang'?'tang':'jiang']+' '+BD[t].un.replace(/\D+/,'')+' 条指令）'});
-  menu('建造','银币 '+fmt(S.money)+(lk.length?'<br>未解锁：'+lk.join('、'):''),o);
+  menu('建造','银币 '+fmt(S.money)+'<br><small>同一种建筑每多一座贵 25%</small>'+(lk.length?'<br>未解锁：'+lk.join('、'):''),o);
 }
 var CNT={cow:'cows',horse:'horses',dairy:'dairy',hen:'hens',sheep:'sheep',dog:'dogs',cat:'cats'},ANM={cow:'牛',horse:'马',dairy:'奶牛',hen:'鸡',sheep:'羊',dog:'狗',cat:'猫'};
 var AUN={cow:null,horse:['jiang',1],dairy:['jiang',4],hen:['jiang',2],sheep:['jiang',5],dog:['tang',5],cat:['jiang',7]};
@@ -1146,6 +1160,7 @@ function drawB(b){
   if(d.t&&b.state){cx.font='bold 9px sans-serif';cx.textAlign='center';cx.fillStyle=b.state==='noworker'?'#ffd34a':'#ff7a6a';cx.fillText(b.state==='noworker'?'zZ':b.state==='full'?'满':'!',px+Z-5,py+9)}
   if(b.pw){rect(px+Z-6,py+1,4,4,'#ffe84a');rect(px+Z-5,py+2,2,2,'#fff')}
   var lv=lvl(b);if(lv>=2){var fc=['','#e8553a','#e8553a','#3ad66a','#b85ad6'][lv-1];rect(px-1,py+Z-5,Z+2,2,lv>=3?'#ffd34a':'#e8b82a');rect(px+1,py-3,1,13,'#7a5a3a');var fw=Math.round(Math.sin(tAnim*5));rect(px+2,py-3,6+fw,4,fc);if(lv>=3){rect(px+Z-2,py-3,1,13,'#7a5a3a');rect(px+Z-8-fw,py-3,6+fw,4,'#3a8ad6');rect(px+Z/2-8,py+Z-5,16,1,'#fff3a8')}if(lv>=5){for(var s2=0;s2<3;s2++)rect(px+Z/2-6+s2*5,py-6+Math.round(Math.sin(tAnim*4+s2)),3,3,'#ffe84a')}}
+  if(b.t==='pasture')drawPen(b,px,py);
   drawWorkers(b,px,py);cx.font='6px sans-serif';cx.textAlign='center';cx.fillStyle='#ffffffdd';cx.fillText(d.n+(lv>1?' Lv'+lv:''),px+Z/2,py-14);
 }
 function headIcon(x,y,kind,on,bob){
@@ -1158,6 +1173,14 @@ function headIcon(x,y,kind,on,bob){
   else{rect(x+1,by,5,2,'#3b2412');rect(x,by+1,7,6,'#b27a45');rect(x+1,by+2,1,1,'#222');rect(x+5,by+2,1,1,'#222');rect(x+1,by+5,5,2,'#d9a878')}
   rect(x-1,by+7,9,1,'#00000040');
 }
+function rnd01(a,b){var s=Math.sin(a*12.9898+b*78.233)*43758.5453;return s-Math.floor(s)}
+function drawPen(b,px,py){var hr=(S.t/60)%24;if(hr>=20||hr<6)return;
+  var k=bw(b)/2,x0=px+5*k,x1=px+27*k,y0=py+11*k,y1=py+27*k,max=Math.max(2,Math.floor(bw(b)*bw(b)/2)),list=[];
+  [['dairy',8],['hen',4.5],['sheep',7]].forEach(function(q){for(var i=0;i<(b.w[q[0]]||0);i++)list.push([q[0],q[1]])});list=list.slice(0,max);
+  var ag=list.map(function(q,i){var sd=b.id*13+i*7.7,t=tAnim/q[1]+rnd01(sd,1)*9,j=Math.floor(t),f=t-j,m=Math.min(1,f/0.55),s=m*m*(3-2*m);
+    var ax=x0+rnd01(sd,j)*(x1-x0),ay=y0+rnd01(sd+3,j)*(y1-y0),bx=x0+rnd01(sd,j+1)*(x1-x0),by=y0+rnd01(sd+3,j+1)*(y1-y0);
+    return{k:q[0],x:ax+(bx-ax)*s+camx,y:ay+(by-ay)*s+camy,fx:bx>=ax?1:-1,mv:f<0.55&&Math.abs(bx-ax)+Math.abs(by-ay)>2}});
+  ag.sort(function(a,c){return a.y-c.y});ag.forEach(function(a){animal(a)})}
 function drawWorkers(b,px,py){
   var d=BD[b.t];if(!d.slots)return;
   var n=slotsOf(b),Z=bw(b)*TS,list=[],i;for(i=0;i<b.w.cow;i++)list.push('cow');for(i=0;i<b.w.horse;i++)list.push('horse');for(i=0;i<(b.w.grad||0);i++)list.push('grad');for(i=0;i<(b.w.dairy||0);i++)list.push('dairy');for(i=0;i<(b.w.hen||0);i++)list.push('hen');for(i=0;i<(b.w.sheep||0);i++)list.push('sheep');
@@ -1367,7 +1390,7 @@ function nightLights(){
   L.push({x:PL.x-camx,y:PL.y-camy-8,r:78*fl(0),i:0.95,w:0.22});
   (S.hl||[]).forEach(function(h,i){L.push({x:h.x-camx,y:h.y-camy-8,r:30*fl(i+3),i:0.8,w:0.16})});
   S.bld.forEach(function(b,i){var n=bw(b),Z=n*TS,cxx=(b.x+n/2)*TS-camx,cyy=(b.y+n*0.62)*TS-camy;if(cxx<-Z*2||cxx>VW+Z*2||cyy<-Z*2||cyy>VH+Z*2)return;
-    var lit=b.wk||b.t==='warehouse'||b.t==='house'||b.t==='market';if(!lit)return;L.push({x:cxx,y:cyy,r:(Z*0.9+18)*fl(i+7),i:b.wk?0.85:0.7,w:0.2})});
+    var tg=(b.wk||b.pw||(BD[b.t].slots&&occOf(b)>0))?0.85:(b.t==='warehouse'||b.t==='house'||b.t==='market')?0.7:0;b.lt=(b.lt===undefined?tg:b.lt+(tg-b.lt)*0.04);if(b.lt<0.03)return;L.push({x:cxx,y:cyy,r:(Z*0.9+18)*fl(i+7),i:b.lt,w:0.2})});
   var sx=17*TS-camx,sy=18*TS-camy;[[2.5,5.2],[5.5,5.2],[8.5,5.2]].forEach(function(q,i){L.push({x:sx+q[0]*TS,y:sy+q[1]*TS,r:52*fl(i+20),i:0.8,w:0.2})});
   if(runtime.grid&&runtime.grid.cap>0)(runtime.lampL||[]).forEach(function(q,i){L.push({x:q.x-camx,y:q.y-camy-13,r:50*fl(i+40),i:0.9,w:0.22})});
   for(var id in NPCP){if(!npcOn(id))continue;var N=NPCP[id];L.push({x:N.x-camx,y:N.y-camy-8,r:24,i:0.5,w:0.06})}
@@ -1464,8 +1487,9 @@ function save(){if(noSave)return;try{localStorage.setItem(KEY,JSON.stringify(sna
 'use strict';
 /* ============ 玩法扩展：价格/订单/成就/事件/学生/宝箱 ============ */
 var CUST=['隔壁老王','城里来的采购','食堂大妈','校长的表弟','一位神秘买家','姜董事的朋友（不一定存在）','赶集的小贩','路过的快递员'];
-function pr(k){return Math.max(1,Math.round(IT[k][1]*(S.pm[k]||1)*(S.fest>0?2:1)))}
-function trend(k){var p=S.pm[k]||1;return p>1.15?' ▲':p<0.85?' ▼':''}
+function satK(k){return 1/(1+((S.sold||{})[k]||0)/50)}
+function pr(k){return Math.max(1,Math.round(IT[k][1]*(S.pm[k]||1)*(S.fest>0?2:1)*satK(k)))}
+function trend(k){var p=S.pm[k]||1,st=satK(k);return (p>1.15?' ▲':p<0.85?' ▼':'')+(st<0.8?'（卖多了，降到 '+Math.round(st*100)+'%）':'')}
 function newOrder(rush){
   var pool=IORD.filter(function(k){return (S.made[k]||0)>0||k==='wood'||k==='stone'||k==='hay'});if(!pool.length)pool=['wood'];
   var k=pick(pool),val=IT[k][1],n=Math.max(3,Math.min(40,Math.round(260/val*(0.6+Math.random()))));
@@ -1601,7 +1625,7 @@ function fireEvent(){
 }
 function game2Step(dt){
   if(S.fest>0)S.fest-=dt;
-  var hr=Math.floor(S.t/60);if(runtime.lastHr!==hr){runtime.lastHr=hr;IORD.forEach(function(k){var p=S.pm[k]||1;p=Math.max(0.6,Math.min(1.8,p+(Math.random()-0.5)*0.36+(1-p)*0.12));S.pm[k]=Math.round(p*100)/100})}
+  var hr=Math.floor(S.t/60);if(runtime.lastHr!==hr){runtime.lastHr=hr;S.sold=S.sold||{};for(var sk in S.sold){S.sold[sk]=Math.floor(S.sold[sk]*0.85);if(!S.sold[sk])delete S.sold[sk]}IORD.forEach(function(k){var p=S.pm[k]||1;p=Math.max(0.6,Math.min(1.8,p+(Math.random()-0.5)*0.36+(1-p)*0.12));S.pm[k]=Math.round(p*100)/100})}
   S.ordT-=dt;if(S.ordT<=0){S.ordT=50+Math.random()*40;if(S.ord.length<3)newOrder(false)}
   S.ord=S.ord.filter(function(d){return d.exp>=S.day});
   S.stu.forEach(function(st){st.t+=dt*(1+0.3*(S.sch-1))});
@@ -2329,7 +2353,7 @@ function hlAct(h){
         var it=needPick(t,tr,have);if(!it)return;var lim=t.t==='power'?pwCoalCap(t):12,need=(BD[t.t].inp&&BD[t.t].inp[it])||1,sc=((t.inb[it]||0)+(tr[it]||0))/need+i2.d*0.01;
         if(sc<bs){bs=sc;best=it;room=lim-(t.inb[it]||0)-(tr[it]||0)}});
       if(best&&room>0){var n=Math.min(cp,have(best),10,room);add(best,-n);h.carry={item:best,n:n,src:'wh'};did=true}}
-    else{var it2=Object.keys(b.out).filter(function(x){return b.out[x]>0&&ins.some(function(i2){return i2.b!==b&&accepts(i2,x)})})[0];
+    else{var it2=Object.keys(b.out).filter(function(x){return b.out[x]>0&&ins.some(function(i2){return i2.b!==b&&accepts(i2,x)})}).sort(function(p,q){return b.out[q]-b.out[p]})[0];
       if(it2){var n2=Math.min(cp,b.out[it2]);b.out[it2]-=n2;h.carry={item:it2,n:n2};did=true}}
   });
   if(did){h.dir=(h.dir+2)%4;h.wait=0.25}
@@ -2457,11 +2481,29 @@ function guideMenu(){S.tips=S.tips||{};var o=[];
 
 /* ============ 右上角 💡 玩法提示（可翻页） ============ */
 var UPDT='<b>进出口和路上运输</b>取代了运输队；<b>牛马市场</b>：动物要解锁、要购买，黄牛和奶牛分开；<b>牧场繁殖</b>，建筑最高 <b>Lv5</b>；<b>搬家</b>，拆除会再确认；工坊里的货交任务<b>也算数</b>；结局<b>转正大会</b>；画面加了光影和立体感。';
-function tipPages(){S.tips=S.tips||{};S.tipNew=S.tipNew||{};var a=[];
-  if(S.updNew||S.updSeen)a.push({id:'_upd',t:'牛马谷更新了',x:UPDT,nw:!!S.updNew});
+/* ============ 更新公告：每次发新版本，在最上面加一条（v 要和 NMBUILD 一样） ============
+   by：这次是听谁的指导；add 新增、chg 调整、fix 修复 */
+var NMLOG=[
+ {v:'0.34',d:'11月14日',by:'姜董事',w:'「公开透明」',add:['💡 里加了<b>更新公告</b>：每次更新写清楚加了什么、改了什么','可以翻看<b>历次更新</b>']},
+ {v:'0.33',d:'11月14日',by:'姜主任',w:'「降本增效」',add:['白天牧场里的奶牛、鸡、羊会在围栏里<b>走来走去</b>，晚上回屋'],chg:['<b>升级要材料</b>：Lv2 木板+石头，Lv3 木板+铁锭，Lv4 铁锭+齿轮，Lv5 齿轮+金锭','小卖部<b>同一种货卖多了会降价</b>，过几个小时慢慢恢复'],fix:['牧场出一个货，夜里的灯就闪一下']},
+ {v:'0.32',d:'11月14日',by:'姜经理',w:'「精细化管理」',chg:['同一种建筑<b>每多造一座贵 25%</b>，升级费 ×1.5','牧场的牛奶、鸡蛋、羊毛<b>分开算库存</b>，牛奶满了鸡照样下蛋'],fix:['有电厂以后<b>底栏按钮点了没反应</b>','两条传送带汇到一起时，总是一边先走（牛奶一直进、草料进不去）']},
+ {v:'0.31',d:'11月14日',by:'姜组长',w:'「一专多能」',add:['传送带可以<b>分岔</b>：从主线上按住往旁边拖出支线，一个口送好几个工坊']},
+ {v:'0.30',d:'11月14日',by:'姜主任',w:'「提速」',add:['存档里加了<b>检查更新</b>'],fix:['上传新版本后要等很久才更新']},
+ {v:'0.29',d:'11月14日',by:'姜经理',w:'「物尽其用」',add:['<b>仓库</b>能用传送带往工坊送货，缺什么送什么'],chg:['传送带重新画了，货物换成小图标'],fix:['牛马从仓库往熔炉送货只拿铁不拿煤，熔炉卡住']},
+ {v:'0.28',d:'11月14日',by:'姜董事',w:'「绿色能源」',chg:['电网改成<b>按千瓦算</b>：工坊菜单里“接通电源”，电厂升级发电更多、最大 3×3'],add:['石板路有<b>路灯</b>，有电的晚上会亮']},
+ {v:'0.27',d:'11月14日',by:'姜组长',w:'「高效执行」',chg:['地图可以再缩小一档'],fix:['放建筑时“放这里”按钮不灵敏']},
+ {v:'0.26',d:'11月14日',by:'姜主任',w:'「以人为本」',add:['指令栏可以收起到左边','右边 ＋/－ 放大缩小地图'],fix:['牧场里的动物被围栏挡住，走不进去']},
+ {v:'0.25',d:'11月14日',by:'姜经理',w:'「流程优化」',fix:['铺传送带最后一格总是朝上','手指划得快，传送带会断开']}
+];
+function logHtml(L){var h='<b>v'+L.v+'</b> · '+L.d+'<br>应'+L.by+L.w+'指导精神，本次更新如下：';
+  [['add','🆕 新增'],['chg','🔧 调整'],['fix','🐞 修复']].forEach(function(q){if(L[q[0]]&&L[q[0]].length)h+='<div style="margin-top:6px"><b>'+q[1]+'</b><br>· '+L[q[0]].join('<br>· ')+'</div>'});return h}
+function logMenu(){menu('历次更新公告','',NMLOG.map(function(L){return{l:'v'+L.v+' · '+L.d,s:'应'+L.by+'指导',r:'看',keep:1,f:function(){menu('更新公告 v'+L.v,logHtml(L),[{l:'返回历次更新',keep:1,f:function(){logMenu()}}],true)}}}))}
+(function(){if(!saved){S.updV=NMBUILD;return}if(S.updV!==NMBUILD){S.updV=NMBUILD;S.updNew=1;S.updSeen=1}})();
+function tipPages(){S.tips=S.tips||{};S.tipNew=S.tipNew||{};var a=[],L0=NMLOG[0];
+  a.push({id:'_upd',t:'📢 更新公告 v'+L0.v,x:logHtml(L0),nw:!!S.updNew});
   var un=TIPS.filter(function(t){return S.tips[t.id]&&S.tipNew[t.id]}),rd=TIPS.filter(function(t){return S.tips[t.id]&&!S.tipNew[t.id]});
   un.concat(rd).forEach(function(t){a.push({id:t.id,t:t.t,x:t.x,nw:!!S.tipNew[t.id]})});
-  if(!S.updNew&&a.length&&a[0].id==='_upd')a.push(a.shift());
+
   return a}
 function tipUnread(){S.tipNew=S.tipNew||{};return Object.keys(S.tipNew).length+(S.updNew?1:0)}
 function tipBadge(){var b=$('#tipb');if(!b)return;var n=tipUnread();b.innerHTML='💡'+(n?'<span style="position:absolute;right:-5px;top:-6px;background:#e8553a;color:#fff;border-radius:9px;font-size:10px;line-height:15px;min-width:15px;padding:0 3px;text-align:center;font-weight:bold">'+n+'</span>':'')}
@@ -2471,7 +2513,8 @@ function tipView(i,pg){pg=pg||tipPages();if(!pg.length){guideMenu();return}i=Mat
     {row:1},
     {inrow:1,l:'◀ 上一条',dis:i<=0,why:'已经是第一条了',keep:1,f:function(){tipView(i-1,pg)}},
     {inrow:1,l:'下一条 ▶',dis:i>=pg.length-1,why:'已经是最后一条了',keep:1,f:function(){tipView(i+1,pg)}},
-    {l:'全部玩法和解锁条件',r:'查看',keep:1,f:function(){guideMenu()}}]);
+    p.id==='_upd'?{l:'历次更新公告',r:'查看',keep:1,f:function(){logMenu()}}:null,
+    {l:'全部玩法和解锁条件',r:'查看',keep:1,f:function(){guideMenu()}}].filter(Boolean));
 }
 (function(){var d=document.createElement('button');d.type='button';d.id='tipb';d.className='pill';d.style.cssText='position:absolute;right:8px;top:calc(max(6px,env(safe-area-inset-top)) + 124px);font-size:14px;padding:3px 9px';document.body.appendChild(d);
   tapBind(d,function(){if(busy()&&!menuOpen)return;tipView(0)});tipBadge()})();
@@ -2521,7 +2564,7 @@ function tick(ts){
     Object.keys(NPCP).filter(npcOn).forEach(function(k){var N=NPCP[k];if(N.bub){N.bub.l-=dt;if(N.bub.l<=0)N.bub=null}if(!N.bub&&Math.random()<0.003)N.bub={t:ppick(NPLINE[k]),l:3.5}});
     runtime.haul.forEach(function(h){if(h.bub){h.bub.l-=dt;if(h.bub.l<=0)h.bub=null}else if(Math.random()<0.0015)h.bub={t:ppick(h.carry&&h.carry.item&&AQC[h.carry.item]?AQC[h.carry.item].concat(AQ[h.k]).concat(AQC[h.carry.item]):AQ[h.k]),l:3}});
     saveT+=dt;if(saveT>15){saveT=0;save()}}
-  hudT+=dt;if(hudT>0.25){hudT=0;hud();QIDS.forEach(function(id){if(id!=='tang'&&id!=='jiang'&&npcOn(id)&&!S.seen[id]){S.seen[id]=1;toast('新领导出现：'+NAM[id]+'（长得和姜主任一模一样，别问）');}});if(S.hasPower!==!!countB('power')){S.hasPower=countB('power')?1:0;setBar()}}
+  hudT+=dt;if(hudT>0.25){hudT=0;hud();QIDS.forEach(function(id){if(id!=='tang'&&id!=='jiang'&&npcOn(id)&&!S.seen[id]){S.seen[id]=1;toast('新领导出现：'+NAM[id]+'（长得和姜主任一模一样，别问）');}});if(!!S.hasPower!==!!countB('power')){S.hasPower=countB('power')?1:0;setBar()}}
   render();requestAnimationFrame(tick);
 }
 /* ============ 存档导出 ============ */

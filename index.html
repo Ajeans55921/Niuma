@@ -49,7 +49,7 @@ textarea{width:100%;height:90px;font-size:16px;user-select:text;-webkit-user-sel
 <div id="bar"></div>
 <div id="menu"><div id="mbox"></div></div>
 <script>
-var NMBUILD='0.24'; /* 版本号：每次改游戏都要改这里 */
+var NMBUILD='0.25'; /* 版本号：每次改游戏都要改这里 */
 /* 游戏代码文件，按这个顺序加载。顺序不能乱：后面的文件会用到、甚至改写前面文件里的东西 */
 var NMJS=[];
 </script>
@@ -823,16 +823,24 @@ function roadAt(w){
   else roadOne(tx,ty,null);
   lastRoad=[tx,ty];
 }
+function beltOne(k,first,dir){
+  /* dir：手指是从哪个方向走进这一格的（null 表示刚按下） */
+  if(lastBelt!==null&&dir!==null&&S.belt[lastBelt])S.belt[lastBelt].d=dir;
+  if(dir!==null)beltDir=dir;
+  if(!BLG[k]&&G[k]!==2&&OB[k]!=='B'&&(!OB[k]||OB[k]==='g'||OB[k]==='f')){
+    if(!S.belt[k]){if(S.money>=3){S.money-=3;delete S.road[k];S.belt[k]={d:beltDir,item:null,p:0};if(OB[k]==='g'||OB[k]==='f')OB[k]=0}else{toast('银币不够');painting=false;return false}}
+    else if(first){S.belt[k].d=(S.belt[k].d+1)%4;beltDir=S.belt[k].d}
+  }
+  lastBelt=k;return true;
+}
 function beltAt(w,first){
   var tx=Math.floor(w.x/TS),ty=Math.floor(w.y/TS);if(tx<0||ty<0||tx>=W||ty>=H)return;
   var k=gi(tx,ty);if(lastBelt===k)return;
-  if(lastBelt!==null){var lx=lastBelt%W,ly=Math.floor(lastBelt/W),dx=tx-lx,dy=ty-ly;
-    if(Math.abs(dx)+Math.abs(dy)===1&&S.belt[lastBelt]){S.belt[lastBelt].d=dx===1?1:dx===-1?3:dy===1?2:0}}
-  if(!BLG[k]&&G[k]!==2&&OB[k]!=='B'&&(!OB[k]||OB[k]==='g'||OB[k]==='f')){
-    if(!S.belt[k]){if(S.money>=3){S.money-=3;delete S.road[k];S.belt[k]={d:beltDir,item:null,p:0};if(OB[k]==='g'||OB[k]==='f')OB[k]=0}else{toast('银币不够');painting=false;return}}
-    else if(first){S.belt[k].d=(S.belt[k].d+1)%4}
-  }
-  lastBelt=k;
+  if(lastBelt===null){beltOne(k,first,null);return}
+  /* 手指划得快会跳过格子：像铺路一样一格一格补上，不留空、方向也接得上 */
+  var px=lastBelt%W,py=Math.floor(lastBelt/W),n=0;
+  while((px!==tx||py!==ty)&&n++<200){var d;if(px!==tx){d=tx>px?1:3;px+=tx>px?1:-1}else{d=ty>py?2:0;py+=ty>py?1:-1}
+    if(beltOne(gi(px,py),false,d)===false)return}
 }
 function tapTile(tx,ty,w){
   if(SC){sceneTap(w);return}

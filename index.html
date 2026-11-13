@@ -52,7 +52,11 @@ textarea{width:100%;height:90px;font-size:16px;user-select:text;-webkit-user-sel
 <div id="bar"></div>
 <div id="menu"><div id="mbox"></div></div>
 <script>
-var NMBUILD='0.38'; /* 版本号：每次改游戏都要改这里 */
+window.addEventListener('error',function(e){try{if(window.__nmErr)return;window.__nmErr=1;var d=document.createElement('div');d.style.cssText='position:fixed;left:10px;right:10px;top:40%;z-index:99;background:#fff3e8;color:#5a2a1a;border:3px solid #c4442a;border-radius:12px;padding:12px;font:14px/1.5 sans-serif';
+  d.innerHTML='<b>游戏出错了</b>（存档还在，不会丢）<br>请截图发给开发者：<br><small style="word-break:break-all">'+String(e.message||e).slice(0,160)+'<br>'+String(e.filename||'').split('/').pop()+':'+(e.lineno||'')+'</small><br><button type="button" style="margin-top:8px;font-size:15px;padding:6px 12px;border-radius:8px;border:2px solid #5a2a1a;background:#ffe28a">检查有没有修好的新版本</button>';document.body.appendChild(d);
+  d.querySelector('button').onclick=function(){var t=this,sw=navigator.serviceWorker;if(!sw||!sw.controller){location.reload();return}t.textContent='正在检查…';
+    sw.addEventListener('message',function(m){var x=m.data||{};if(x.type==='nm-update')location.reload();else if(x.type==='nm-none')t.textContent='还没有新版本，过一会儿再点';else if(x.type==='nm-fail')t.textContent='连不上网，检查网络后再点'});sw.controller.postMessage({type:'nm-check'})}}catch(_){}});
+var NMBUILD='0.39'; /* 版本号：每次改游戏都要改这里 */
 /* 游戏代码文件，按这个顺序加载。顺序不能乱：后面的文件会用到、甚至改写前面文件里的东西 */
 var NMJS=[];
 </script>
@@ -94,6 +98,8 @@ var BD={
   power:{n:'发电厂',ch:'电',col:'#e8d03a',cost:520,w:2,h:2,inp:{coal:1},un:'tang6',desc:'烧煤发电（Lv1 60 千瓦，满级 280 千瓦）；工坊菜单里“接通电源”就能用电。还会解锁传送带'}
 };
 Object.keys(BD).forEach(function(k){BD[k].w=BD[k].w||2;BD[k].h=BD[k].h||2;BD[k].id=k});
+BD.canteen={n:'食堂',ch:'食',col:'#e8a24a',cost:800,w:3,h:3,slots:2,un:'jiang6',all:{fish:1,fruit:1,veg:1,egg:1,milk:1},
+  desc:'学生和毕业生 11:30、17:30 在这吃饭；要毕业生当厨师；把仓库接到它唯一的入口送食材'};
 var BORD=['woodcutter','quarry','hayfield','sawmill','warehouse','market','coalmine','ironmine','furnace','power','house','pasture','gearshop','coppermine','goldmine','goldfurnace'];
 var HC=[0,1,2,3];var DX=[0,1,0,-1],DY=[-1,0,1,0];
 /* ============ 状态 ============ */
@@ -249,7 +255,7 @@ function cowsFree(){var a=0,h=0;S.bld.forEach(function(b){a+=b.w.cow;h+=b.w.hors
 function lvl(b){return b.lv||1}
 var MAXLV=5,SZT={d:[2,3,3,3,3],pasture:[3,4,5,6,8],power:[2,2,3,3,3]},SLT={d:[4,6,8,10,12],pasture:[6,8,10,12,16]};
 function slotsOf(b){var d=BD[b.t];if(!d.slots)return 0;if(b.t==='depot')return 4+(lvl(b)-1);return (SLT[b.t]||SLT.d)[lvl(b)-1]}
-function growsB(b){var d=BD[b.t];return !!((d.slots&&b.t!=='depot')||b.t==='power')}
+function growsB(b){var d=BD[b.t];if(!d)return false;return !!((d.slots&&b.t!=='depot')||b.t==='power')}
 function sumLv(t){var n=0;S.bld.forEach(function(b){if(b.t===t)n+=lvl(b)});return n}
 function aniCap(){return 8+4*sumLv('house')}
 /* 升级除了银币还要材料：Lv2 木板+石头，Lv3 木板+铁锭，Lv4 铁锭+齿轮，Lv5 齿轮+金锭；建筑越贵要得越多 */
@@ -1456,7 +1462,7 @@ function tidyTop(){var prot={};S.bld.forEach(function(b){var n=bw(b),r=BD[b.t].r
   return n0}
 if((S.tidy||0)<1){S.tidy=1;try{tidyTop()}catch(e){}}
 /* 工坊最大 3×3：已经扩大的旧建筑缩回 3×3（以原来中心为准） */
-(function(){var ch=0;S.bld.forEach(function(b){if(b.t==='pasture'||!growsB(b))return;var n=bw(b);if(n>3){var off=Math.floor((n-3)/2);b.x+=off;b.y+=off;b.sz=3;ch++}});
+(function(){if(S.shr3)return;S.shr3=1;var ch=0;S.bld.forEach(function(b){if(b.t==='pasture'||!growsB(b))return;var n=bw(b);if(n>3){var off=Math.floor((n-3)/2);b.x+=off;b.y+=off;b.sz=3;ch++}});
   if(ch){rebuildGrid();(S.hl||[]).forEach(function(h){h.path=[]});runtime.shrinkMsg=ch}})();
 var ZTINT={R:['#8b8f99','#868a94'],K:['#6c6c76','#676771'],O2:['#8a95a6','#8590a1'],O1:['#9a8a80','#95857b'],O3:['#a39a74','#9e956f']};
 function drawZoneSigns(){
@@ -1554,7 +1560,7 @@ function schoolMenu(){
   o.push({l:'进入学校',s:'参观教室、办公室',r:'进入',pri:true,f:function(){enterSchool()}});
   if(lock){menu('牛马谷学校','学校暂未招生：先帮姜组长和姜主任办 6 件事。你可以先进去参观。',o);return}
   o.push({l:'招收一名学生',s:'学费：60 币 + 3 鸡蛋 + 1 牛奶（营养餐）· 读 10 天毕业',r:'招生',dis:full||!can,pri:!full&&can,keep:1,f:function(){
-    S.money-=60;add('egg',-3);add('milk',-1);var g=Math.random()<0.5?'g':'b',nm=pick(g==='g'?['翠花','小美','小红','丫丫','小芳','甜甜','朵朵','小雪']:['小王','小李','小张','铁柱','二狗','阿牛','小虎','豆豆'])+'同学';
+    S.money-=60;add('egg',-3);add('milk',-1);var g=Math.random()<0.5?'g':'b',nm=(Math.random()<0.8?pick(g==='g'?['紫涵','子涵','紫萱','梓萱','欣怡','雨涵','诗涵','梓涵','一诺','可馨']:['沐辰','子轩','梓轩','浩宇','宇轩','俊熙','皓轩','奕辰','子墨','沐阳']):pick(g==='g'?['翠花','丫丫','甜甜']:['铁柱','二狗','豆豆']))+'同学';
     S.stu.push({t:0,d:STUD,nm:nm,g:g});toast(nm+'入学了');schoolMenu()}});
   var uc=S.sch===1?400:1200;
   o.push({l:'扩建学校 Lv'+S.sch,s:S.sch>=3?'已是最大规模':'同时在读 +2，毕业生上限 +4',r:S.sch>=3?'':uc+'币',dis:S.sch>=3||S.money<uc,keep:1,f:function(){S.money-=uc;S.sch++;toast('学校扩建到 Lv'+S.sch);schoolMenu()}});
@@ -2546,6 +2552,7 @@ var UPDT='<b>进出口和路上运输</b>取代了运输队；<b>牛马市场</b
 /* ============ 更新公告：每次发新版本，在最上面加一条（v 要和 NMBUILD 一样） ============
    by：这次是听谁的指导；add 新增、chg 调整、fix 修复 */
 var NMLOG=[
+ {v:'0.39',d:'11月14日',by:'姜主任',w:'「稳字当头、安全第一」',fix:['建了<b>食堂</b>（或果园、菜园、渔场）以后，再打开游戏<b>画面空白</b>、什么都没有'],add:['万一游戏出错，会显示出错提示，不会再是一片空白（存档不会丢）']},
  {v:'0.38',d:'11月14日',by:'姜主任',w:'「立德树人、吃饱饭才能读好书」',add:['新建筑<b>食堂</b>（姜主任第 6 条指令后解锁）：学生和毕业生每天 <b>11:30、17:30</b> 吃饭；要派毕业生当<b>厨师</b>；仓库用路或传送带接到它唯一的<b>入口</b>，送鱼、水果、蔬菜、鸡蛋、牛奶','没有食堂、没人做饭或者断粮：差的饭<b>花钱在外面采购</b>（每份 25 银币）；钱也不够就饿肚子，学生学得慢、毕业生干活慢一半','食堂可以<b>进去看</b>：饭点孩子们坐着吃饭','<b>牛马可以出售</b>：牛马菜单里，空闲的可以半价卖掉','学校<b>随机事件</b>：学生打架、发烧、作业被牛吃了、家长来访、晚自习说话，可以唐老师处理，也可以请姜主任处理'],chg:['学生读 <b>10 天</b>才毕业','学生画成了<b>小孩</b>，有男孩有女孩','没工作的毕业生不再在学校附近闲逛']},
  {v:'0.37',d:'11月14日',by:'姜董事',w:'「严抓落实、精打细算」',chg:['领导的<b>指令变难</b>：越往后要的东西种类越多，后期一次要 3~4 种，鸡蛋、牛奶、羊毛、鱼、水果、蔬菜都可能要（只要你已经能产出）','指令<b>奖励变少</b>：每单最多 500 银币、3 金币、1 宝石','学校晚自习 <b>21:10 起陆续熄灯</b>，早上 7 点早读亮灯一会儿'],fix:['传送带接到工坊入口时，最后一格方向不对，<b>仓库不往齿轮坊送货</b>（现在接到入口的那格会自动朝里）']},
  {v:'0.36',d:'11月14日',by:'姜主任',w:'「降本增效」',chg:['资源<b>来得慢了</b>：采矿、伐木、牧草这类采集慢了约 40%，加工慢了约 20%','学校晚上 6 点开灯上<b>晚自习</b>，到点一间间<b>熄灯</b>，早上早读再亮']},
@@ -2610,8 +2617,9 @@ var STUD=6000; /* 一天 = 600 秒（游戏里 6:00 到第二天 2:00），10 �
    没有食堂、没人做饭、或者食材不够：差的份数花钱在外面采购（每份 25 银币）。
    钱也不够：饿肚子到下一顿——学生学得慢，毕业生干活慢一半。 */
 var FOOD=['fish','fruit','veg','egg','milk'],MEALP=25;
-BD.canteen={n:'食堂',ch:'食',col:'#e8a24a',cost:800,w:3,h:3,slots:2,un:'jiang6',all:{fish:1,fruit:1,veg:1,egg:1,milk:1},
-  desc:'学生和毕业生 11:30、17:30 在这吃饭；要毕业生当厨师；把仓库接到它唯一的入口送食材'};
+/* BD.canteen 定义在 01-core.js（别的文件加载时就要认识它，不然老存档里有食堂会打不开） */
+BD.canteen.all={fish:1,fruit:1,veg:1,egg:1,milk:1}; /* 01-core 会按 inp/opt 重算 all，这里补回来 */
+if(S.bld.some(function(b){return b.t==='canteen'}))rebuildGrid(); /* 老存档里的食堂：补上它的入口 */
 BORD.push('canteen');SZT.canteen=[3,3,4,4,4];SLT.canteen=[2,3,4,5,6];
 function diners(){return (S.stu||[]).length+(S.grad||0)}
 function cooksOK(b){return (b.w.grad||0)>0}

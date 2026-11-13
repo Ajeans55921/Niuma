@@ -1,6 +1,6 @@
 /* 牛马谷：离线缓存 + 自动更新。一般不用改这个文件。
    它会读 index.html 里 NMJS 列出的所有 .js 文件，一起下载、一起比较、一起更新。 */
-var CACHE='niuma-cache';
+var CACHE='niuma-cache';var SWV='0.39';
 var STATIC=['manifest.webmanifest','icon-192.png','icon-512.png','icon-maskable-512.png','apple-touch-icon.png'];
 function abs(f){return new URL(f,self.registration.scope).href}
 function fresh(u){return fetch(u+(u.indexOf('?')<0?'?':'&')+'nm='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw r.status;return r})}
@@ -17,7 +17,8 @@ function putStatic(c,force){return Promise.all(STATIC.map(function(f){var u=abs(
 /* 第一次安装：把游戏存到手机里。已经存过一个版本的话先不动，交给 check() 去比较并提示 */
 self.addEventListener('install',function(e){
   e.waitUntil(caches.open(CACHE).then(function(c){
-    return c.match(abs('index.html')).then(function(hit){if(hit)return;return download().then(function(fs){return Promise.all(fs.map(function(f){return c.put(f.u,f.r)}))})})
+    /* sw.js 换了新版本时也整体重新下载（v0.39：游戏打不开时，靠这一步把新版本换上） */
+    return download().then(function(fs){return Promise.all(fs.map(function(f){return c.put(f.u,f.r)}))}).catch(function(){})
       .then(function(){return putStatic(c)})
   }).then(function(){return self.skipWaiting()}));
 });

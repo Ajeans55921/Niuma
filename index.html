@@ -17,7 +17,10 @@ html,body{margin:0;height:100%;background:#1c2a38;color:#fff;font-family:-apple-
 .pill{background:rgba(20,28,40,.78);border:2px solid #0d141c;border-radius:8px;padding:4px 8px;line-height:1.35;font-size:13px;text-shadow:0 1px 0 #000}
 #hud{position:absolute;left:0;right:0;top:0;padding:max(6px,env(safe-area-inset-top)) 8px 0;display:flex;gap:6px;justify-content:space-between;pointer-events:none}
 #trk{position:absolute;left:8px;top:calc(max(6px,env(safe-area-inset-top)) + 72px);max-width:62%;font-size:12px;border-color:#f6c744;pointer-events:auto;line-height:1.45}
-#trk b{color:#f6c744}#trk .ok{color:#8fe08f}
+#trk b{color:#f6c744}#trk.mini{max-width:none;padding:6px 10px;border-radius:0 10px 10px 0;left:0;border-left:none}
+#trk .tka{display:inline-block;color:#f6c744;font-size:13px;padding:2px 9px 2px 2px;margin:-2px 0 -2px -2px}
+#zoomb{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:6}
+#zoomb button{width:42px;height:42px;padding:0;font-size:22px;font-weight:700;color:#fff;touch-action:manipulation}#trk .ok{color:#8fe08f}
 #bar{position:absolute;left:0;right:0;bottom:max(8px,env(safe-area-inset-bottom));display:flex;justify-content:center;gap:5px;padding:0 6px}
 .tb{flex:1;max-width:66px;height:50px;border-radius:9px;background:rgba(20,28,40,.88);border:2px solid #0d141c;color:#fff;font-size:13px;font-weight:600;line-height:1.15;padding:0}
 .tb.on{border-color:#f6c744;background:rgba(90,70,20,.92)}.tb.no{opacity:.4}
@@ -49,7 +52,7 @@ textarea{width:100%;height:90px;font-size:16px;user-select:text;-webkit-user-sel
 <div id="bar"></div>
 <div id="menu"><div id="mbox"></div></div>
 <script>
-var NMBUILD='0.25'; /* 版本号：每次改游戏都要改这里 */
+var NMBUILD='0.26'; /* 版本号：每次改游戏都要改这里 */
 /* 游戏代码文件，按这个顺序加载。顺序不能乱：后面的文件会用到、甚至改写前面文件里的东西 */
 var NMJS=[];
 </script>
@@ -404,7 +407,12 @@ function talkNPC(id){
   }else say(N,[c.line,'要的东西：'+needTxt(c)+'。奖励 '+c.rw+' 银币。',id==='tang'?pick(['“东西齐了再来找我，办公室门口随便放。”','“急不得，慢工出细活，但最好快点。”']):pick(['“慢慢来，别累着你的牛马。”','“办好了来找我，我给你盖个章。”'])]);
 }
 function trk(){
-  var h='<b>当前指令</b><span style="float:right;margin-left:10px;background:#f6c744;color:#1c2a38;border-radius:6px;padding:0 7px;font-size:11px;font-weight:bold;text-shadow:none">详情 ▸</span>';
+  var hide=0;try{hide=localStorage.getItem('niumagu-trk')==='1'}catch(e){}
+  if(hide){var nd=QIDS.filter(npcOn).filter(function(id){return S.q[id].cur&&qDone(S.q[id].cur)}).length+(S.notes||[]).length;
+    var h0='<b>📋 指令 ▸</b>'+(nd?'<span style="margin-left:5px;background:#e8553a;color:#fff;border-radius:9px;padding:0 6px;font-size:11px;font-weight:bold;text-shadow:none">'+nd+'</span>':'');
+    $('#trk').classList.add('mini');if($('#trk')._h!==h0){$('#trk')._h=h0;$('#trk').innerHTML=h0}return}
+  $('#trk').classList.remove('mini');
+  var h='<span class="tka">◀</span><b>当前指令</b><span style="float:right;margin-left:10px;background:#f6c744;color:#1c2a38;border-radius:6px;padding:0 7px;font-size:11px;font-weight:bold;text-shadow:none">详情 ▸</span>';
   QIDS.filter(npcOn).forEach(function(id){
     var q=S.q[id];if(!q.cur)newQuest(id);var c=q.cur;
     h+='<br>'+({tang:'组',jiang:'主',jl:'经',ds:'董',xz:'校'})[id]+'：'+(qDone(c)?'<span class="ok">已齐，回去找'+NAM[id]+'交差</span>':needTxt(c).replace(/、/g,' '));
@@ -906,7 +914,13 @@ function wander(e,dt){
 'use strict';
 /* ============ 渲染 ============ */
 var scale=2,scaleCss=2,VW=0,VH=0,camx=0,camy=0,tAnim=0;
-function resize(){var w=innerWidth,h=innerHeight,d=Math.min(devicePixelRatio||1,2);cv.width=w*d;cv.height=h*d;scaleCss=Math.max(2,Math.round(w/190));scale=scaleCss*d;cv.style.width=w+'px';cv.style.height=h+'px';VW=cv.width/scale;VH=cv.height/scale;cx.imageSmoothingEnabled=false}
+/* 缩放：右边 ＋/－ 按钮只放大缩小村子地图，进建筑、学校、探险时用原来的大小（不然房间装不下） */
+var baseCss=2,zoomN=0;try{zoomN=+localStorage.getItem('niumagu-zoom')||0}catch(e){}
+function zoomLim(){return[Math.max(1.5,baseCss-1),baseCss+1.5]}
+function zoomCss(){var l=zoomLim();return Math.max(l[0],Math.min(l[1],baseCss+zoomN*0.5))}
+function setScale(sc){var d=Math.min(devicePixelRatio||1,2);scaleCss=sc;scale=sc*d;VW=cv.width/scale;VH=cv.height/scale;cx.imageSmoothingEnabled=false}
+function fitScale(){var want=(typeof SC!=='undefined'&&SC)?baseCss:zoomCss();if(want!==scaleCss)setScale(want)}
+function resize(){var w=innerWidth,h=innerHeight,d=Math.min(devicePixelRatio||1,2);cv.width=w*d;cv.height=h*d;baseCss=Math.max(2,Math.round(w/190));cv.style.width=w+'px';cv.style.height=h+'px';scaleCss=0;fitScale()}
 addEventListener('resize',resize);resize();
 var OUTC=null;
 function rect(x,y,w,h,c){cx.fillStyle=OUTC||c;cx.fillRect(Math.round(x),Math.round(y),w,h)}
@@ -1172,7 +1186,7 @@ function emitParts(dt){
   var i;for(i=runtime.parts.length-1;i>=0;i--){var p=runtime.parts[i];p.l-=dt;if(p.l<=0){runtime.parts.splice(i,1);continue}p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=p.g*dt}
 }
 function render(){
-  if(SC){renderScene();return}
+  fitScale();if(SC){renderScene();return}
   camx=Math.max(0,Math.min(W*TS-VW,S.cx-VW/2));camy=Math.max(0,Math.min(H*TS-VH,S.cy-VH/2));
   S.cx=camx+VW/2;S.cy=camy+VH/2;
   cx.setTransform(scale,0,0,scale,0,0);rect(0,0,VW,VH,'#1c2a38');drawGround();
@@ -1642,7 +1656,7 @@ function enterBuilding(b){
     var n=Math.min(S.cows+S.horses,7);for(i=0;i<n;i++){var k=i<S.cows?'cow':'horse';mkAgent(sc,k,(2+i)*TS,(6+(i%3))*TS,roamPick(1.5*TS,5*TS,9*TS,9.5*TS),{sp:9})}
     addProp(sc,{x:8,y:7,w:2,h:2,solid:true,draw:function(px,py){rect(px,py+8,32,22,'#9a6a3a');rect(px+2,py+10,28,6,'#c9a35a');rect(px+4,py+18,24,2,'#00000030')}});
   }else{
-    addProp(sc,{x:3,y:5,w:5,h:3,solid:true,up:84,tap:function(){bldMenu(b)},stand:[5,8],draw:function(px,py){
+    var mainP=addProp(sc,{x:3,y:5,w:5,h:3,solid:true,up:84,tap:function(){bldMenu(b)},stand:[5,8],draw:function(px,py){
       cx.save();cx.translate(px+2.5*TS-48,py-3*TS-6);cx.scale(3,3);drawBsprite(b,0,0,b.wk,tAnim);cx.restore();
       if(b.wk&&d.t){rect(px,py+3*TS+2,5*TS,3,'#00000055');rect(px,py+3*TS+2,5*TS*Math.min(1,b.p),3,'#7ed957')}}});
     if(d.all){addProp(sc,{x:1,y:8,w:1,h:1,solid:true,tap:function(){feedIn(b)},stand:[2,8],draw:function(px,py){drawCrate(px-1,py-4,'#c9d1da','原料',Object.keys(b.inb).reduce(function(a,k){return a+(b.inb[k]||0)},0))}})}
@@ -1655,7 +1669,7 @@ function enterBuilding(b){
         else if(b.wk){a.tx=2*TS+Math.random()*7*TS;a.ty=8.5*TS+Math.random()*1.2*TS;a.sp=22}
         else{a.tx=a.x+(Math.random()-.5)*20;a.ty=Math.max(8*TS,Math.min(9.7*TS,a.y+(Math.random()-.5)*10));a.sp=6}},{sp:24})});
     (b.cf||[]).forEach(function(c,ci){mkAgent(sc,c.k,(3+ci*1.3)*TS,9.2*TS,roamPick(2*TS,7.5*TS,9*TS,9.6*TS),{sp:12,draw:function(a){var qx=a.x-camx,qy=a.y-camy;cx.save();cx.translate(qx,qy);cx.scale(.6,.6);cx.translate(-qx,-qy);animal(a);cx.restore()}})});
-    if(st==='farm'){for(var i2=0;i2<6;i2++)(function(i2){addProp(sc,{x:i2%2?1:9,y:3+Math.floor(i2/2)*2,w:1,h:1,draw:function(px,py){rect(px+2,py+8,12,6,'#d9c04a');rect(px+4,py+5,8,4,'#e8d46a');rect(px+3,py+13,10,2,'#00000025')}})})(i2);if(t==='pasture'){for(var h3=0;h3<Math.min(6,b.w.dairy||0);h3++)mkAgent(sc,'dairy',(2+h3*1.4)*TS,7.2*TS,roamPick(1.5*TS,6.5*TS,9.5*TS,9.6*TS),{sp:7});for(var h=0;h<Math.min(8,b.w.hen||0);h++)mkAgent(sc,'hen',(2+h)*TS,8.4*TS,roamPick(1.5*TS,8*TS,9.5*TS,9.8*TS),{sp:14});for(var h2=0;h2<Math.min(6,b.w.sheep||0);h2++)mkAgent(sc,'sheep',(3+h2)*TS,7.6*TS,roamPick(1.5*TS,7*TS,9.5*TS,9.6*TS),{sp:8})}}
+    if(st==='farm'){for(var i2=0;i2<6;i2++)(function(i2){addProp(sc,{x:i2%2?1:9,y:3+Math.floor(i2/2)*2,w:1,h:1,draw:function(px,py){rect(px+2,py+8,12,6,'#d9c04a');rect(px+4,py+5,8,4,'#e8d46a');rect(px+3,py+13,10,2,'#00000025')}})})(i2);if(t==='pasture'){mainP.dy=-999;var PEN=roamPick(3.5*TS,3.6*TS,7.6*TS,6.8*TS);for(var h3=0;h3<Math.min(6,b.w.dairy||0);h3++)mkAgent(sc,'dairy',(3.6+h3*0.7)*TS,(3.8+h3%3*1.1)*TS,PEN,{sp:7});for(var h=0;h<Math.min(8,b.w.hen||0);h++)mkAgent(sc,'hen',(3.5+h*0.55)*TS,(4.2+h%3)*TS,PEN,{sp:14});for(var h2=0;h2<Math.min(6,b.w.sheep||0);h2++)mkAgent(sc,'sheep',(3.8+h2*0.7)*TS,(4.6+h2%2*1.5)*TS,PEN,{sp:8})}}
     if(st==='work'||st==='mine'){[1,9].forEach(function(x0){addProp(sc,{x:x0,y:2,w:1,h:1,draw:function(px,py){rect(px+1,py+2,14,14,'#8fd0f5');rect(px+7,py+2,2,14,'#fffaf0');rect(px,py+1,16,2,'#fffaf0');rect(px,py+15,16,2,'#fffaf0')}})})}
     if(st==='mine'){for(var o=0;o<10;o++)(function(o){addProp(sc,{x:1+Math.floor(Math.random()*9),y:2+Math.floor(Math.random()*2),w:1,h:1,draw:function(px,py){rect(px+3,py+4,3,3,ICOL[d.out]||'#fff');rect(px+9,py+9,3,2,ICOL[d.out]||'#fff')}})})(o)}
   }
@@ -2484,7 +2498,15 @@ function restoreView(){var bk=bakInfo();if(!bk){saveMenu();return}
  if(!storeOK||fileMode){d.textContent='存档 ⚠️';d.style.borderColor='#e8553a'}
  tapBind(d,function(){if(busy())return;saveMenu()})})();
 /* 点左上角指令栏：打开指令面板（领导指令 + 紧急通知） */
-tapBind($('#trk'),function(){if(busy())return;taskPanel()});
+var trkArrow=false;$('#trk').addEventListener('pointerdown',function(e){trkArrow=!!(e.target.closest&&e.target.closest('.tka'))});
+function trkSet(v){try{localStorage.setItem('niumagu-trk',v?'1':'0')}catch(e){}$('#trk')._h='';trk()}
+tapBind($('#trk'),function(){if(busy())return;if($('#trk').classList.contains('mini')){trkSet(0);return}if(trkArrow){trkSet(1);return}taskPanel()});
+/* 右边的 ＋ / － ：放大缩小地图 */
+(function(){var box=document.createElement('div');box.id='zoomb';document.body.appendChild(box);
+  [['＋',1],['－',-1]].forEach(function(q){var bt=document.createElement('button');bt.type='button';bt.className='pill';bt.textContent=q[0];box.appendChild(bt);
+    tapBind(bt,function(){var l=zoomLim(),c=zoomCss(),n=Math.max(l[0],Math.min(l[1],c+q[1]*0.5));if(n===c){toast(q[1]>0?'已经放到最大了':'已经缩到最小了');return}zoomN=(n-baseCss)/0.5;try{localStorage.setItem('niumagu-zoom',zoomN)}catch(e){}fitScale();zoomShow()})});
+  setInterval(function(){box.style.display=(typeof SC!=='undefined'&&SC)?'none':'flex'},300)})();
+function zoomShow(){var bs=$('#zoomb').children,l=zoomLim(),c=zoomCss();bs[0].style.opacity=c>=l[1]?.4:1;bs[1].style.opacity=c<=l[0]?.4:1}zoomShow();
 /* iPhone 上点字号小于 16 的输入框会自动放大页面，游戏又禁止缩放，就缩不回去了。
    输入框已改成 16 号字；离开输入框时再把缩放复原一次，以防万一 */
 function unzoom(){try{var m=document.querySelector('meta[name=viewport]');if(!m)return;var c=m.getAttribute('content');m.setAttribute('content',c+',minimum-scale=1');setTimeout(function(){m.setAttribute('content',c)},60)}catch(e){}}

@@ -3,7 +3,7 @@
 var CACHE='niuma-cache';
 var STATIC=['manifest.webmanifest','icon-192.png','icon-512.png','icon-maskable-512.png','apple-touch-icon.png'];
 function abs(f){return new URL(f,self.registration.scope).href}
-function fresh(u){return fetch(u,{cache:'no-store'}).then(function(r){if(!r.ok)throw r.status;return r})}
+function fresh(u){return fetch(u+(u.indexOf('?')<0?'?':'&')+'nm='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw r.status;return r})}
 /* index.html 里 NMJS=[...] 列出的就是全部游戏代码文件 */
 function scriptsOf(html){var m=/NMJS=\[([^\]]*)\]/.exec(html),a=[],re=/'([^']+)'/g,q;if(m)while((q=re.exec(m[1])))a.push(q[1]);return a}
 function buildOf(t){var m=/NMBUILD='([^']*)'/.exec(t);return m?m[1]:''}
@@ -46,5 +46,5 @@ function check(){return caches.open(CACHE).then(function(c){return download().th
     return Promise.all(fs.map(function(f){return c.put(f.u,f.r)})).then(function(){return olds[0]!==null?{build:buildOf(fs[0].t)}:null})})})})}
 self.addEventListener('message',function(e){
   var d=e.data||{};if(d.type!=='nm-check')return;var src=e.source;
-  e.waitUntil(check().then(function(r){if(r&&src)src.postMessage({type:'nm-update',build:r.build})}).catch(function(){}));
+  e.waitUntil(check().then(function(r){if(!src)return;if(r)src.postMessage({type:'nm-update',build:r.build});else src.postMessage({type:'nm-none'})}).catch(function(){if(src)src.postMessage({type:'nm-fail'})}));
 });

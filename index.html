@@ -52,7 +52,7 @@ textarea{width:100%;height:90px;font-size:16px;user-select:text;-webkit-user-sel
 <div id="bar"></div>
 <div id="menu"><div id="mbox"></div></div>
 <script>
-var NMBUILD='0.27'; /* 版本号：每次改游戏都要改这里 */
+var NMBUILD='0.30'; /* 版本号：每次改游戏都要改这里 */
 /* 游戏代码文件，按这个顺序加载。顺序不能乱：后面的文件会用到、甚至改写前面文件里的东西 */
 var NMJS=[];
 </script>
@@ -91,7 +91,7 @@ var BD={
   house:{n:'牛马小屋',ch:'屋',col:'#d98a6a',cost:150,w:2,h:2,un:'jiang3',desc:'牛马上限 +4'},
   market:{n:'小卖部',ch:'卖',col:'#e8c35a',cost:80,w:2,h:2,desc:'卖出仓库里勾选的货物'},
   depot:{n:'运输队',ch:'运',col:'#7a6a5a',cost:150,w:2,h:2,slots:4,desc:'牛马拉货：产地→仓库，仓库→机器'},
-  power:{n:'发电厂',ch:'电',col:'#e8d03a',cost:520,w:2,h:2,inp:{coal:1},un:'tang6',desc:'烧煤，周围6台机器不用牛马也能转，并解锁传送带'}
+  power:{n:'发电厂',ch:'电',col:'#e8d03a',cost:520,w:2,h:2,inp:{coal:1},un:'tang6',desc:'烧煤发电（Lv1 60 千瓦，满级 280 千瓦）；工坊菜单里“接通电源”就能用电。还会解锁传送带'}
 };
 Object.keys(BD).forEach(function(k){BD[k].w=BD[k].w||2;BD[k].h=BD[k].h||2;BD[k].id=k});
 var BORD=['woodcutter','quarry','hayfield','sawmill','warehouse','market','coalmine','ironmine','furnace','power','house','pasture','gearshop','coppermine','goldmine','goldfurnace'];
@@ -216,11 +216,15 @@ function shiftSave(ob){
 /* 原来地图的边界树墙打开一些 */
 function openBorders(){var sv=seedv;seedv=6262;for(var y=9;y<56;y++){var k=gi(71,y);if(OB[k]==='T'&&srnd()<0.75)OB[k]=0}for(var x=0;x<72;x++){var k2=gi(x,55);if(OB[k2]==='T'&&srnd()<0.75)OB[k2]=0}seedv=sv}
 gen();layoutG();var obOld=false;
-if(saved&&saved.v===2){S=Object.assign(fresh(),saved);if(!saved.sh8){S.sh8=0;S.nb=1}
+if(saved&&saved.v===2){S=Object.assign(fresh(),saved);
+  /* 0.28 电网改版：老存档里已经有发电厂的，工坊默认先接通电源（电不够的会自动停电） */
+  if(!saved.pwv&&(saved.bld||[]).some(function(b){return b.t==='power'}))S.bld.forEach(function(b){var d=BD[b.t];if(d&&d.t&&d.slots&&b.t!=='depot')b.pon=1});
+if(!saved.sh8){S.sh8=0;S.nb=1}
   var ow=saved.W||48;if(ow!==W){['belt','road','rl','flat'].forEach(function(n){var src=S[n]||{},o={};Object.keys(src).forEach(function(k){var kk=+k;o[Math.floor(kk/ow)*W+kk%ow]=src[k]});S[n]=o});
     (S.hl||[]).forEach(function(h){if(h.home!==undefined&&h.home!==null)h.home=Math.floor(h.home/ow)*W+h.home%ow;h.path=[]});
     if(S.obj&&ow===72&&S.obj.length===72*56){for(var yy=0;yy<56;yy++)for(var xx=0;xx<72;xx++)OB[gi(xx,yy)]=S.obj[yy*72+xx];openBorders();for(var x3=71;x3<W;x3++)OB[gi(x3,15)]=0;for(var y3=44;y3<=61;y3++)if(OB[gi(22,y3)]!=='B')OB[gi(22,y3)]=0;S.obj=null;S.orez=1;S.mapGrow=1}}
   if(S.obj&&S.obj.length===OB.length){OB=S.obj.slice();obOld=!S.sh8}else if(!S.sh8&&S.mapGrow){obOld=true}}
+S.pwv=2;
 if(!saved||saved.v!==2||(!obOld&&!S.sh8)){if(!obOld)layoutOB(null,true)}
 if(obOld||!S.sh8)shiftSave(obOld);
 if(!S.rlv){S.rlv=1;S.rl=S.rl||{};Object.keys(S.road||{}).forEach(function(ks){var k=+ks;if(!(S.road[k]===1||S.road[k]===2))return;[1,W].forEach(function(o){var r=S.road[k+o];if((r===1||r===2)&&!(o===1&&(k+1)%W===0)){S.rl[k]=(S.rl[k]||0)|(o===1?2:4);S.rl[k+o]=(S.rl[k+o]||0)|(o===1?8:1)}})})}S.flat=S.flat||{};Object.keys(S.flat).forEach(function(k){if(G[+k]===1)G[+k]=0});S.bld.forEach(function(b){if(!b.sz)b.sz=BD[b.t].w});['hens','sheep','dogs','cats','dairy'].forEach(function(k){if(typeof S[k]!=='number')S[k]=0});if(!S.dmig){S.dmig=1;S.bld.forEach(function(b){if(b.t==='pasture'){var n=b.w.cow||0;if(n){S.cows-=n;S.dairy+=n;b.w.dairy=(b.w.dairy||0)+n;b.w.cow=0}b.w.horse=0;b.w.grad=0}})}if(!S.q.xz)S.q.xz={n:0,cur:null};S.obj=null;S.road=S.road||{};S.seen=S.seen||{};['jl','ds'].forEach(function(k){if(!S.q[k])S.q[k]={n:0,cur:null}});
@@ -243,13 +247,13 @@ function countB(t){return S.bld.filter(function(b){return b.t===t}).length}
 function gradFree(){var a=0;S.bld.forEach(function(b){a+=b.w.grad||0});return S.grad-a}
 function cowsFree(){var a=0,h=0;S.bld.forEach(function(b){a+=b.w.cow;h+=b.w.horse});(S.hl||[]).forEach(function(x){if(x.k==='cow')a++;else h++});return[S.cows-a,S.horses-h]}
 function lvl(b){return b.lv||1}
-var MAXLV=5,SZT={d:[2,3,3,3,3],pasture:[3,4,5,6,8]},SLT={d:[4,6,8,10,12],pasture:[6,8,10,12,16]};
+var MAXLV=5,SZT={d:[2,3,3,3,3],pasture:[3,4,5,6,8],power:[2,2,3,3,3]},SLT={d:[4,6,8,10,12],pasture:[6,8,10,12,16]};
 function slotsOf(b){var d=BD[b.t];if(!d.slots)return 0;if(b.t==='depot')return 4+(lvl(b)-1);return (SLT[b.t]||SLT.d)[lvl(b)-1]}
-function growsB(b){var d=BD[b.t];return !!(d.slots&&b.t!=='depot')}
+function growsB(b){var d=BD[b.t];return !!((d.slots&&b.t!=='depot')||b.t==='power')}
 function sumLv(t){var n=0;S.bld.forEach(function(b){if(b.t===t)n+=lvl(b)});return n}
 function aniCap(){return 8+4*sumLv('house')}
 function upCost(b){return Math.round(Math.max(BD[b.t].cost,100)*[1.6,2.8,4.5,7][lvl(b)-1])}
-function upEff(b){var t=b.t;return t==='house'?'牛马上限再 +4':t==='market'?'卖货更快':t==='depot'?'运输位置 +1':t==='power'?'多供 4 台机器':(growsB(b)?'占地变成 '+(SZT[b.t]||SZT.d)[lvl(b)]+'×'+(SZT[b.t]||SZT.d)[lvl(b)]+'，位置 '+slotsOf(b)+'→'+(SLT[b.t]||SLT.d)[lvl(b)]+'，牛马干活速度 +40%':'牛马干活速度 +40%，位置 +1，仓储 +12')}
+function upEff(b){var t=b.t;return t==='house'?'牛马上限再 +4':t==='market'?'卖货更快':t==='depot'?'运输位置 +1':t==='power'?'发电 '+PWKW[lvl(b)-1]+' → '+PWKW[lvl(b)]+' 千瓦'+((SZT.power[lvl(b)]>bw(b))?'，占地变成 '+SZT.power[lvl(b)]+'×'+SZT.power[lvl(b)]:'')+'，煤仓 +10':(growsB(b)?'占地变成 '+(SZT[b.t]||SZT.d)[lvl(b)]+'×'+(SZT[b.t]||SZT.d)[lvl(b)]+'，位置 '+slotsOf(b)+'→'+(SLT[b.t]||SLT.d)[lvl(b)]+'，牛马干活速度 +40%':'牛马干活速度 +40%，位置 +1，仓储 +12')}
 function growSpot(b,n){
   var o=bw(b),best=null,bs=1e9,sp=allSP();
   for(var oy=0;oy<=n-o;oy++)for(var ox=0;ox<=n-o;ox++){
@@ -325,7 +329,7 @@ function tapBind(el,fn){
 function closeMenu(){menuOpen=false;runtime.liveMenu=null;$('#menu').style.display='none'}
 /* 菜单开着时自动刷新数字（手指按着的时候不刷，免得点空） */
 var ptrDown=0,lastPtr=0;addEventListener('pointerdown',function(){ptrDown=1;lastPtr=Date.now()},true);['pointerup','pointercancel'].forEach(function(e){addEventListener(e,function(){ptrDown=0;lastPtr=Date.now()},true)});
-function liveSig(){var a=[Math.round(S.money),(S.notes||[]).length];for(var k in S.inv)a.push(k+S.inv[k]);S.bld.forEach(function(b){for(var k2 in b.out)if(b.out[k2])a.push(b.id+k2+b.out[k2]);for(var k3 in b.inb)if(b.inb[k3])a.push(b.id+'i'+k3+b.inb[k3]);a.push(b.state||'',(b.cf||[]).length)});(S.hl||[]).forEach(function(h){if(h.carry)a.push(h.carry.n)});return a.join(',')}
+function liveSig(){var a=[Math.round(S.money),(S.notes||[]).length];for(var k in S.inv)a.push(k+S.inv[k]);S.bld.forEach(function(b){for(var k2 in b.out)if(b.out[k2])a.push(b.id+k2+b.out[k2]);for(var k3 in b.inb)if(b.inb[k3])a.push(b.id+'i'+k3+b.inb[k3]);a.push(b.state||'',b.pw?1:0,b.pon?1:0,(b.cf||[]).length)});(S.hl||[]).forEach(function(h){if(h.carry)a.push(h.carry.n)});return a.join(',')}
 function liveTick(){var L=runtime.liveMenu;if(!L||!menuOpen||ptrDown||Date.now()-lastPtr<700)return;var sg=liveSig();if(sg===L.sig)return;
   var bx=$('#mbox'),st=bx.scrollTop,fn=L.fn;fn();bx.scrollTop=st;if(runtime.liveMenu)runtime.liveMenu.sig=liveSig()}
 $('#menu').addEventListener('pointerdown',function(e){if(e.target===$('#menu'))closeMenu()});
@@ -470,28 +474,51 @@ var runtime={belt:{},haul:[],bub:[],floats:[],parts:[]};
 function acceptB(b,item){
   var d=BD[b.t];
   if(b.t==='warehouse')return have(item)<cap();
-  if(d.all&&d.all[item]!==undefined)return (b.inb[item]||0)<(b.t==='power'?20:12);
+  if(d.all&&d.all[item]!==undefined)return (b.inb[item]||0)<(b.t==='power'?pwCoalCap(b):12);
   return false;
 }
+/* 顺着传送带走到头：通到哪个建筑的入口？路上已经有哪些货？ */
+function beltDest(k){var seen={},tr={},cur=k,n=0;
+  while(n++<600){if(seen[cur])return null;seen[cur]=1;var bl=S.belt[cur];if(!bl)return null;if(bl.item)tr[bl.item]=(tr[bl.item]||0)+1;
+    var x=cur%W,y=Math.floor(cur/W),tx=x+DX[bl.d],ty=y+DY[bl.d];if(tx<0||ty<0||tx>=W||ty>=H)return null;var nk=gi(tx,ty),nb=S.belt[nk],t=BLG[nk];
+    if(nb){if((nb.d+2)%4===bl.d)return null;cur=nk;continue}
+    if(t&&(PORTS[cur]||[]).some(function(p){return p.b===t&&p.io==='in'}))return{b:t,tr:tr};return null}
+  return null}
+/* 某个工坊现在最缺什么（按“已有+路上的”比例，最少的先送） */
+function needPick(t,tr,from){var d=BD[t.t];if(!d.all)return null;var best=null,bs=1e9,lim=t.t==='power'?pwCoalCap(t):12;
+  Object.keys(d.all).forEach(function(it){if(from(it)<=0)return;var hv=(t.inb[it]||0)+(tr[it]||0);if(hv>=lim)return;var need=(d.inp&&d.inp[it])||1,sc=hv/need;if(sc<bs){bs=sc;best=it}});return best}
+function whBeltOut(b,dt){b.ot=(b.ot||0)-dt;if(b.ot>0)return;b.ot=0.35;
+  portsOf(b).forEach(function(p){if(p.io!=='out')return;var x=p.t[0],y=p.t[1];if(x<0||y<0||x>=W||y>=H)return;var k=gi(x,y),bl=S.belt[k];if(!bl||bl.item)return;
+    var tx=x+DX[bl.d],ty=y+DY[bl.d];if(BLG[gi(tx,ty)]===b)return;var ds=beltDest(k);if(!ds||ds.b.t==='warehouse')return;
+    var it=needPick(ds.b,ds.tr,have);if(!it)return;add(it,-1);bl.item=it;bl.p=0})}
+function pwCoalCap(b){return 20+10*(lvl(b)-1)}
 function putB(b,item){if(b.t==='warehouse')add(item,1);else b.inb[item]=(b.inb[item]||0)+1}
+/* ============ 电网（按千瓦算） ============
+   发电厂：有煤才发电，发电量看等级；所有电厂的电合在一起用。
+   工坊：在建筑菜单里“接通电源”才用电；等级越高越耗电。电不够时，后接通的先停电。 */
+var PWKW=[60,100,150,210,280],USEKW=[10,18,28,38,50];
+function kwOf(p){return PWKW[lvl(p)-1]}
+function useOf(b){return USEKW[lvl(b)-1]}
+function canPw(b){var d=BD[b.t];return !!(d.t&&d.slots&&b.t!=='depot')}
 function powerStep(){
-  var plants=S.bld.filter(function(b){return b.t==='power'&&(b.inb.coal||0)>=1}),ms=S.bld.filter(function(b){return BD[b.t].t&&BD[b.t].slots});
-  ms.forEach(function(m){m.pw=0});
-  plants.forEach(function(p){
-    var pc=bcenter(p),near=ms.filter(function(m){var c=bcenter(m);return Math.hypot(c.x-pc.x,c.y-pc.y)<=7*TS}).sort(function(a,b){var ca=bcenter(a),cb=bcenter(b);return Math.hypot(ca.x-pc.x,ca.y-pc.y)-Math.hypot(cb.x-pc.x,cb.y-pc.y)});
-    var n=0;near.forEach(function(m){if(!m.pw&&n<6+4*(lvl(p)-1)){m.pw=1;n++}});p.load=n;
-  });
+  var plants=S.bld.filter(function(b){return b.t==='power'}),cap=0;
+  plants.forEach(function(p){p.on=(p.inb.coal||0)>=1?1:0;if(p.on)cap+=kwOf(p)});
+  var used=0;
+  S.bld.forEach(function(m){if(!canPw(m)){m.pw=0;return}m.pw=0;m.pwShort=0;if(!m.pon)return;var u=useOf(m);if(used+u<=cap){m.pw=1;used+=u}else m.pwShort=1});
+  runtime.grid={cap:cap,used:used,n:S.bld.filter(function(m){return m.pw}).length};
+  plants.forEach(function(p){p.load=p.on&&cap?Math.round(used*kwOf(p)/cap):0});
 }
 function step(dt){
   powerStep();
   S.bld.forEach(function(b){
     var d=BD[b.t];breedStep(b,d,dt);
-    if(b.t==='power'){b.wk=(b.load>0&&(b.inb.coal||0)>=1)?1:0;if(b.load>0||(b.inb.coal||0)>=1){b.burn=(b.burn||0)+dt*0.12*(b.load>0?1:0.2);if(b.burn>=1&&(b.inb.coal||0)>=1){b.burn-=1;b.inb.coal--}}return}
+    if(b.t==='power'){b.wk=(b.load>0&&(b.inb.coal||0)>=1)?1:0;if(b.load>0&&(b.inb.coal||0)>=1){b.burn=(b.burn||0)+dt*b.load*0.0016;if(b.burn>=1){b.burn-=1;b.inb.coal--}}return}
     if(!d.t)return;
     if(b.strike>0){b.strike-=dt;b.state='strike';b.wk=0;b.spd=0;return}
     var w=b.w.cow*(d.res||d.inf?1.5:1)+b.w.horse*1+(b.w.grad||0)*(d.res||d.inf?1.2:1.8)+(b.w.hen||0)*0.8+(b.w.sheep||0)+(b.w.dairy||0);
     if(b.t==='pasture'&&!((b.w.dairy||0)+(b.w.hen||0)+(b.w.sheep||0))){b.state='noanimal';b.wk=0;b.spd=0;return}
-    var spd=b.pw?1.8+0.3*(b.w.cow+b.w.horse):(w>0?1+0.5*(w-1):0);spd*=1+0.4*(lvl(b)-1);
+    /* 通电：有牛马时速度 ×1.6；没牛马也能按 1 倍速度转 */
+    var spd=w>0?1+0.5*(w-1):0;if(b.pw)spd=spd>0?spd*1.6:1;spd*=1+0.4*(lvl(b)-1);
     b.spd=spd;b.state='';b.wk=0;
     if(spd<=0){b.state='noworker';return}
     var rc=d.inf||1;if(d.res){var n=resCount(d.res,b.x,b.y,bw(b),bw(b));rc=Math.min(n,8)/3;if(n<2){b.state='noresource';return}}
@@ -502,12 +529,12 @@ function step(dt){
     if(b.p>=1){
       b.p=0;if(d.inp)for(var r2 in d.inp)b.inb[r2]-=d.inp[r2];
       var o=d.out;if(b.t==='pasture'){var pw0=[['milk',b.w.dairy||0],['egg',b.w.hen||0],['wool',b.w.sheep||0]],pt=(b.w.dairy||0)+(b.w.hen||0)+(b.w.sheep||0),pr0=Math.random()*pt;o='egg';for(var pi=0;pi<3;pi++){pr0-=pw0[pi][1];if(pr0<0&&pw0[pi][1]>0){o=pw0[pi][0];break}}}
-      var ny=1;if(d.opt){var ok0=Object.keys(d.opt)[0];if((b.inb[ok0]||0)>0){b.inb[ok0]--;ny=2}}b.out[o]=(b.out[o]||0)+ny;S.made[o]=(S.made[o]||0)+ny;var cc0=bcenter(b);runtime.parts.push({x:cc0.x,y:b.y*TS+2,vx:rnd(-3,3),vy:-20,g:0,l:1.1,c:ICOL[o]||'#fff',s:3,pop:1});
+      var ny=b.pw&&!d.inp?2:1;if(d.opt){var ok0=Object.keys(d.opt)[0];if((b.inb[ok0]||0)>0){b.inb[ok0]--;ny=2}}b.out[o]=(b.out[o]||0)+ny;S.made[o]=(S.made[o]||0)+ny;var cc0=bcenter(b);runtime.parts.push({x:cc0.x,y:b.y*TS+2,vx:rnd(-3,3),vy:-20,g:0,l:1.1,c:ICOL[o]||'#fff',s:3,pop:1});
     }
   });
   /* 机器输出：只能从出口上传送带 */
   S.bld.forEach(function(b){
-    if(b.t==='warehouse')return;var oc=Object.keys(b.out).filter(function(k){return b.out[k]>0});if(!oc.length)return;
+    if(b.t==='warehouse'){whBeltOut(b,dt);return}var oc=Object.keys(b.out).filter(function(k){return b.out[k]>0});if(!oc.length)return;
     b.ot=(b.ot||0)-dt;if(b.ot>0)return;b.ot=0.25;
     portsOf(b).forEach(function(p){if(p.io!=='out')return;var x=p.t[0],y=p.t[1];if(x<0||y<0||x>=W||y>=H)return;var bl=S.belt[gi(x,y)];
       if(bl&&!bl.item){var tx=x+DX[bl.d],ty=y+DY[bl.d];if(BLG[gi(tx,ty)]===b)return;bl.item=oc[0];bl.p=0;b.out[oc[0]]--}});
@@ -565,11 +592,12 @@ function removeB(b,sure){
 'use strict';
 /* ============ 面板 ============ */
 function statusTxt(b){var d=BD[b.t];
-  if(b.t==='power')return(b.inb.coal||0)>0?'发电中，供给 '+(b.load||0)+'/'+(6+4*(lvl(b)-1))+' 台机器':'没有煤了';
+  if(b.t==='power'){var g=runtime.grid||{cap:0,used:0,n:0};return(b.inb.coal||0)>0?'本厂发电 '+kwOf(b)+' 千瓦 · 全村用电 '+g.used+'/'+g.cap+' 千瓦（'+g.n+' 台接通）':'没有煤了，不发电（本厂可发 '+kwOf(b)+' 千瓦）'}
   if(b.t==='warehouse')return'';
   if(b.t==='depot')return'牛马拉货：产地→仓库，仓库→机器';
   if(!d.t)return'';
-  return({noworker:'没有牛马干活，也没通电',noanimal:'牧场里没有奶牛、鸡或羊，去“牛马”菜单买',strike:'牛马罢工中：要求加草料',noresource:'附近资源太少',full:'产出堆满了：出口接路、路上派牛马运走',noinput:'缺原料：把路接到入口，路上派牛马送料','':'运转中，速度 ×'+(b.spd||0).toFixed(1)+(lvl(b)>1?'（Lv'+lvl(b)+' 加成 ×'+(1+0.4*(lvl(b)-1)).toFixed(1)+'）':'')})[b.state||''];
+  var pt=b.pw?'⚡ 已通电（'+useOf(b)+' 千瓦）· ':b.pwShort?'⚡ 电不够，停电中 · ':'';
+  return pt+({noworker:'没有牛马干活，也没接通电源',noanimal:'牧场里没有奶牛、鸡或羊，去“牛马”菜单买',strike:'牛马罢工中：要求加草料',noresource:'附近资源太少',full:'产出堆满了：出口接路、路上派牛马运走',noinput:'缺原料：把路接到入口，路上派牛马送料','':'运转中，速度 ×'+(b.spd||0).toFixed(1)+(lvl(b)>1?'（Lv'+lvl(b)+' 加成 ×'+(1+0.4*(lvl(b)-1)).toFixed(1)+'）':'')})[b.state||''];
 }
 function outCap(b){return 24+12*(lvl(b)-1)}
 function bldMenu(b){
@@ -592,11 +620,14 @@ function bldMenu(b){
     if(d.t&&S.grad>0&&b.t!=='pasture'){o.push({row:1});o.push({inrow:1,l:'毕业生 '+(b.w.grad||0)+' ',s:'空闲 '+gradFree()+' · 效率高',r:'＋',dis:gradFree()<1||occOf(b)>=maxs,keep:1,f:function(){b.w.grad=(b.w.grad||0)+1;bldMenu(b)}});o.push({inrow:1,l:'生',r:'－',dis:!(b.w.grad>0),keep:1,f:function(){b.w.grad--;bldMenu(b)}})}
   }
   o.unshift({l:'进去看看',s:'走进'+d.n+'内部，看牛马干活',r:'进入',f:function(){enterBuilding(b)}});
+  if(canPw(b)){var g=runtime.grid||{cap:0,used:0},hp=countB('power')>0,u=useOf(b);
+    if(b.pon)o.splice(1,0,{l:'⚡ 断开电源',s:(b.pw?'正在用电 '+u+' 千瓦':'电不够，现在没电')+' · 全村 '+g.used+'/'+g.cap+' 千瓦',r:'断电',keep:1,f:function(){b.pon=0;powerStep();bldMenu(b)}});
+    else o.splice(1,0,{l:'⚡ 接通电源',s:'速度 ×1.6'+(d.inp?'':'，每次多产 1 个')+'，没牛马也能转 · 耗电 '+u+' 千瓦 · 剩余 '+Math.max(0,g.cap-g.used)+' 千瓦',r:'通电',dis:!hp,why:'先建发电厂（姜组长第 6 条指令解锁）',keep:1,f:function(){b.pon=1;powerStep();if(!b.pw)toast('电不够：给发电厂加煤、升级或多建一座');bldMenu(b)}})}
   portRows(b,o,function(){bldMenu(b)});
   o.push(upRow(b));
   o.push({l:'搬家',s:'换个位置，等级和牛马都跟着走 · 搬家费 '+moveFee(b)+' 币',r:'迁移',f:function(){startMove(b)}});
   o.push({l:'拆除',s:'会再问你一遍',f:function(){removeB(b)}});
-  menu(d.n+' Lv'+lvl(b),sub+(d.slots?'<br>位置 '+occOf(b)+'/'+slotsOf(b)+(b.pw?' · 已通电':'')+' · 占地 '+bw(b)+'×'+bw(b)+breedTxt(b):''),o);runtime.liveMenu={fn:function(){if(S.bld.indexOf(b)>=0)bldMenu(b)},sig:liveSig()};
+  menu(d.n+' Lv'+lvl(b),sub+(d.slots?'<br>位置 '+occOf(b)+'/'+slotsOf(b)+' · 占地 '+bw(b)+'×'+bw(b)+breedTxt(b):''),o);runtime.liveMenu={fn:function(){if(S.bld.indexOf(b)>=0)bldMenu(b)},sig:liveSig()};
 }
 function whMenu(wb,tab){
   wb=wb||WH();tab=tab||'inv';var re=function(t){whMenu(wb,t)},o=[];
@@ -1186,23 +1217,61 @@ function emitParts(dt){
   });
   var i;for(i=runtime.parts.length-1;i>=0;i--){var p=runtime.parts[i];p.l-=dt;if(p.l<=0){runtime.parts.splice(i,1);continue}p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=p.g*dt}
 }
+/* ============ 传送带：两边铁轨、滚动的履带、首尾滚筒；货物是小图标 ============ */
+function beltFeeds(k,d){/* 旁边 d 方向那格的传送带是不是往这格送 */var x=k%W,y=Math.floor(k/W),nx=x+DX[d],ny=y+DY[d];if(nx<0||ny<0||nx>=W||ny>=H)return false;var nb=S.belt[gi(nx,ny)];return !!(nb&&(nb.d+2)%4===d)}
+function drawBelts(){
+  var ks=Object.keys(S.belt),vis=[],ph=(tAnim*2.2*16)%4;
+  ks.forEach(function(k){var x=k%W,y=Math.floor(k/W),px=x*TS-camx,py=y*TS-camy;if(px<-TS||py<-TS||px>VW||py>VH)return;vis.push([+k,px,py])});
+  vis.forEach(function(v){var k=v[0],bl=S.belt[k],d=bl.d,x=k%W,y=Math.floor(k/W);
+    var back=(d+2)%4,lt=(d+3)%4,rt=(d+1)%4,fb=beltFeeds(k,back),fl=beltFeeds(k,lt),fr=beltFeeds(k,rt);
+    var nx=x+DX[d],ny=y+DY[d],nb=S.belt[gi(nx,ny)],fe=!!(nb&&(nb.d+2)%4!==d);
+    cx.save();cx.translate(v[1]+8,v[2]+8);cx.rotate((d-1)*Math.PI/2);
+    rect(-8,-8,16,16,'#00000030');
+    rect(-8,-6,16,12,'#565c68');
+    for(var t=-8+ph;t<8;t+=4){rect(Math.floor(t),-6,1,12,'#464b55');if(t+1<8)rect(Math.floor(t)+1,-6,1,12,'#666c79')}
+    rect(-8,-6,16,1,'#00000035');rect(-8,5,16,1,'#ffffff12');
+    cx.fillStyle='#8d94a3';cx.globalAlpha=0.55;rect(-1,-2,1,1,'#8d94a3');rect(0,-1,1,1,'#8d94a3');rect(1,0,1,1,'#8d94a3');rect(0,1,1,1,'#8d94a3');rect(-1,2,1,1,'#8d94a3');cx.globalAlpha=1;
+    if(!fl){rect(-8,-8,16,2,'#2f323a');rect(-8,-8,16,1,'#5a5f6b');rect(-5,-8,1,1,'#8a909c');rect(3,-8,1,1,'#8a909c')}
+    if(!fr){rect(-8,6,16,2,'#2f323a');rect(-8,7,16,1,'#1e2026');rect(-5,7,1,1,'#6a707c');rect(3,7,1,1,'#6a707c')}
+    if(!fb){rect(-8,-6,2,12,'#3a3d46');rect(-7,-6,1,12,'#6e7482')}
+    if(!fe){rect(6,-6,2,12,'#3a3d46');rect(6,-6,1,12,'#6e7482')}
+    cx.restore()});
+  vis.forEach(function(v){var bl=S.belt[v[0]];if(!bl.item)return;var q=bl.p,ix=v[1]+8+DX[bl.d]*(q-0.5)*TS,iy=v[2]+8+DY[bl.d]*(q-0.5)*TS;
+    rect(Math.round(ix)-3,Math.round(iy)+2,7,2,'#00000045');drawItemPx(bl.item,Math.round(ix),Math.round(iy)-1)});
+}
+/* 货物小图标（7×7 像素左右，x,y 是中心） */
+function drawItemPx(k,x,y){var O='#1c1a22',c=ICOL[k]||'#ccc';
+  function R(a,b,w,h,col){rect(x+a,y+b,w,h,col)}
+  switch(k){
+    case 'wood':R(-4,-2,8,5,O);R(-3,-1,6,3,'#9a6a3a');R(-3,-1,6,1,'#b8864a');R(2,-1,2,3,'#d9a566');R(3,0,1,1,'#9a6a3a');break;
+    case 'plank':R(-4,-2,8,4,O);R(-3,-1,6,2,'#d9a566');R(-3,-1,6,1,'#efc58a');R(-1,0,3,1,'#b8864a');break;
+    case 'stone':R(-3,-3,6,6,O);R(-4,-2,8,4,O);R(-3,-2,6,4,'#a8aeb8');R(-2,-3,4,1,'#a8aeb8');R(-2,-2,2,1,'#d8dde4');R(-2,2,5,1,'#8a909a');break;
+    case 'coal':R(-3,-3,6,6,O);R(-4,-2,8,4,O);R(-3,-2,6,4,'#2a2a30');R(-2,-3,4,1,'#2a2a30');R(-2,-2,2,1,'#5a5a66');R(1,0,1,1,'#4a4a55');break;
+    case 'iron':case 'copper':case 'gold':var sp=k==='iron'?'#e8eef6':k==='copper'?'#e8863a':'#ffd34a';R(-4,-2,8,5,O);R(-3,-3,6,7,O);R(-3,-2,6,5,'#7a7f8a');R(-2,-3,4,1,'#7a7f8a');R(-2,-2,2,1,sp);R(1,0,2,1,sp);R(-1,1,1,1,sp);break;
+    case 'ingot':case 'goldbar':var a=k==='ingot'?['#e0e6ee','#ffffff','#a8b0bc']:['#ffc83a','#fff0a0','#c8901a'];R(-4,-1,8,4,O);R(-3,-2,6,1,O);R(-3,0,6,2,a[0]);R(-2,-1,4,1,a[1]);R(-3,2,6,0.01,a[2]);R(-3,1,6,1,a[2]);break;
+    case 'gear':R(-3,-3,6,6,O);R(-1,-4,2,8,O);R(-4,-1,8,2,O);R(-2,-2,4,4,'#8fb0d8');R(-1,-3,2,6,'#8fb0d8');R(-3,-1,6,2,'#8fb0d8');R(-1,-1,2,2,'#2a3a55');R(-2,-2,1,1,'#c8dcf4');break;
+    case 'egg':R(-2,-4,4,8,O);R(-3,-3,6,6,O);R(-2,-3,4,6,'#fbf6ea');R(-1,-3,2,1,'#fbf6ea');R(-1,-2,1,1,'#ffffff');R(1,1,1,1,'#e0d8c4');break;
+    case 'milk':R(-3,-3,6,7,O);R(-2,-4,4,1,O);R(-2,-2,4,5,'#ffffff');R(-2,-3,4,1,'#3a8ad6');R(-1,0,2,1,'#cfe4f8');break;
+    case 'hay':R(-4,-3,8,6,O);R(-3,-2,6,4,'#d9c04a');R(-3,-2,6,1,'#f0dc7a');R(-1,-2,1,4,'#a8902a');R(-3,1,6,1,'#b8a03a');break;
+    case 'wool':R(-4,-2,8,5,O);R(-3,-3,6,7,O);R(-3,-2,6,5,'#f4f1ea');R(-2,-3,4,1,'#f4f1ea');R(-2,-2,2,1,'#ffffff');R(1,1,2,1,'#d8d2c4');break;
+    case 'fish':R(-4,-2,7,4,O);R(3,-2,2,4,O);R(-3,-1,5,2,'#7ac0e8');R(3,-1,1,2,'#5a9ac8');R(-2,-1,1,1,'#1c1a22');R(-1,0,3,1,'#b8e0f8');break;
+    default:R(-3,-3,6,6,O);R(-2,-2,4,4,c);R(-2,-2,4,1,'#ffffff70');R(-2,1,4,1,'#00000030');}
+}
+/* ============ 石板路路灯：每 4 格一盏，立在路边；有电厂在发电时晚上会亮 ============ */
+function lampSide(x,y){if(x<1||y<1||x>=W-1||y>=H-1)return -1;var k=gi(x,y);if(S.road[k]!==2||(x+y)%4)return -1;
+  var ord=[0,3,2,1];for(var i=0;i<4;i++){var d=ord[i],nk=gi(x+DX[d],y+DY[d]);if(!S.road[nk]&&!BLG[nk]&&!S.belt[nk]&&G[nk]!==2&&!(PORTS[nk]))return d}return -1}
+function lampPos(x,y,d){return{x:x*TS+8+DX[d]*7,y:y*TS+(d===0?2:d===2?15:9)}}
+function drawLamp(px,py,on){rect(px-1,py-1,3,2,'#00000040');rect(px,py-12,1,12,'#3a3e48');rect(px-2,py-14,5,3,'#3a3e48');rect(px-1,py-13,3,2,on?'#ffe58a':'#9aa0aa');if(on&&nightK((S.t/60)%24)>0.2){cx.globalAlpha=0.35;rect(px-3,py-15,7,5,'#ffe58a');cx.globalAlpha=1}}
 function render(){
   fitScale();if(SC){renderScene();return}
   camx=Math.max(0,Math.min(W*TS-VW,S.cx-VW/2));camy=Math.max(0,Math.min(H*TS-VH,S.cy-VH/2));
   S.cx=camx+VW/2;S.cy=camy+VH/2;
   cx.setTransform(scale,0,0,scale,0,0);rect(0,0,VW,VH,'#1c2a38');drawGround();
-  /* 传送带 */
-  Object.keys(S.belt).forEach(function(k){
-    var bl=S.belt[k],x=k%W,y=Math.floor(k/W),px=x*TS-camx,py=y*TS-camy;
-    if(px<-TS||py<-TS||px>VW||py>VH)return;
-    rect(px,py,TS,TS,'#4a4f5a');rect(px+1,py+1,TS-2,TS-2,'#5a606c');
-    var ph=Math.floor(tAnim*8)%4;cx.fillStyle='#8a92a2';
-    for(var i=0;i<3;i++){var o=((i*5+ph*1.25)%15);var ax=bl.d===1?o:bl.d===3?15-o:7,ay=bl.d===2?o:bl.d===0?15-o:7;cx.fillRect(Math.round(px+ax-(bl.d%2===0?3:0)),Math.round(py+ay-(bl.d%2===1?3:0)),bl.d%2===0?6:1,bl.d%2===1?6:1)}
-    rect(px+(bl.d===1?12:bl.d===3?1:6),py+(bl.d===2?12:bl.d===0?1:6),3,3,'#f6c744');
-    if(bl.item){var q=bl.p,ix=px+7+DX[bl.d]*(q-0.5)*TS,iy=py+7+DY[bl.d]*(q-0.5)*TS;rect(ix-2,iy-2,5,5,ICOL[bl.item]);rect(ix-2,iy-2,5,1,'#00000040')}
-  });
+  drawBelts();
   drawPorts();drawBranchTags();castShadows();drawZoneSigns();
   var ents=[],y0=Math.max(0,Math.floor(camy/TS)-1),y1=Math.min(H-1,Math.ceil((camy+VH)/TS)+3),x0=Math.max(0,Math.floor(camx/TS)-1),x1=Math.min(W-1,Math.ceil((camx+VW)/TS)+1),x,y;
+  var lampOn=!!(runtime.grid&&runtime.grid.cap>0);runtime.lampL=[];
+  for(y=y0;y<=y1;y++)for(x=x0;x<=x1;x++){var ls=lampSide(x,y);if(ls>=0)(function(x,y,ls){var q=lampPos(x,y,ls);runtime.lampL.push(q);ents.push({y:q.y,f:function(){drawLamp(q.x-camx,q.y-camy,lampOn)}})})(x,y,ls)}
   for(y=y0;y<=y1;y++)for(x=x0;x<=x1;x++){var o=OB[gi(x,y)];if(o&&o!=='B'&&!BLG[gi(x,y)])(function(o,x,y){ents.push({y:(y+1)*TS-(o==='T'?0:2),f:function(){drawObj(o,x,y)}})})(o,x,y)}
   ents.push({y:23*TS,f:drawSchool});drawG2(ents,x0,x1,y0,y1);
   S.bld.forEach(function(b){ents.push({y:(b.y+bw(b))*TS-0.5,f:function(){drawB(b)}});0});
@@ -1223,7 +1292,7 @@ function render(){
     cx.font='bold 14px sans-serif';cx.fillStyle='#fff';cx.textAlign='center';cx.fillText(ghost.mv?'搬':d.ch,px+gz*TS/2,py+gz*TS/2+6);
     if(err){cx.font='7px sans-serif';cx.fillText(err,px+gz*TS/2,py-3)}
     $('#gok').disabled=!!err;$('#gok').style.opacity=err?.4:1;
-    if(ghost.t==='power'){cx.strokeStyle='rgba(255,230,60,.8)';cx.beginPath();cx.arc(px+d.w*TS/2,py+d.h*TS/2,7*TS,0,6.3);cx.stroke()}}
+}
   /* 时间色调与天气 */
   var hr=(S.t/60)%24,al=nightK(hr);
   weatherFx(1/60);
@@ -1282,6 +1351,7 @@ function nightLights(){
   S.bld.forEach(function(b,i){var n=bw(b),Z=n*TS,cxx=(b.x+n/2)*TS-camx,cyy=(b.y+n*0.62)*TS-camy;if(cxx<-Z*2||cxx>VW+Z*2||cyy<-Z*2||cyy>VH+Z*2)return;
     var lit=b.wk||b.t==='warehouse'||b.t==='house'||b.t==='market';if(!lit)return;L.push({x:cxx,y:cyy,r:(Z*0.9+18)*fl(i+7),i:b.wk?0.85:0.7,w:0.2})});
   var sx=17*TS-camx,sy=18*TS-camy;[[2.5,5.2],[5.5,5.2],[8.5,5.2]].forEach(function(q,i){L.push({x:sx+q[0]*TS,y:sy+q[1]*TS,r:52*fl(i+20),i:0.8,w:0.2})});
+  if(runtime.grid&&runtime.grid.cap>0)(runtime.lampL||[]).forEach(function(q,i){L.push({x:q.x-camx,y:q.y-camy-13,r:50*fl(i+40),i:0.9,w:0.22})});
   for(var id in NPCP){if(!npcOn(id))continue;var N=NPCP[id];L.push({x:N.x-camx,y:N.y-camy-8,r:24,i:0.5,w:0.06})}
   return L}
 function nightLight(al){
@@ -2191,7 +2261,7 @@ function portsOf(b){var r=b.pr||0,o=[];if(b.t==='warehouse'){[[r,'in'],[(r+1)%4,
 function rebuildPorts(){PORTS={};S.bld.forEach(function(b){portsOf(b).forEach(function(p){var x=p.t[0],y=p.t[1];if(x<0||y<0||x>=W||y>=H)return;var k=gi(x,y);(PORTS[k]=PORTS[k]||[]).push({b:b,io:p.io})})})}
 var _rg=rebuildGrid;rebuildGrid=function(){_rg();rebuildPorts()};rebuildPorts();
 function obst(k){var o=OB[k];return!!(o&&o!=='g'&&o!=='f')}
-function portOK(k){return!(BLG[k]||G[k]===2||S.belt[k]||obst(k))}
+function portOK(k){return!(BLG[k]||G[k]===2||obst(k))}
 function isNode(x,y){if(x<0||y<0||x>=W||y>=H)return false;var k=gi(x,y);if(BLG[k]||G[k]===2||obst(k))return false;if(PORTS[k])return!S.belt[k];return isHaulR(k)}
 var _cp2=canPlace;canPlace=function(t,x,y,nz,ign){var e=_cp2(t,x,y,nz,ign);if(e)return e;var d=BD[t],w0=nz||d.w,h0=nz||d.h;
   for(var j=0;j<h0;j++)for(var i=0;i<w0;i++){var ps=PORTS[gi(x+i,y+j)];if(ps&&ps.some(function(p){return p.b!==ign}))return'这里是别的建筑的进出口'}return''};
@@ -2222,6 +2292,7 @@ function hlDecide(h){
       else ok=Object.keys(b.out).some(function(it){return b.out[it]>0&&ins.some(function(i2){return i2.b!==b&&accepts(i2,it)})});
       if(ok&&(!best||e.d+pen<best.d))best={b:b,k:e.k,d:e.d+pen}})}
   h.ins=ins;
+  if(h.carry&&!best&&h.carry.src==='wh'){h.idleC=(h.idleC||0)+1;if(h.idleC>6){addCap(h.carry.item,h.carry.n);h.carry=null;h.idleC=0}}else h.idleC=0;
   if(best){var gx=best.k%W,gy=Math.floor(best.k/W);if(best.k===gi(h.tx,h.ty)){h.path=[];hlAct(h);return true}h.path=pathTo(h.tx,h.ty,gx,gy,h)||[];h.goal=best.k;return h.path.length>0}
   return false;
 }
@@ -2235,8 +2306,11 @@ function hlAct(h){
   });
   if(!h.carry)ps.forEach(function(p){
     if(h.carry||p.io!=='out')return;var b=p.b,cp=hlCap(h);
-    if(b.t==='warehouse'){var it=Object.keys(S.inv).filter(function(x){return have(x)>0&&ins.some(function(i2){return i2.b.t!=='warehouse'&&accepts(i2,x,'wh')})})[0];
-      if(it){var n=Math.min(cp,have(it),10);add(it,-n);h.carry={item:it,n:n,src:'wh'};did=true}}
+    if(b.t==='warehouse'){var best=null,bs=1e9,room=0;
+      ins.forEach(function(i2){if(i2.b.t==='warehouse')return;var t=i2.b,tr={};(S.hl||[]).forEach(function(o2){if(o2!==h&&o2.carry)tr[o2.carry.item]=(tr[o2.carry.item]||0)+o2.carry.n});
+        var it=needPick(t,tr,have);if(!it)return;var lim=t.t==='power'?pwCoalCap(t):12,need=(BD[t.t].inp&&BD[t.t].inp[it])||1,sc=((t.inb[it]||0)+(tr[it]||0))/need+i2.d*0.01;
+        if(sc<bs){bs=sc;best=it;room=lim-(t.inb[it]||0)-(tr[it]||0)}});
+      if(best&&room>0){var n=Math.min(cp,have(best),10,room);add(best,-n);h.carry={item:best,n:n,src:'wh'};did=true}}
     else{var it2=Object.keys(b.out).filter(function(x){return b.out[x]>0&&ins.some(function(i2){return i2.b!==b&&accepts(i2,x)})})[0];
       if(it2){var n2=Math.min(cp,b.out[it2]);b.out[it2]-=n2;h.carry={item:it2,n:n2};did=true}}
   });
@@ -2279,6 +2353,7 @@ function portRows(b,o,back){
   o.push({l:'进出口：'+txt,s:'转 90°，换个方向',r:'转向',keep:1,f:function(){b.pr=((b.pr||0)+1)%4;rebuildGrid();save();back()}});
   var blk=[],nor=[];
   ps.forEach(function(p){var px=p.t[0],py=p.t[1],nm=(p.io==='in'?'入口':'出口')+'（'+SIDEN[p.s]+'）';
+    if(S.belt[gi(px,py)]){o.push({l:nm+' · 接了传送带',s:p.io==='out'?(b.t==='warehouse'?'仓库会按传送带通到的工坊，自动放它缺的原料':'产出会自动放上传送带'):'传送带上的货会自动送进来',dis:true,why:'用传送带运，不用派牛马',f:function(){}});return}
     if(!isNode(px,py)){blk.push(nm);return}
     var brs=branchesOf(px,py,b);
     if(!brs.length){nor.push(nm);return}
@@ -2340,7 +2415,7 @@ var TIPS=[
  {id:'orders',nd:'第一张订单出现',t:'订单板',x:'客户会来下订单，出价比小卖部高，但过期就没了。<br>在“任务”菜单里打开订单板交货。',c:function(){return S.ord.length>0}},
  {id:'school',nd:'姜组长+姜主任共落实 3 条指令',t:'学校',x:'在“任务”里打开学校，可以招生。<br>学生毕业后成为毕业生，在机器上干活的效率大约是牛的 1.8 倍。',c:function(){return S.q.tang.n+S.q.jiang.n>=3}},
  {id:'stone',nd:'姜经理落实 2 条指令',t:'石板路',x:'“铺路”按钮可以切换土路和石板路。<br>石板路 5 币一格，走得更快。',c:function(){return S.q.jl.n>=2}},
- {id:'power',nd:'姜组长落实 6 条指令',t:'发电厂和传送带',x:'发电厂烧煤，周围的机器没有牛马也能转，还会解锁传送带。<br>传送带和牛马一样：只能从出口接货，只能往入口送货。',c:function(){return S.q.tang.n>=6}},
+ {id:'power',nd:'姜组长落实 6 条指令',t:'发电厂和传送带',x:'发电厂烧煤发电，按千瓦算：Lv1 发 60 千瓦，满级 280 千瓦，升级后占地变 3×3。<br>工坊菜单里点“⚡ 接通电源”：速度 ×1.6，采矿伐木这类每次多产 1 个，没牛马也能转。工坊等级越高越耗电（Lv1 10 千瓦 … Lv5 50 千瓦）。<br>有电以后，石板路的路灯晚上会亮。<br>传送带和牛马一样：只能从出口接货，只能往入口送货。',c:function(){return S.q.tang.n>=6}},
  {id:'fish',nd:'姜主任落实 6 条指令',t:'钓鱼和渔场',x:'点湖面，唐老师会走到岸边钓鱼。<br>渔场要建在湖边，喂草料产量翻倍。',c:function(){return S.q.jiang.n>=6}},
  {id:'adv',nd:'所有领导共落实 10 条指令',t:'加班荒原',x:'村子最东边的路口通往加班荒原。<br>那里可以打怪、采草药、挖水晶，最深处有 Boss。打不过就回村，“补给”按钮能吃东西回血。',c:function(){return S.q.tang.n+S.q.jiang.n+S.q.jl.n+S.q.ds.n>=10}},
  {id:'shop',nd:'第一次拿到金币或宝石',t:'金币、宝石和小卖部',x:'金币来自领导的奖励，也能用金锭换；宝石只有姜主任（姜校长）肯给。<br>在小卖部建筑的“兑换柜台”或“任务”菜单里，可以换金币、扩仓库、延长离线时间。',c:function(){return S.gold>0||S.gems>0}},
@@ -2471,6 +2546,7 @@ function saveMenu(){
   var bk=bakInfo(),o=[
    {l:'导出存档码',s:'换网址、换手机时用：得到一串码，复制存好',r:'导出',keep:1,f:exportView},
    {l:'导入存档码',s:'把别处导出的码粘贴进来，导入前会再问你一遍',r:'导入',keep:1,f:importView}];
+  o.push({l:'检查更新',s:'上传新版本后可以点这里马上查',r:'检查',keep:1,f:function(){if(window.__nmChk){toast('正在检查…');window.__nmChk()}else toast('要从网址或主屏幕图标打开才能自动更新')}});
   if(bk)o.push({l:'换回备份存档',s:'备份（'+bk.why+'）：'+saveSum(bk.o),r:'恢复',keep:1,f:restoreView});
   menu('存档管理',saveWarn()+'游戏每 15 秒自动存档'+(lastSave?'（上次：'+Math.max(0,Math.round((Date.now()-lastSave)/1000))+' 秒前）':'')+'，更新游戏不会丢存档。<br>当前进度：'+saveSum(snap())+'<br>版本 <b>v'+NMBUILD+'</b>'+(isApp()?' · 主屏幕应用':''),o)}
 function exportView(){saveCode().then(function(code){
@@ -2521,11 +2597,11 @@ document.addEventListener('focusout',function(e){if(e.target&&e.target.tagName==
     if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(function(){});
     if(!('serviceWorker' in navigator))return;
     var sw=navigator.serviceWorker,last=0;
-    sw.addEventListener('message',function(e){var d=e.data||{};if(d.type==='nm-update')showUpd(d.build)});
+    sw.addEventListener('message',function(e){var d=e.data||{};if(d.type==='nm-update'){showUpd(d.build);if(runtime.updAsk)toast('找到新版本，点上方黄色按钮更新')}else if(runtime.updAsk&&d.type==='nm-none')toast('已经是最新版 v'+NMBUILD+'。刚上传的话，等 1～2 分钟再查');else if(runtime.updAsk&&d.type==='nm-fail')toast('连不上网站，检查一下网络');runtime.updAsk=0});
     sw.register('./sw.js').catch(function(){});
     sw.ready.then(function(reg){
-      function chk(force){if(!force&&Date.now()-last<5*60e3)return;last=Date.now();if(reg.active)reg.active.postMessage({type:'nm-check'})}
-      chk(1);setInterval(function(){chk(1)},30*60e3);
+      function chk(force){if(!force&&Date.now()-last<60e3)return;last=Date.now();if(reg.active)reg.active.postMessage({type:'nm-check'})}
+      chk(1);setInterval(function(){chk(1)},10*60e3);window.__nmChk=function(){runtime.updAsk=1;if(!reg.active){toast('稍等，游戏还在准备离线功能');return}reg.active.postMessage({type:'nm-check'})};
       document.addEventListener('visibilitychange',function(){if(!document.hidden)chk()});
     });
   }catch(e){}

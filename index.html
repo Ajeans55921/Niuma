@@ -56,7 +56,7 @@ window.addEventListener('error',function(e){try{if(window.__nmErr)return;window.
   d.innerHTML='<b>游戏出错了</b>（存档还在，不会丢）<br>请截图发给开发者：<br><small style="word-break:break-all">'+String(e.message||e).slice(0,160)+'<br>'+String(e.filename||'').split('/').pop()+':'+(e.lineno||'')+'</small><br><button type="button" style="margin-top:8px;font-size:15px;padding:6px 12px;border-radius:8px;border:2px solid #5a2a1a;background:#ffe28a">检查有没有修好的新版本</button>';document.body.appendChild(d);
   d.querySelector('button').onclick=function(){var t=this,sw=navigator.serviceWorker;if(!sw||!sw.controller){location.reload();return}t.textContent='正在检查…';
     sw.addEventListener('message',function(m){var x=m.data||{};if(x.type==='nm-update')location.reload();else if(x.type==='nm-none')t.textContent='还没有新版本，过一会儿再点';else if(x.type==='nm-fail')t.textContent='连不上网，检查网络后再点'});sw.controller.postMessage({type:'nm-check'})}}catch(_){}});
-var NMBUILD='0.55'; /* 版本号：每次改游戏都要改这里 */
+var NMBUILD='0.56'; /* 版本号：每次改游戏都要改这里 */
 /* 游戏代码文件，按这个顺序加载。顺序不能乱：后面的文件会用到、甚至改写前面文件里的东西 */
 var NMJS=[];
 </script>
@@ -2585,6 +2585,7 @@ var UPDT='<b>进出口和路上运输</b>取代了运输队；<b>牛马市场</b
 /* ============ 更新公告：每次发新版本，在最上面加一条（v 要和 NMBUILD 一样） ============
    by：这次是听谁的指导；add 新增、chg 调整、fix 修复 */
 var NMLOG=[
+ {v:'0.56',d:'11月14日',by:'姜校长',w:'「急群众之所急」',add:['🔮 某个神秘的新内容还在秘密建设中……<b>敬请期待</b>'],fix:['根据群众反映，几个按钮太容易误触，已加上确认']},
  {v:'0.55',d:'11月14日',by:'姜校长',w:'「集中精力办大事」',add:['🔮 某个神秘的新内容还在秘密建设中……<b>敬请期待</b>'],chg:['响应姜校长“集中精力办大事”的号召：第一章通关（转正大会）以后，💡 不再弹牛马谷的玩法提示，左上角也换成新的目标']},
  {v:'0.54',d:'11月14日',by:'姜校长',w:'「从头再来，再创辉煌」',add:['响应姜校长“归零心态、重新出发”的号召，存档里加了<b>🔄 一键重开</b>：从第 1 天、1 级重新玩；重开前的进度会自动备份，后悔了能在“换回备份存档”找回来']},
  {v:'0.53',d:'11月14日',by:'姜校长',w:'「精简流程，为一线减负」',add:['🔮 某个神秘的新内容还在秘密建设中……<b>敬请期待</b>'],chg:['响应姜校长“少开会、开短会”的号召，<b>转正大会</b>条件大幅精简：唐老师称号升到“正式老师”即可召开，不用再打怪、凑毕业生、备会场物资']},
@@ -3243,7 +3244,7 @@ var _rs21=renderScene;renderScene=function(){if(SC&&SC.kind==='mg'){cx.setTransf
 var _ss21=sceneStep;sceneStep=function(dt){if(SC&&SC.kind==='mg'){mgStep(dt);return}_ss21(dt)};
 var _st21=sceneTap;sceneTap=function(w){if(SC&&SC.kind==='mg'){mgTap(w);return}_st21(w)};
 var _sb21=sceneBtns;sceneBtns=function(){_sb21();if(SC&&SC.kind==='mg')$('#scout').textContent='回牛马谷'};
-$('#scout').addEventListener('click',function(e){if(SC&&SC.kind==='mg'&&!busy()){e.stopImmediatePropagation();mgLeave()}},true);
+$('#scout').addEventListener('click',function(e){if(SC&&SC.kind==='mg'&&!busy()){e.stopImmediatePropagation();if(typeof mgLeaveAsk==='function')mgLeaveAsk();else mgLeave()}},true);
 </script>
 <script>
 /* 牛马谷 · 22-magic-art.js — 魔法学校画面精修（四季、雪、城堡、彩窗、光束）+ 解锁剧情（天马送信） */
@@ -4022,6 +4023,21 @@ function castleMap(){var g=mgG(),t=storyTgt(),here=SC.map.id,o=[];
 (function(){var b=document.createElement('button');b.type='button';b.id='scmap';b.className='pill';b.style.cssText='font-size:12px;display:none';b.textContent='🗺️ 地图';$('#scb').appendChild(b);tapBind(b,function(){if(busy())return;castleMap()})})();
 var _sb25=sceneBtns;sceneBtns=function(){_sb25();$('#scmap').style.display=SC&&SC.kind==='mg'?'block':'none';mgqUpd(1)};
 var _ls25=leaveScene;leaveScene=function(){_ls25();var b=$('#scmap');if(b)b.style.display='none';mgqUpd(1)};
+
+/* ============ 0.56：宿舍口令有提示、点门的图案也能走进去、“回牛马谷”要确认 ============ */
+mgPass=function(h){h=(S.mg&&S.mg.house)||h;if(S.mg.passDay===S.day){setTimeout(function(){mgGo('dormG',7,8)},0);return false}
+  var right=PASSW[(['niu','ma','quan','mao'].indexOf(h)+S.day)%4];
+  function ask(msg){menu('守门画像',(msg||'“口令？”')+'<br><small>（画框角落有人用铅笔写了一行小字：今天的口令是“'+right+'”。）</small>',PASSW.map(function(p){return{l:'“'+p+'”',keep:1,f:function(){
+      if(p===right){closeMenu();S.mg.passDay=S.day;save();toast('画像：“请进。”（今天不用再对口令了）');mgGo('dormG',7,8)}else ask('“错了。再想想，领导平时怎么说话的？”')}}}).concat([{l:'算了'}]),true)}
+  ask();return false};
+var _tp26=mgTap;mgTap=function(w){var m=SC.map;
+  var np=m.npcs.some(function(n){return !(n.hide&&n.hide())&&Math.hypot(n.x-w.x,n.y-8-w.y)<14});
+  if(!np){var hit=null,bd=1e9;m.doors.forEach(function(d){if(d.to===m.id)return;var top=d.y<=1,x0=d.x*TS-3,x1=d.x*TS+TS+3,y0=d.y*TS-(top?TS+8:4),y1=d.y*TS+TS+3;
+      if(w.x>=x0&&w.x<=x1&&w.y>=y0&&w.y<=y1){var dd=Math.hypot(d.x*TS+8-w.x,d.y*TS+8-w.y);if(dd<bd){bd=dd;hit=d}}});
+    if(hit){var cx0=Math.floor(SC.px/TS),cy0=Math.floor(SC.py/TS);if(cx0===hit.x&&cy0===hit.y){SC.lastDoor=-1}else if(mgWalk(hit.x,hit.y))return}}
+  _tp26(w)};
+function mgLeaveAsk(){menu('回牛马谷？','你现在在魔法学校的'+(SC&&SC.map?SC.map.name:'')+'。<br><small>回去以后，从牛马谷东边的路口还能回来，会回到现在这个地方。</small>',[{l:'留在魔法学校',pri:1},{l:'🏠 回牛马谷',f:function(){mgLeave()}}],true)}
+(function(){var sc=$('#scout');if(sc&&sc.parentNode){sc.parentNode.appendChild(sc);sc.style.marginTop='22px'}})();
 </script>
 <script>
 /* 牛马谷 · 18-main.js — 仓库详情、主循环、存档导出导入、网页应用更新、启动 */

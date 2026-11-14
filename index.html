@@ -56,7 +56,7 @@ window.addEventListener('error',function(e){try{if(window.__nmErr)return;window.
   d.innerHTML='<b>游戏出错了</b>（存档还在，不会丢）<br>请截图发给开发者：<br><small style="word-break:break-all">'+String(e.message||e).slice(0,160)+'<br>'+String(e.filename||'').split('/').pop()+':'+(e.lineno||'')+'</small><br><button type="button" style="margin-top:8px;font-size:15px;padding:6px 12px;border-radius:8px;border:2px solid #5a2a1a;background:#ffe28a">检查有没有修好的新版本</button>';document.body.appendChild(d);
   d.querySelector('button').onclick=function(){var t=this,sw=navigator.serviceWorker;if(!sw||!sw.controller){location.reload();return}t.textContent='正在检查…';
     sw.addEventListener('message',function(m){var x=m.data||{};if(x.type==='nm-update')location.reload();else if(x.type==='nm-none')t.textContent='还没有新版本，过一会儿再点';else if(x.type==='nm-fail')t.textContent='连不上网，检查网络后再点'});sw.controller.postMessage({type:'nm-check'})}}catch(_){}});
-var NMBUILD='0.56'; /* 版本号：每次改游戏都要改这里 */
+var NMBUILD='0.57'; /* 版本号：每次改游戏都要改这里 */
 /* 游戏代码文件，按这个顺序加载。顺序不能乱：后面的文件会用到、甚至改写前面文件里的东西 */
 var NMJS=[];
 </script>
@@ -252,10 +252,10 @@ function take(k,n){var m=Math.min(n,have(k));if(m>0)add(k,-m);n-=m;
 function add(k,n){S.inv[k]=Math.max(0,have(k)+n);if(!S.inv[k])delete S.inv[k]}
 function unlocked(t){var u=BD[t].un;if(!u)return true;var m=/^(tang|jiang)(\d+)$/.exec(u);return S.q[m[1]].n>=+m[2]}
 function countB(t){return S.bld.filter(function(b){return b.t===t}).length}
-function gradFree(){var a=0;S.bld.forEach(function(b){a+=b.w.grad||0});return S.grad-a}
-function cowsFree(){var a=0,h=0;S.bld.forEach(function(b){a+=b.w.cow;h+=b.w.horse});(S.hl||[]).forEach(function(x){if(x.k==='cow')a++;else h++});return[S.cows-a,S.horses-h]}
+function gradFree(){var a=0;S.bld.forEach(function(b){a+=b.w.grad||0});(S.hl||[]).forEach(function(x){if(x.k==='grad')a++});return S.grad-a}
+function cowsFree(){var a=0,h=0;S.bld.forEach(function(b){a+=b.w.cow;h+=b.w.horse});(S.hl||[]).forEach(function(x){if(x.k==='cow')a++;else if(x.k==='horse')h++});return[S.cows-a,S.horses-h]}
 function lvl(b){return b.lv||1}
-var MAXLV=5,SZT={d:[2,3,3,3,3],pasture:[3,4,5,6,8],power:[2,2,3,3,3]},SLT={d:[4,6,8,10,12],pasture:[6,8,10,12,16]};
+var MAXLV=5,SZT={d:[2,3,3,3,3],pasture:[3,4,5,6,8],power:[2,2,3,3,3]},SLT={d:[4,6,8,10,12],pasture:[12,16,20,26,32]};
 function slotsOf(b){var d=BD[b.t];if(!d.slots)return 0;if(b.t==='depot')return 4+(lvl(b)-1);return (SLT[b.t]||SLT.d)[lvl(b)-1]}
 function growsB(b){var d=BD[b.t];if(!d)return false;return !!((d.slots&&b.t!=='depot')||b.t==='power')}
 function sumLv(t){var n=0;S.bld.forEach(function(b){if(b.t===t)n+=lvl(b)});return n}
@@ -547,8 +547,8 @@ function step(dt){
     if(b.t==='power'){b.wk=(b.load>0&&(b.inb.coal||0)>=1)?1:0;if(b.load>0&&(b.inb.coal||0)>=1){b.burn=(b.burn||0)+dt*b.load*0.0016;if(b.burn>=1){b.burn-=1;b.inb.coal--}}return}
     if(!d.t)return;
     if(b.strike>0){b.strike-=dt;b.state='strike';b.wk=0;b.spd=0;return}
-    var w=b.w.cow*(d.res||d.inf?1.5:1)+b.w.horse*1+(b.w.grad||0)*(d.res||d.inf?1.2:1.8)*(S.hungry?0.5:1)+(b.w.hen||0)*0.8+(b.w.sheep||0)+(b.w.dairy||0);
-    if(b.t==='pasture'&&!((b.w.dairy||0)+(b.w.hen||0)+(b.w.sheep||0))){b.state='noanimal';b.wk=0;b.spd=0;return}
+    var w=b.w.cow*(d.res||d.inf?1.5:1)+b.w.horse*1+(b.w.grad||0)*(d.res||d.inf?1.2:1.8)*(S.hungry?0.5:1)+livWork(b);
+    if(b.t==='pasture'&&!livCnt(b)){b.state='noanimal';b.wk=0;b.spd=0;return}
     /* 通电：有牛马时速度 ×1.6；没牛马也能按 1 倍速度转 */
     var spd=w>0?1+0.5*(w-1):0;if(b.pw)spd=spd>0?spd*1.6:1;spd*=1+0.4*(lvl(b)-1);if(typeof magicSpd==='function')spd*=magicSpd(b);
     b.spd=spd;b.state='';b.wk=0;
@@ -556,14 +556,14 @@ function step(dt){
     var rc=d.inf||1;if(d.res){var n=resCount(d.res,b.x,b.y,bw(b),bw(b));rc=Math.min(n,8)/3;if(n<2){b.state='noresource';return}}
     var oc=0;for(var k in b.out)oc+=b.out[k];
     if(b.t==='pasture'){/* 每种动物的产品单独算库存：牛奶满了，鸡照样下蛋 */
-      var pcap=outCap(b),pok=[['milk',b.w.dairy||0],['egg',b.w.hen||0],['wool',b.w.sheep||0]].filter(function(q){return q[1]>0&&(b.out[q[0]]||0)<pcap});
+      var pok=livProd(b);
       if(!pok.length){b.state='full';return}}
     else if(oc>=outCap(b)){b.state='full';return}
     if(d.inp){for(var r in d.inp)if((b.inb[r]||0)<d.inp[r]){b.state='noinput';return}}
     var fb=d.opt&&(b.inb[Object.keys(d.opt)[0]]||0)>0;b.p+=spd*rc*dt/(d.t*(d.inp?1.25:1.6));b.wk=1;
     if(b.p>=1){
       b.p=0;if(d.inp)for(var r2 in d.inp)b.inb[r2]-=d.inp[r2];
-      var o=d.out;if(b.t==='pasture'){var pw0=[['milk',b.w.dairy||0],['egg',b.w.hen||0],['wool',b.w.sheep||0]].filter(function(q){return q[1]>0&&(b.out[q[0]]||0)<outCap(b)}),pt=0;pw0.forEach(function(q){pt+=q[1]});var pr0=Math.random()*pt;o=pw0.length?pw0[0][0]:'egg';for(var pi=0;pi<pw0.length;pi++){pr0-=pw0[pi][1];if(pr0<0){o=pw0[pi][0];break}}}
+      var o=d.out;if(b.t==='pasture'){var pw0=livProd(b),pt=0;pw0.forEach(function(q){pt+=q[1]});var pr0=Math.random()*pt;o=pw0.length?pw0[0][0]:'egg';for(var pi=0;pi<pw0.length;pi++){pr0-=pw0[pi][1];if(pr0<0){o=pw0[pi][0];break}}}
       var ny=b.pw&&!d.inp?2:1;if(d.opt){var ok0=Object.keys(d.opt)[0];if((b.inb[ok0]||0)>0){b.inb[ok0]--;ny=2}}b.out[o]=(b.out[o]||0)+ny;S.made[o]=(S.made[o]||0)+ny;var cc0=bcenter(b);if(!(nightK((S.t/60)%24)>0.3))runtime.parts.push({x:cc0.x,y:b.y*TS+2,vx:rnd(-3,3),vy:-20,g:0,l:1.1,c:ICOL[o]||'#fff',s:3,pop:1});
     }
   });
@@ -639,7 +639,7 @@ function statusTxt(b){var d=BD[b.t];
   var pt=b.pw?'⚡ 已通电（'+useOf(b)+' 千瓦）· ':b.pwShort?'⚡ 电不够，停电中 · ':'';
   return pt+({noworker:'没有牛马干活，也没接通电源',noanimal:'牧场里没有奶牛、鸡或羊，去“牛马”菜单买',strike:'牛马罢工中：要求加草料',noresource:'附近资源太少',full:'产出堆满了：出口接路、路上派牛马运走',noinput:'缺原料：把路接到入口，路上派牛马送料','':'运转中，速度 ×'+(b.spd||0).toFixed(1)+(lvl(b)>1?'（Lv'+lvl(b)+' 加成 ×'+(1+0.4*(lvl(b)-1)).toFixed(1)+'）':'')})[b.state||''];
 }
-function outCap(b){return 24+12*(lvl(b)-1)}
+function outCap(b){return b.t==='pasture'?40+20*(lvl(b)-1):24+12*(lvl(b)-1)}
 function bldMenu(b){
   var d=BD[b.t],fr=cowsFree(),o=[],ilim=inLim(b),olim=outCap(b);
   var inl=Object.keys(d.all||{}).map(function(k){return IT[k][0]+' '+(b.inb[k]||0)+'/'+ilim});
@@ -656,7 +656,7 @@ function bldMenu(b){
     o.push({row:1});
     o.push({inrow:1,l:'马 '+b.w.horse+' ',s:'空闲 '+fr[1],r:'＋',dis:fr[1]<1||occOf(b)>=maxs,why:occOf(b)>=maxs?'位置满了，升级才能多放':'没有空闲的马，去“牛马”菜单买，或从别的建筑调过来',keep:1,f:function(){b.w.horse++;bldMenu(b)}});
     o.push({inrow:1,l:'马',r:'－',dis:b.w.horse<1,keep:1,f:function(){b.w.horse--;bldMenu(b)}});}
-    if(b.t==='pasture'){[['dairy','奶牛'],['hen','鸡'],['sheep','羊']].forEach(function(z){if(!aniOK(z[0])&&!(b.w[z[0]]>0))return;var k=z[0],fz=freeOf(k);o.push({row:1});o.push({inrow:1,l:z[1]+' '+(b.w[k]||0)+' ',s:'空闲 '+fz,r:'＋',dis:fz<1||occOf(b)>=maxs,why:occOf(b)>=maxs?'牧场位置满了，升级才能多放':'没有空闲的'+z[1]+'，去“牛马”菜单买',keep:1,f:function(){b.w[k]=(b.w[k]||0)+1;bldMenu(b)}});o.push({inrow:1,l:z[1],r:'－',dis:!(b.w[k]>0),why:'这里没有'+z[1]+'可以撤下',keep:1,f:function(){b.w[k]--;bldMenu(b)}})})}
+    if(b.t==='pasture'){LIV.map(function(z){return[z.k,z.n]}).forEach(function(z){if(!aniOK(z[0])&&!(b.w[z[0]]>0))return;var k=z[0],fz=freeOf(k);o.push({row:1});o.push({inrow:1,l:z[1]+' '+(b.w[k]||0)+' ',s:'空闲 '+fz,r:'＋',dis:fz<1||occOf(b)>=maxs,why:occOf(b)>=maxs?'牧场位置满了，升级才能多放':'没有空闲的'+z[1]+'，去“牛马”菜单买',keep:1,f:function(){b.w[k]=(b.w[k]||0)+1;bldMenu(b)}});o.push({inrow:1,l:z[1],r:'－',dis:!(b.w[k]>0),why:'这里没有'+z[1]+'可以撤下',keep:1,f:function(){b.w[k]--;bldMenu(b)}})})}
     if(d.t&&S.grad>0&&b.t!=='pasture'){o.push({row:1});o.push({inrow:1,l:'毕业生 '+(b.w.grad||0)+' ',s:'空闲 '+gradFree()+' · 效率高',r:'＋',dis:gradFree()<1||occOf(b)>=maxs,keep:1,f:function(){b.w.grad=(b.w.grad||0)+1;bldMenu(b)}});o.push({inrow:1,l:'生',r:'－',dis:!(b.w.grad>0),keep:1,f:function(){b.w.grad--;bldMenu(b)}})}
   }
   o.unshift({l:'进去看看',s:'走进'+d.n+'内部，看牛马干活',r:'进入',f:function(){enterBuilding(b)}});
@@ -718,38 +718,38 @@ function buildMenu(){
   var lk=BORD.filter(function(t){return!unlocked(t)}).map(function(t){return BD[t].n+'（'+({tang:'姜组长',jiang:'姜主任'})[BD[t].un.slice(0,4)==='tang'?'tang':'jiang']+' '+BD[t].un.replace(/\D+/,'')+' 条指令）'});
   menu('建造','银币 '+fmt(S.money)+'<br><small>同一种建筑每多一座贵 25%</small>'+(lk.length?'<br>未解锁：'+lk.join('、'):''),o);
 }
-var CNT={cow:'cows',horse:'horses',dairy:'dairy',hen:'hens',sheep:'sheep',dog:'dogs',cat:'cats'},ANM={cow:'牛',horse:'马',dairy:'奶牛',hen:'鸡',sheep:'羊',dog:'狗',cat:'猫'};
-var AUN={cow:null,horse:['jiang',1],dairy:['jiang',4],hen:['jiang',2],sheep:['jiang',5],dog:['tang',5],cat:['jiang',7]};
-function aniOK(k){var u=AUN[k];return!u||S.q[u[0]].n>=u[1]}
+var CNT={cow:'cows',horse:'horses',dairy:'dairy',hen:'hens',sheep:'sheep',duck:'ducks',bee:'bees',pig:'pigs',dog:'dogs',cat:'cats'},ANM={cow:'牛',horse:'马',dairy:'奶牛',hen:'鸡',sheep:'羊',duck:'鸭',bee:'蜜蜂',pig:'猪',dog:'狗',cat:'猫'};
+var AUN={cow:null,horse:['jiang',1],dairy:['jiang',4],hen:['jiang',2],sheep:['jiang',5],duck:['jiang',3],bee:['jiang',6],pig:['jiang',8],dog:['tang',5],cat:['jiang',7]};
+function aniOK(k){if(S.end)return true;var u=AUN[k];return!u||S.q[u[0]].n>=u[1]}
 function livCap(){var n=0;S.bld.forEach(function(b){if(b.t==='pasture')n+=slotsOf(b)});return n}
 function freeOf(k){var a=0;S.bld.forEach(function(b){a+=b.w[k]||0});(S.hl||[]).forEach(function(x){if(x.k===k)a++});return(S[CNT[k]]||0)-a}
-function aniPrice(k){var n=S[CNT[k]]||0;return{cow:100+20*n,horse:140+25*n,dairy:150+20*n,hen:40+6*n,sheep:120+15*n,dog:80,cat:60}[k]}
+function aniPrice(k){var n=S[CNT[k]]||0;return{cow:100+20*n,horse:140+25*n,dairy:150+20*n,hen:40+6*n,sheep:120+15*n,duck:60+8*n,bee:90+12*n,pig:220+30*n,dog:80,cat:60}[k]}
 /* 空闲的才能卖；卖价是买最后那只的价钱的一半 */
 function aniIdle(k){if(k==='cow')return cowsFree()[0];if(k==='horse')return cowsFree()[1];if(k==='dog'||k==='cat')return S[CNT[k]]||0;return freeOf(k)}
-function aniSell(k){var n=Math.max(0,(S[CNT[k]]||0)-1);var p={cow:100+20*n,horse:140+25*n,dairy:150+20*n,hen:40+6*n,sheep:120+15*n,dog:80,cat:60}[k];return Math.floor(p/2)}
+function aniSell(k){var n=Math.max(0,(S[CNT[k]]||0)-1);var p={cow:100+20*n,horse:140+25*n,dairy:150+20*n,hen:40+6*n,sheep:120+15*n,duck:60+8*n,bee:90+12*n,pig:220+30*n,dog:80,cat:60}[k];return Math.floor(p/2)}
 function buyAni(k){var c=aniPrice(k);S.money-=c;S[CNT[k]]=(S[CNT[k]]||0)+1;
-  if(k==='hen'||k==='sheep'||k==='dairy'){var pb=S.bld.filter(function(b){return b.t==='pasture'&&occOf(b)<slotsOf(b)})[0];if(pb){pb.w[k]=(pb.w[k]||0)+1;toast('买了一'+(k==='dairy'?'头':'只')+ANM[k]+'，送进了牧场')}else toast('买了一'+(k==='dairy'?'头':'只')+ANM[k]+'，牧场满了，先在草地上溜达')}
+  if(LIVK[k]){var pb=S.bld.filter(function(b){return b.t==='pasture'&&occOf(b)<slotsOf(b)})[0];if(pb){pb.w[k]=(pb.w[k]||0)+1;toast('买了一'+LIVK[k].u+ANM[k]+'，送进了牧场')}else toast('买了一'+LIVK[k].u+ANM[k]+'，牧场满了，先在草地上溜达')}
   else if(k==='dog'||k==='cat')toast(pick(k==='dog'?['新来的狗在村里巡逻，野狗不敢来偷蛋了','狗：汪！（入职成功）']:['猫来了，它什么都不干，但很可爱','猫：喵。（拒绝签合同）']));
   else toast('买了一'+(k==='cow'?'头牛':'匹马')+'，到建筑菜单里派它干活');
   aniMenu()}
 function aniMenu(){
-  var full=S.cows+S.horses>=aniCap(),lfull=S.hens+S.sheep+(S.dairy||0)>=livCap(),fr=cowsFree(),hasP=countB('pasture')>0,o=[];
+  var full=S.cows+S.horses>=aniCap(),lfull=livTot()>=livCap(),fr=cowsFree(),hasP=countB('pasture')>0,o=[];
   function lk(k){var u=AUN[k];return({tang:'姜组长',jiang:'姜主任'})[u[0]]+'再落实 '+(u[1]-S.q[u[0]].n)+' 条指令后解锁'}
-  var DS={cow:'工作牛（黄牛）：力气大，适合采集（效率 ×1.5）和拉货，不产奶',dairy:'奶牛：放进牧场产牛奶，不干活',horse:'跑得快，适合拉货和加工',hen:'放进牧场下蛋，便宜，繁殖快',sheep:'放进牧场产羊毛',dog:'看家：野狗不敢来偷蛋',cat:'没有任何用处，但很可爱'};
-  ['cow','horse','dairy','hen','sheep','dog','cat'].forEach(function(k){var c=aniPrice(k),big=k==='cow'||k==='horse',pet=k==='dog'||k==='cat';
+  var DS={cow:'工作牛（黄牛）：力气大，适合采集（效率 ×1.5）和拉货，不产奶',dairy:'奶牛：放进牧场产牛奶，不干活',horse:'跑得快，适合拉货和加工',hen:'放进牧场下蛋，便宜，繁殖快',sheep:'放进牧场产羊毛',duck:'放进牧场掉羽毛，嘎嘎叫，很吵',bee:'一箱蜜蜂，放进牧场产蜂蜜（慢一点，但蜂蜜贵）',pig:'放进牧场拱松露：出得很慢，但松露非常值钱',dog:'看家：野狗不敢来偷蛋',cat:'没有任何用处，但很可爱'};
+  ['cow','horse'].concat(LIV.map(function(z){return z.k})).concat(['dog','cat']).forEach(function(k){var c=aniPrice(k),big=k==='cow'||k==='horse',pet=k==='dog'||k==='cat';
     if(!aniOK(k)){o.push({l:'买'+ANM[k]+' 🔒',s:lk(k),r:'',dis:true,keep:1,f:function(){}});return}
     var why=big&&full?'牛马小屋住满了':(!big&&!pet&&!hasP)?'先建牧场':(!big&&!pet&&lfull)?'牧场满了，升级或多建':pet&&(S[CNT[k]]||0)>=3?'最多养 3 只':'';
-    var UN=({cow:'头牛',horse:'匹马',dairy:'头奶牛',hen:'只鸡',sheep:'只羊',dog:'只狗',cat:'只猫'})[k];
+    var UN=LIVK[k]?LIVK[k].u+ANM[k]:({cow:'头牛',horse:'匹马',dog:'只狗',cat:'只猫'})[k];
     o.push({l:'买一'+UN+'（有 '+(S[CNT[k]]||0)+'）',s:why||DS[k],r:c+'币',dis:!!why||S.money<c,keep:1,f:function(){buyAni(k)}});
     var have0=S[CNT[k]]||0;if(have0>0){var fz=aniIdle(k),sp=aniSell(k);
       o.push({l:'　卖一'+UN,s:fz>0?'空闲 '+fz+' · 按半价收回':'没有空闲的：先从建筑或路上撤下来',r:'+'+sp+'币',dis:fz<1,why:'正在干活的不能卖，先在建筑菜单里撤下来',keep:1,f:function(){
         menu('卖掉一'+UN+'？','收回 '+sp+' 银币。卖了就没了，它会想你的。',[{l:'确认卖掉',r:'+'+sp+'币',pri:1,f:function(){if(aniIdle(k)<1)return;S[CNT[k]]--;S.money+=sp;toast('卖掉一'+UN+' +'+sp+' 银币');aniMenu()}},{l:'再想想',f:function(){aniMenu()}}],true)}})}});
-  menu('牛马市场','牛 '+S.cows+'、马 '+S.horses+'（空闲 牛'+fr[0]+' 马'+fr[1]+'）· 上限 '+aniCap()+(hasP?'<br>奶牛 '+(S.dairy||0)+'、鸡 '+S.hens+'、羊 '+S.sheep+' · 牧场容量 '+livCap():'')+'<br><small>买来的牛马要在建筑菜单里派工，空闲的会在草地上溜达。</small>',o);
+  menu('牛马市场','牛 '+S.cows+'、马 '+S.horses+'（空闲 牛'+fr[0]+' 马'+fr[1]+'）· 上限 '+aniCap()+(hasP?'<br>'+LIV.filter(function(z){return aniOK(z.k)}).map(function(z){return z.n+' '+(S[CNT[z.k]]||0)}).join('、')+' · 牧场 '+livTot()+'/'+livCap():'')+'<br><small>买来的牛马要在建筑菜单里派工，空闲的会在草地上溜达。</small>',o);
 }
 /* 草地上的动物：只有买来的、空闲的才会出现 */
 function ambSpot(hb){for(var t=0;t<40;t++){var x=hb[0]+Math.floor(Math.random()*(hb[1]-hb[0])),y=hb[2]+Math.floor(Math.random()*(hb[3]-hb[2])),k=gi(x,y);if(G[k]!==2&&!BLG[k]&&(!OB[k]||OB[k]==='g'||OB[k]==='f'))return[x,y]}return[16,22]}
 function ambSync(){
-  var want={cow:freeOf('cow'),horse:freeOf('horse'),dairy:freeOf('dairy'),hen:freeOf('hen'),sheep:freeOf('sheep'),dog:S.dogs||0,cat:S.cats||0};
+  var want={cow:freeOf('cow'),horse:freeOf('horse'),dairy:freeOf('dairy'),hen:freeOf('hen'),sheep:freeOf('sheep'),duck:freeOf('duck'),pig:freeOf('pig'),dog:S.dogs||0,cat:S.cats||0};
   Object.keys(want).forEach(function(k){var n=Math.max(0,Math.min(10,want[k])),have0=cowsAmb.filter(function(a){return a.k===k});
     for(var i=have0.length;i<n;i++){var hb=[10,32,10,34],p=ambSpot(hb);cowsAmb.push({x:p[0]*TS+8,y:p[1]*TS+10,k:k,q:AQ[k],vx:0,vy:0,t:0,fx:1,hb:hb})}
     for(var j=n;j<have0.length;j++){cowsAmb.splice(cowsAmb.indexOf(have0[j]),1)}});
@@ -1195,6 +1195,9 @@ function headIcon(x,y,kind,on,bob){
   else if(kind==='dairy'){rect(x,by+1,7,6,'#f4f1ea');rect(x-1,by,2,2,'#d8d4c8');rect(x+6,by,2,2,'#d8d4c8');rect(x+1,by+2,2,2,'#3a3a3a');rect(x+1,by+3,1,1,'#222');rect(x+5,by+3,1,1,'#222');rect(x+1,by+5,5,2,'#f2a9a0');rect(x+3,by+7,2,1,'#e8c94a')}
   else if(kind==='hen'){rect(x+1,by+1,6,6,'#fbf6ea');rect(x+3,by-1,2,2,'#d63a3a');rect(x+6,by+3,2,1,'#f2a23a');rect(x+4,by+2,1,1,'#222')}
   else if(kind==='sheep'){rect(x,by+1,7,6,'#f4f1ea');rect(x-1,by,3,3,'#e8e4d8');rect(x+5,by,3,3,'#e8e4d8');rect(x+2,by+3,3,4,'#3a3a3a');rect(x+2,by+4,1,1,'#fff');rect(x+4,by+4,1,1,'#fff')}
+  else if(kind==='duck'){rect(x+1,by+2,6,5,'#f4f6f8');rect(x+3,by,4,3,'#2f8a4a');rect(x+6,by+1,2,1,'#f2a23a');rect(x+5,by+1,1,1,'#222')}
+  else if(kind==='bee'){rect(x,by+1,7,6,'#c8954a');rect(x,by+1,7,1,'#e8b86a');rect(x,by+4,7,1,'#8a6430');rect(x+2,by+3,3,2,'#3a2a1a');rect(x+5,by-1,2,2,'#f2c232');rect(x+5,by-1,1,1,'#222')}
+  else if(kind==='pig'){rect(x,by+1,7,6,'#f4b4b8');rect(x,by,2,2,'#e89aa0');rect(x+5,by,2,2,'#e89aa0');rect(x+2,by+4,3,2,'#e88a94');rect(x+2,by+5,1,1,'#a04a54');rect(x+4,by+5,1,1,'#a04a54');rect(x+1,by+2,1,1,'#222');rect(x+5,by+2,1,1,'#222')}
   else if(kind==='grad'){rect(x,by,7,2,'#2c4f86');rect(x-1,by+1,9,1,'#2c4f86');rect(x+6,by+2,1,3,'#ffd34a');rect(x,by+3,7,4,'#f1c9a5');rect(x+1,by+4,1,1,'#222');rect(x+5,by+4,1,1,'#222');rect(x+2,by+6,3,1,'#c8744a')}
   else{rect(x+1,by,5,2,'#3b2412');rect(x,by+1,7,6,'#b27a45');rect(x+1,by+2,1,1,'#222');rect(x+5,by+2,1,1,'#222');rect(x+1,by+5,5,2,'#d9a878')}
   rect(x-1,by+7,9,1,'#00000040');
@@ -1202,14 +1205,19 @@ function headIcon(x,y,kind,on,bob){
 function rnd01(a,b){var s=Math.sin(a*12.9898+b*78.233)*43758.5453;return s-Math.floor(s)}
 function drawPen(b,px,py){var hr=(S.t/60)%24;if(hr>=20||hr<6)return;
   var k=bw(b)/2,x0=px+5*k,x1=px+27*k,y0=py+11*k,y1=py+27*k,max=Math.max(2,Math.floor(bw(b)*bw(b)/2)),list=[];
-  [['dairy',8],['hen',4.5],['sheep',7]].forEach(function(q){for(var i=0;i<(b.w[q[0]]||0);i++)list.push([q[0],q[1]])});list=list.slice(0,max);
+  /* 每种动物只画一只，旁边标数量，免得围栏里挤成一团 */
+  LIV.forEach(function(z){if((b.w[z.k]||0)>0)list.push([z.k,z.sp,b.w[z.k]])});
   var ag=list.map(function(q,i){var sd=b.id*13+i*7.7,t=tAnim/q[1]+rnd01(sd,1)*9,j=Math.floor(t),f=t-j,m=Math.min(1,f/0.55),s=m*m*(3-2*m);
     var ax=x0+rnd01(sd,j)*(x1-x0),ay=y0+rnd01(sd+3,j)*(y1-y0),bx=x0+rnd01(sd,j+1)*(x1-x0),by=y0+rnd01(sd+3,j+1)*(y1-y0);
-    return{k:q[0],x:ax+(bx-ax)*s+camx,y:ay+(by-ay)*s+camy,fx:bx>=ax?1:-1,mv:f<0.55&&Math.abs(bx-ax)+Math.abs(by-ay)>2}});
+    return{k:q[0],n:q[2],x:ax+(bx-ax)*s+camx,y:ay+(by-ay)*s+camy,fx:bx>=ax?1:-1,mv:f<0.55&&Math.abs(bx-ax)+Math.abs(by-ay)>2}});
   ag.sort(function(a,c){return a.y-c.y});ag.forEach(function(a){animal(a)})}
 function drawWorkers(b,px,py){
   var d=BD[b.t];if(!d.slots)return;
   var n=slotsOf(b),Z=bw(b)*TS,list=[],i;for(i=0;i<b.w.cow;i++)list.push('cow');for(i=0;i<b.w.horse;i++)list.push('horse');for(i=0;i<(b.w.grad||0);i++)list.push('grad');for(i=0;i<(b.w.dairy||0);i++)list.push('dairy');for(i=0;i<(b.w.hen||0);i++)list.push('hen');for(i=0;i<(b.w.sheep||0);i++)list.push('sheep');
+  if(b.t==='pasture'){var ks=LIV.filter(function(z){return(b.w[z.k]||0)>0}),gq=9,tw2=Math.max(1,ks.length)*gq,xa=px+Z/2-tw2/2;rect(xa-2,py-12,tw2+3,11,'#0d141ca0');
+    if(!ks.length){cx.font='bold 5px sans-serif';cx.textAlign='center';cx.fillStyle='#fff';cx.fillText('空',px+Z/2,py-5)}
+    ks.forEach(function(z,i){headIcon(xa+i*gq,py-11,z.k,b.wk,-Math.abs(Math.sin(tAnim*7+i*1.7))*1.5)});
+    cx.font='bold 5px sans-serif';cx.textAlign='left';cx.fillStyle='#ffe28a';cx.fillText(occOf(b)+'/'+n,xa+tw2+3,py-4);return}
   var gp=n>8?8:10,tw=n*gp,x0=px+Z/2-tw/2;
   rect(x0-2,py-12,tw+3,11,'#0d141ca0');
   for(i=0;i<n;i++){
@@ -1254,6 +1262,10 @@ function animalRaw(e,carry){
     else{rect(px+4,py-14+hb,5,7,'#b27a45');rect(px+8,py-14+hb,2,3,'#3b2412');rect(px+7,py-12+hb,1,1,'#222');rect(px-9,py-9+hb+(amv?Math.round(Math.sin(tAnim*14)):0),2,5,'#3b2412')}}
   else if(k==='hen'){var pk=Math.floor(tAnim*3+e.x)%2;rect(px-4,py-6,8,5,'#fbf6ea');rect(px+(fl>0?2:-5),py-9+pk,3,4,'#fbf6ea');rect(px+(fl>0?4:-6),py-8+pk,2,1,'#f2a23a');rect(px+(fl>0?3:-4),py-10+pk,1,2,'#d63a3a');rect(px-1,py-1,1,2,'#f2a23a');rect(px+1,py-1,1,2,'#f2a23a')}
   else if(k==='sheep'){var bo=Math.round(Math.sin(tAnim*4+e.x)*0.5);rect(px-6,py-9+bo,12,7,'#f4f1ea');rect(px-5,py-10+bo,10,2,'#ffffff');rect(px+(fl>0?4:-8),py-10,4,5,'#3a3a3a');rect(px+(fl>0?7:-8),py-9,1,1,'#fff');aLegs(px,py,'#3a3a3a',amv)}
+  else if(k==='duck'){var dp=Math.floor(tAnim*3+e.x)%2,dh=fl>0?px+2:px-6;rect(px-5,py-6,9,5,'#f4f6f8');rect(px+(fl>0?-6:4),py-6,2,2,'#e4e8ec');rect(dh,py-10+dp,4,4,'#2f8a4a');rect(dh+(fl>0?3:-2),py-8+dp,3,1,'#f2a23a');rect(dh+(fl>0?2:1),py-9+dp,1,1,'#222');rect(px-2,py-1,1,2,'#f2a23a');rect(px+1,py-1,1,2,'#f2a23a')}
+  else if(k==='bee'){var bx2=px+Math.round(Math.sin(tAnim*3+e.x)*4),bz=py-8+Math.round(Math.sin(tAnim*5+e.y)*2);rect(px-4,py-7,8,7,'#c8954a');rect(px-4,py-7,8,1,'#e8b86a');rect(px-4,py-4,8,1,'#8a6430');rect(px-1,py-3,2,2,'#3a2a1a');
+    [[0,0],[5,-3],[-5,-2]].forEach(function(o,i){var fx2=bx2+o[0]+Math.round(Math.sin(tAnim*7+i*2)*3),fy2=bz+o[1]-6;rect(fx2,fy2,3,2,'#f2c232');rect(fx2+1,fy2,1,2,'#2a2a2a');if(Math.floor(tAnim*16+i)%2)rect(fx2,fy2-1,3,1,'#ffffffaa')})}
+  else if(k==='pig'){var ph=fl>0?px+3:px-8;rect(px-6,py-8,12,6,'#f4b4b8');rect(px-6,py-8,12,1,'#f8c8cc');rect(ph,py-10,5,5,'#f4b4b8');rect(ph+(fl>0?3:0),py-8,3,2,'#e88a94');rect(ph+(fl>0?1:3),py-9,1,1,'#222');rect(ph+(fl>0?0:3),py-11,2,2,'#e89aa0');rect(fl>0?px-8:px+6,py-8,2,2,'#e89aa0');aLegs(px,py,'#e89aa0',amv)}
   else if(k==='cat'){rect(px-4,py-6,8,4,'#d98a3a');rect(px+(fl>0?2:-6),py-9,4,4,'#d98a3a');rect(px+(fl>0?2:-6),py-10,1,2,'#d98a3a');rect(px+(fl>0?5:-3),py-10,1,2,'#d98a3a');rect(px+(fl>0?-7:5),py-7+Math.round(Math.sin(tAnim*3)),2,1,'#d98a3a');rect(px-3,py-2,2,2,'#a8642a');rect(px+2,py-2,2,2,'#a8642a')}
   else{rect(px-5,py-7,10,5,'#d2a468');rect(px-7,py-10,5,5,'#d2a468');aLegs(px,py,'#a57c46',amv)}
   if(carry){rect(px-2,py-14,5,4,carry)}
@@ -1320,6 +1332,9 @@ function drawItemPx(k,x,y){var O='#1c1a22',c=ICOL[k]||'#ccc';
     case 'egg':R(-2,-4,4,8,O);R(-3,-3,6,6,O);R(-2,-3,4,6,'#fbf6ea');R(-1,-3,2,1,'#fbf6ea');R(-1,-2,1,1,'#ffffff');R(1,1,1,1,'#e0d8c4');break;
     case 'milk':R(-3,-3,6,7,O);R(-2,-4,4,1,O);R(-2,-2,4,5,'#ffffff');R(-2,-3,4,1,'#3a8ad6');R(-1,0,2,1,'#cfe4f8');break;
     case 'hay':R(-4,-3,8,6,O);R(-3,-2,6,4,'#d9c04a');R(-3,-2,6,1,'#f0dc7a');R(-1,-2,1,4,'#a8902a');R(-3,1,6,1,'#b8a03a');break;
+    case 'feather':R(-1,-4,3,8,O);R(0,-3,1,7,'#9aa4b0');R(-3,-3,3,5,'#e8eef6');R(1,-3,3,5,'#f4f6f8');R(-2,-1,1,1,'#ffffff');break;
+    case 'honey':R(-3,-3,7,7,O);R(-2,-2,5,5,'#f2b632');R(-2,-3,5,1,'#c8954a');R(-1,-1,1,2,'#ffe08a');R(-1,-4,3,1,'#8a6430');break;
+    case 'truffle':R(-3,-2,7,5,O);R(-2,-1,5,4,'#5a3e2a');R(-1,-2,3,1,'#5a3e2a');R(-1,0,1,1,'#8a6a4a');R(1,1,1,1,'#3a2618');break;
     case 'wool':R(-4,-2,8,5,O);R(-3,-3,6,7,O);R(-3,-2,6,5,'#f4f1ea');R(-2,-3,4,1,'#f4f1ea');R(-2,-2,2,1,'#ffffff');R(1,1,2,1,'#d8d2c4');break;
     case 'beef':R(-4,-3,8,6,O);R(-3,-2,6,4,'#b8433a');R(-3,-2,6,1,'#d8605a');R(-2,0,4,1,'#f4e0d0');R(1,-1,1,2,'#f4e0d0');break;
     case 'fish':R(-4,-2,7,4,O);R(3,-2,2,4,O);R(-3,-1,5,2,'#7ac0e8');R(3,-1,1,2,'#5a9ac8');R(-2,-1,1,1,'#1c1a22');R(-1,0,3,1,'#b8e0f8');break;
@@ -1347,8 +1362,8 @@ function render(){
   cowsAmb.forEach(function(a){ents.push({y:a.y,f:function(){animal(a)}})});
   Object.keys(NPCP).filter(npcOn).forEach(function(k){var N=NPCP[k];ents.push({y:N.y,f:function(){person(N,N,N.mv);var px=N.x-camx,py=N.y-camy;cx.font='bold 7px sans-serif';cx.textAlign='center';cx.fillStyle='#fff';cx.fillText(NAM[k],px,py-22);
     if(N.bub)drawBub(N,py-26);var c=S.q[k].cur;if(!c||qDone(c)){cx.fillStyle='#f6c744';cx.font='bold 10px sans-serif';cx.fillText(c?'?':'!',px,py-31-Math.abs(Math.sin(tAnim*4))*2)}}})});
-  ents.push({y:PL.y,f:function(){person(PL,{shirt:'#3d6fb5',hair:'#23232e',glass:1},PL.mv);var px=PL.x-camx,py=PL.y-camy;
-    cx.font='bold 6px sans-serif';cx.textAlign='center';var tt=ttlName(),w=cx.measureText(tt).width+6;rect(px-w/2,py-36,w,8,'#000000aa');cx.fillStyle='#ffe28a';cx.fillText(tt,px,py-30);cx.fillStyle='#fff';cx.fillText('唐老师',px,py-38);
+  ents.push({y:PL.y,f:function(){var aj=!!S.asJ;person(PL,aj?NPCP.xz:{shirt:'#3d6fb5',hair:'#23232e',glass:1},PL.mv);var px=PL.x-camx,py=PL.y-camy;
+    cx.font='bold 6px sans-serif';cx.textAlign='center';var tt=aj?'校长（你在操控）':ttlName(),w=cx.measureText(tt).width+6;rect(px-w/2,py-36,w,8,'#000000aa');cx.fillStyle='#ffe28a';cx.fillText(tt,px,py-30);cx.fillStyle='#fff';cx.fillText(aj?'姜校长':'唐老师',px,py-38);
     if(PL.job&&PL.job.kind==='gather'&&!PL.path.length){var g=GATH[PL.job.o];rect(px-8,py-26,16,2,'#00000088');rect(px-8,py-26,16*Math.min(1,PL.prog/g[1]),2,'#7ed957')}if(PL.job&&PL.job.kind==='clear'&&!PL.path.length){var c2=CLR[PL.job.o];rect(px-8,py-26,16,2,'#00000088');rect(px-8,py-26,16*Math.min(1,PL.prog/c2[0]),2,'#ff9a4a')}}});
   ents.sort(function(a,b){return a.y-b.y});ents.forEach(function(e){e.f()});
   cx.font='bold 7px sans-serif';cx.textAlign='center';runtime.floats.forEach(function(f){cx.fillStyle='#000000aa';cx.fillText(f.t,f.x-camx+1,f.y-camy+1);cx.fillStyle='#ffe28a';cx.fillText(f.t,f.x-camx,f.y-camy)});
@@ -1502,7 +1517,7 @@ function clock(){var m=Math.floor(S.t),h=Math.floor(m/60)%24,mm=m%60;return(h<10
 function hud(){
   var nkh=nightK((S.t/60)%24);$('#h1').innerHTML='第 '+S.day+' 天 '+clock()+' · '+(nkh>=1?'夜里 🌙':nkh>0?((S.t/60)%24>=12?'傍晚':'清晨'):WXN[S.wx])+'<br>'+fmt(S.money)+' 银币'+(S.gold||S.gems?' · 金'+S.gold+' 宝'+S.gems:'')+'<br><small>'+ttlName()+'</small>';
   var wh=WH(),tot=0;Object.keys(S.inv).forEach(function(k){tot+=S.inv[k]});
-  $('#h2').innerHTML='仓库 '+fmt(tot)+' <small style="opacity:.7">▸</small><br>牛'+S.cows+' 马'+S.horses+(S.dairy||S.hens||S.sheep?'<br>奶牛'+(S.dairy||0)+' 鸡'+S.hens+' 羊'+S.sheep:'');
+  $('#h2').innerHTML='仓库 '+fmt(tot)+' <small style="opacity:.7">▸</small><br>牛'+S.cows+' 马'+S.horses+(livTot()?'<br>牧场动物 '+livTot():'');
   trk();ambSync();musSync();liveTick();
 }
 function snap(){var o=Object.assign({},S);o.obj=OB.slice();o.W=W;o.ts=Date.now();return o}
@@ -1560,15 +1575,15 @@ function extraRows(o){
 }
 /* 学校 */
 function schoolMenu(){
-  var slots=2*S.sch,gc=4+4*S.sch,full=S.stu.length>=slots||S.grad+S.stu.length>=gc,o=[];
+  var slots=3*S.sch,gc=6+6*S.sch,full=S.stu.length>=slots||S.grad+S.stu.length>=gc,o=[];
   var can=true,lock=S.q.tang.n+S.q.jiang.n<6;
   o.push({l:'进入学校',s:'参观教室、办公室',r:'进入',pri:true,f:function(){enterSchool()}});
   if(lock){menu('牛马谷学校','学校暂未招生：先帮姜组长和姜主任办 6 件事。你可以先进去参观。',o);return}
   o.push({l:'招收一名学生',s:full?(S.stu.length>=slots?'教室坐满了，扩建学校能多收':'毕业生太多了，扩建学校能多容纳'):'上学免费（以后都是你的牛马）· 读 10 天毕业',r:'招生',dis:full||!can,pri:!full&&can,keep:1,f:function(){
     var g=Math.random()<0.5?'g':'b',nm=(Math.random()<0.8?pick(g==='g'?['紫涵','子涵','紫萱','梓萱','欣怡','雨涵','诗涵','梓涵','一诺','可馨']:['沐辰','子轩','梓轩','浩宇','宇轩','俊熙','皓轩','奕辰','子墨','沐阳']):pick(g==='g'?['翠花','丫丫','甜甜']:['铁柱','二狗','豆豆']))+'同学';
     S.stu.push({t:0,d:STUD,nm:nm,g:g});toast(nm+'入学了');schoolMenu()}});
-  var uc=[400,1200,2500,4000,6000][S.sch-1]||0;
-  o.push({l:'扩建学校 Lv'+S.sch,s:S.sch>=6?'已是最大规模（12 名学生）':'同时在读 +2（Lv'+(S.sch+1)+' 收 '+2*(S.sch+1)+' 人），毕业生上限 +4',r:S.sch>=6?'':uc+'币',dis:S.sch>=6||S.money<uc,keep:1,f:function(){S.money-=uc;S.sch++;toast('学校扩建到 Lv'+S.sch+'，能收 '+2*S.sch+' 名学生');schoolMenu()}});
+  var uc=[400,1200,2500,4000,6000,8500,12000][S.sch-1]||0;
+  o.push({l:'扩建学校 Lv'+S.sch,s:S.sch>=8?'已是最大规模（24 名学生）':'同时在读 +3（Lv'+(S.sch+1)+' 收 '+3*(S.sch+1)+' 人），毕业生上限 +6',r:S.sch>=8?'':uc+'币',dis:S.sch>=8||S.money<uc,keep:1,f:function(){S.money-=uc;S.sch++;toast('学校扩建到 Lv'+S.sch+'，能收 '+3*S.sch+' 名学生');schoolMenu()}});
   S.stu.forEach(function(st){o.push({l:(st.g==='g'?'👧 ':'👦 ')+st.nm+'（在读）',s:'第 '+Math.min(10,Math.floor(st.t/st.d*10)+1)+'/10 天'+(S.hungry?' · 饿着肚子学得慢':''),r:'',keep:1,f:function(){}})});
   menu('牛马谷学校 Lv'+S.sch,'在读 '+S.stu.length+'/'+slots+' · 毕业生 '+S.grad+'/'+gc+'（累计毕业 '+S.gtot+'）<br>毕业生在建筑菜单里派工，机器上效率是牛的约 1.8 倍。<br>学生和毕业生每天 8:00、11:30、17:30 吃饭：有食堂吃食堂，没有就花钱在外面买。',o);
 }
@@ -2041,6 +2056,16 @@ ACH.push({n:'加班克星',d:'在荒原击败 10 只怪物',rw:400,c:function(){
 IT.fish=['鲜鱼',16];IT.wool=['羊毛',20];ICOL.wool='#f4f1ea';IORD.push('wool');IT.fert=['肥料',10];IT.fruit=['水果',22];IT.veg=['蔬菜',13];
 ICOL.fish='#7ac0e8';ICOL.fert='#7a5a34';ICOL.fruit='#e8503a';ICOL.veg='#6cc04a';
 ['fish','fert','fruit','veg'].forEach(function(k){IORD.push(k)});
+/* 牧场动物：一张表管所有种类（k=动物，it=产品，w=干活权重，pw=出产权重） */
+IT.feather=['羽毛',9];IT.honey=['蜂蜜',20];IT.truffle=['松露',55];ICOL.feather='#e8eef6';ICOL.honey='#f2b632';ICOL.truffle='#5a3e2a';['feather','honey','truffle'].forEach(function(k){IORD.push(k)});
+var LIV=[{k:'dairy',it:'milk',n:'奶牛',u:'头',w:1,pw:1,sp:8},{k:'hen',it:'egg',n:'鸡',u:'只',w:0.8,pw:1,sp:4.5},{k:'sheep',it:'wool',n:'羊',u:'只',w:1,pw:1,sp:7},
+  {k:'duck',it:'feather',n:'鸭',u:'只',w:0.8,pw:1,sp:5},{k:'bee',it:'honey',n:'蜜蜂',u:'箱',w:0.7,pw:0.7,sp:2.5},{k:'pig',it:'truffle',n:'猪',u:'头',w:1,pw:0.35,sp:7.5}];
+var LIVK={};LIV.forEach(function(z){LIVK[z.k]=z});
+function livWork(b){var s=0;LIV.forEach(function(z){s+=(b.w[z.k]||0)*z.w});return s}
+function livCnt(b){var s=0;LIV.forEach(function(z){s+=(b.w[z.k]||0)});return s}
+function livProd(b){var c=outCap(b);return LIV.filter(function(z){return(b.w[z.k]||0)>0&&(b.out[z.it]||0)<c}).map(function(z){return[z.it,(b.w[z.k]||0)*z.pw]})}
+function livTot(){var s=0;LIV.forEach(function(z){s+=S[CNT[z.k]]||0});return s}
+['ducks','bees','pigs'].forEach(function(k){if(S[k]===undefined)S[k]=0});
 Object.keys(BD).forEach(function(k){var d=BD[k];var a=Object.assign({},d.inp||{},d.opt||{});d.all=Object.keys(a).length?a:null});
 UNL.jiang[6]='渔场（湖边）';UNL.tang[12]='堆肥坊';UNL.jiang[3]=(UNL.jiang[3]?UNL.jiang[3]+'、':'')+'菜园';UNL.jiang[5]=(UNL.jiang[5]?UNL.jiang[5]+'、':'')+'果园';
 STY.fishery='farm';STY.orchard='farm';STY.garden='farm';STY.compost='farm';
@@ -2251,12 +2276,12 @@ function startOffline(){if(saved&&saved.ts)offlineRun((Date.now()-saved.ts)/1000
 /* ============ 繁殖 ============ */
 var BREED_T=75,GROW_T=110;
 function calvesAll(){var n=0;S.bld.forEach(function(b){n+=(b.cf||[]).length});return n}
-function occOf(b){return b.w.cow+b.w.horse+(b.w.grad||0)+(b.w.dairy||0)+(b.w.hen||0)+(b.w.sheep||0)+(b.cf||[]).length}
-function breedable(b){var r=[];b.bc=b.bc||{};['cow','horse','dairy','hen','sheep'].forEach(function(k){b.bc[k]=b.bc[k]||0;if((b.w[k]||0)>=2&&b.bc[k]<2*Math.floor(b.w[k]/2))r.push(k)});return r}
-function capFull(k){var big=k==='cow'||k==='horse',n=0;S.bld.forEach(function(b){(b.cf||[]).forEach(function(c){if((c.k==='cow'||c.k==='horse')===big)n++})});return big?S.cows+S.horses+n>=aniCap():S.hens+S.sheep+(S.dairy||0)+n>=livCap()}
+function occOf(b){return b.w.cow+b.w.horse+(b.w.grad||0)+livCnt(b)+(b.cf||[]).length}
+function breedable(b){var r=[];b.bc=b.bc||{};['cow','horse'].concat(LIV.map(function(z){return z.k})).forEach(function(k){b.bc[k]=b.bc[k]||0;if((b.w[k]||0)>=2&&b.bc[k]<2*Math.floor(b.w[k]/2))r.push(k)});return r}
+function capFull(k){var big=k==='cow'||k==='horse',n=0;S.bld.forEach(function(b){(b.cf||[]).forEach(function(c){if((c.k==='cow'||c.k==='horse')===big)n++})});return big?S.cows+S.horses+n>=aniCap():livTot()+n>=livCap()}
 function breedStep(b,d,dt){
   if(!d.slots)return;b.cf=b.cf||[];
-  for(var i=b.cf.length-1;i>=0;i--){var c=b.cf[i];c.t+=dt;if(c.t>=GROW_T){b.cf.splice(i,1);S[CNT[c.k]]++;
+  for(var i=b.cf.length-1;i>=0;i--){var c=b.cf[i];c.t+=dt;if(c.t>=GROW_T){b.cf.splice(i,1);S[CNT[c.k]]=(S[CNT[c.k]]||0)+1;
     if(occOf(b)<slotsOf(b))b.w[c.k]=(b.w[c.k]||0)+1;toast(BD[b.t].n+'的小'+ANM[c.k]+'长大了，'+(occOf(b)<=slotsOf(b)?'直接上岗':'去空闲区报到'))}}
   var ks=breedable(b).filter(function(k){return!capFull(k)});
   if(!ks.length||occOf(b)>=slotsOf(b)){b.bt=0;return}
@@ -2266,7 +2291,7 @@ function breedStep(b,d,dt){
     toast(BD[b.t].n+'里生了一只小'+ANM[k]+'！')}
 }
 function breedTxt(b){var bc=b.bc||{},cf=b.cf||[],t='';
-  var bl=['cow','horse','dairy','hen','sheep'].filter(function(k){return(b.w[k]||0)>=2||bc[k]}).map(function(k){return ANM[k]+' '+(bc[k]||0)+'/'+2*Math.floor((b.w[k]||0)/2)+' 胎'});t=bl.length||cf.length?'<br>繁殖：'+bl.join('、'):''+(cf.length?' · 幼崽 '+cf.length+'（'+cf.map(function(c){return Math.round(c.t/GROW_T*100)+'%'}).join('、')+'）':'');
+  var bl=['cow','horse'].concat(LIV.map(function(z){return z.k})).filter(function(k){return(b.w[k]||0)>=2||bc[k]}).map(function(k){return ANM[k]+' '+(bc[k]||0)+'/'+2*Math.floor((b.w[k]||0)/2)+' 胎'});t=bl.length||cf.length?'<br>繁殖：'+bl.join('、'):''+(cf.length?' · 幼崽 '+cf.length+'（'+cf.map(function(c){return Math.round(c.t/GROW_T*100)+'%'}).join('、')+'）':'');
   if(breedable(b).length){if(occOf(b)>=slotsOf(b))t+='<br><small>位置满了，升级才能生</small>';else if(breedable(b).every(capFull))t+='<br><small>'+(breedable(b).some(function(k){return k==='cow'||k==='horse'})?'牛马小屋住满了':'家禽牲畜到上限了，升级或多建牧场')+'，生不了</small>';else t+='<br><small>下一胎 '+Math.round((b.bt||0)/BREED_T*100)+'%</small>'}
   else t+='<br><small>同种成对（2 头牛、2 匹马、2 头奶牛、2 只鸡或 2 只羊）才会生，每对最多 2 胎</small>';
   return t}
@@ -2326,7 +2351,7 @@ ACH.push({n:'转正了',d:'召开转正大会',rw:1000,c:function(){return!!S.en
    第 1~2 条：1~2 种；第 3~5 条：2~3 种；第 6 条以后：3~4 种。
    农牧渔的货（鸡蛋、牛奶、羊毛、鱼、水果、蔬菜）只有你已经能产出时才会要。
    奖励：最多 500 银币；金币、宝石见 giveBonus（每单最多 3 金币、1 宝石）。 */
-function canMake(k){return S.bld.some(function(b){var d=BD[b.t];return d.out===k||(b.t==='pasture'&&((k==='milk'&&b.w.dairy)||(k==='egg'&&b.w.hen)||(k==='wool'&&b.w.sheep)))})}
+function canMake(k){return S.bld.some(function(b){var d=BD[b.t];return d.out===k||(b.t==='pasture'&&LIV.some(function(z){return z.it===k&&b.w[z.k]>0}))})}
 function farmPool(n){return[['egg',10+n*3],['milk',8+n*3],['wool',6+n*2],['fish',6+n*2],['fruit',6+n*2],['veg',8+n*3]].filter(function(q){return IT[q[0]]&&canMake(q[0])})}
 var _nq3=newQuest;newQuest=function(id){_nq3(id);var q=S.q[id],c=q&&q.cur;if(!c)return;var n=q.n;
   if(n>0){var want=n>=6?3+(Math.random()<0.5?1:0):n>=3?2+(Math.random()<0.5?1:0):1+(Math.random()<0.4?1:0);
@@ -2417,7 +2442,9 @@ function roadBFS(sx,sy,hh){var dist={},q=[[sx,sy]],k0=gi(sx,sy);dist[k0]=0;var h
 function pathTo(sx,sy,gx,gy,hh){var prev={},q=[[sx,sy]],k0=gi(sx,sy),g=gi(gx,gy);prev[k0]=-1;var h=0;BFS0=k0;
   while(h<q.length){var c=q[h++],ck=gi(c[0],c[1]);if(ck===g)break;for(var d=0;d<4;d++){var nx=c[0]+DX[d],ny=c[1]+DY[d];if(!isNode(nx,ny)||!linkOK(c[0],c[1],d)||!edgeOK(hh,c[0],c[1],d))continue;var nk=gi(nx,ny);if(prev[nk]!==undefined)continue;prev[nk]=ck;q.push([nx,ny])}}
   if(prev[g]===undefined)return null;var p=[],k=g;while(k!==k0){p.push([k%W,Math.floor(k/W)]);k=prev[k]}return p.reverse()}
-function hlCap(h){return h.k==='horse'?6:10}
+function HLN(k){return k==='horse'?'马':k==='grad'?'毕业生':'牛'}
+function HLN2(k){return k==='horse'?'匹马':k==='grad'?'个毕业生':'头牛'}
+function hlCap(h){return h.k==='horse'?6:h.k==='grad'?8:10}
 function accepts(e,item,src){var b=e.b;if(b.t==='warehouse')return src!=='wh'&&have(item)<cap();var a=BD[b.t].all;return!!(a&&a[item]!==undefined&&acceptB(b,item))}
 function hlDecide(h){
   var dist=roadBFS(h.tx,h.ty,h),ins=[],outs=[];
@@ -2433,7 +2460,7 @@ function hlDecide(h){
   else if(h.carry&&!best){h.idleC=(h.idleC||0)+1;
     if(h.idleC>8){var whOn=ins.some(function(e){return e.b.t==='warehouse'});
       if(whOn){var it=h.carry.item,got=addCap(it,h.carry.n),rest=h.carry.n-got,gv=rest*Math.max(1,Math.floor(pr(it)/2));S.money+=gv;h.carry=null;h.idleC=0;
-        if(!runtime.offline&&(!runtime.ovT||Date.now()-runtime.ovT>20000)){runtime.ovT=Date.now();toast('仓库'+IT[it][0]+'满了，'+(h.k==='horse'?'马':'牛')+'把手上的'+IT[it][0]+'半价卖了')}}
+        if(!runtime.offline&&(!runtime.ovT||Date.now()-runtime.ovT>20000)){runtime.ovT=Date.now();toast('仓库'+IT[it][0]+'满了，'+HLN(h.k)+'把手上的'+IT[it][0]+'半价卖了')}}
       else if(!h.bub&&Math.random()<0.3)h.bub={t:'这'+IT[h.carry.item][0]+'送哪去？路上没有要它的地方',l:3}}}
   else h.idleC=0;
   if(best){var gx=best.k%W,gy=Math.floor(best.k/W);if(best.k===gi(h.tx,h.ty)){h.path=[];hlAct(h);return true}h.path=pathTo(h.tx,h.ty,gx,gy,h)||[];h.goal=best.k;return h.path.length>0}
@@ -2470,13 +2497,13 @@ function haulStep(dt){
   S.hl=S.hl||[];runtime.haul=S.hl;
   for(var i=S.hl.length-1;i>=0;i--){var h=S.hl[i];
     if(!isNode(h.tx,h.ty)){var fx=null;for(var d=0;d<4&&!fx;d++)if(isNode(h.tx+DX[d],h.ty+DY[d]))fx=[h.tx+DX[d],h.ty+DY[d]];
-      if(fx){h.tx=fx[0];h.ty=fx[1];h.x=h.tx*TS+8;h.y=h.ty*TS+10;h.path=[]}else{if(h.carry)addCap(h.carry.item,h.carry.n);S.hl.splice(i,1);if(!runtime.offline)toast('路被拆了，一'+(h.k==='horse'?'匹马':'头牛')+'回到了空闲');continue}}
+      if(fx){h.tx=fx[0];h.ty=fx[1];h.x=h.tx*TS+8;h.y=h.ty*TS+10;h.path=[]}else{if(h.carry)addCap(h.carry.item,h.carry.n);S.hl.splice(i,1);if(!runtime.offline)toast('路被拆了，一'+HLN2(h.k)+'回到了空闲');continue}}
     var rem=dt,guard=0;
     while(rem>0&&guard++<12){
       if(h.wait>0){var w0=Math.min(h.wait,rem);h.wait-=w0;rem-=w0;continue}
       if(!h.path||!h.path.length){if(!hlDecide(h))hlPatrol(h);if(!h.path||!h.path.length){h.wait=0.5;continue}}
       var n=h.path[0];if(!isNode(n[0],n[1])){h.path=[];continue}
-      var tx=n[0]*TS+8,ty=n[1]*TS+10,dx=tx-h.x,dy=ty-h.y,m=Math.hypot(dx,dy),v=(h.k==='horse'?44:28)*spdAt(n[0],n[1])*(h.carry?0.85:1),sp=v*rem;
+      var tx=n[0]*TS+8,ty=n[1]*TS+10,dx=tx-h.x,dy=ty-h.y,m=Math.hypot(dx,dy),v=(h.k==='horse'?44:h.k==='grad'?38:28)*spdAt(n[0],n[1])*(h.carry?0.85:1),sp=v*rem;
       if(Math.abs(dx)>0.3)h.fx=dx>0?1:-1;
       if(m<=sp){rem-=m/v;h.x=tx;h.y=ty;for(var d2=0;d2<4;d2++)if(n[0]-h.tx===DX[d2]&&n[1]-h.ty===DY[d2])h.dir=d2;h.tx=n[0];h.ty=n[1];h.path.shift();h.pd=PORTS[gi(h.tx,h.ty)]?(h.dir+2)%4:null;
         if(PORTS[gi(h.tx,h.ty)]){if(hlAct(h))h.path=[]}}
@@ -2487,7 +2514,7 @@ function haulStep(dt){
 function hlCount(k){return(S.hl||[]).filter(function(h){return h.k===k}).length}
 function netOf(x,y){var d=roadBFS(x,y);return d}
 function hlOnNet(dist){return(S.hl||[]).filter(function(h){return dist[gi(h.tx,h.ty)]!==undefined})}
-function addHauler(k,x,y,br){if(!isNode(x,y)){toast('这个口被挡住了，换个方向或挪开障碍');return}if(freeOf(k)<1){toast('没有空闲的'+(k==='cow'?'牛':'马')+'，去“牛马”菜单买');return}
+function addHauler(k,x,y,br){if(!isNode(x,y)){toast('这个口被挡住了，换个方向或挪开障碍');return}if(freeOf(k)<1){toast('没有空闲的'+HLN(k)+(k==='grad'?'，去学校招生':'，去“牛马”菜单买'));return}
   S.hl=S.hl||[];var h={k:k,tx:x,ty:y,x:x*TS+8,y:y*TS+10,dir:br===undefined?0:br,path:[],carry:null,fx:1,wait:0};if(br!==undefined){h.home=gi(x,y);h.br=br}S.hl.push(h);save()}
 function delHauler(list,k){var c=list.filter(function(h){return h.k===k});if(!c.length)return;var h=c.filter(function(x){return!x.carry})[0]||c[0];if(h.carry)addCap(h.carry.item,h.carry.n);S.hl.splice(S.hl.indexOf(h),1);save()}
 function portRows(b,o,back){
@@ -2500,11 +2527,12 @@ function portRows(b,o,back){
     if(!isNode(px,py)){blk.push(nm);return}
     var brs=branchesOf(px,py,b);
     if(!brs.length){nor.push(nm);return}
-    brs.forEach(function(br){var hs=(S.hl||[]).filter(function(h){return h.home===gi(px,py)&&h.br===br.d}),nc=hs.filter(function(h){return h.k==='cow'}).length,nh=hs.length-nc;
-      o.push({l:nm+' · 路'+br.n+'（往'+['上','右','下','左'][br.d]+'）',s:'牛 '+nc+' 马 '+nh+' · 通往：'+br.to,dis:true,why:'路'+br.n+'通往：'+br.to,f:function(){}});
+    brs.forEach(function(br){var hs=(S.hl||[]).filter(function(h){return h.home===gi(px,py)&&h.br===br.d}),nc=hs.filter(function(h){return h.k==='cow'}).length,ng=hs.filter(function(h){return h.k==='grad'}).length,nh=hs.length-nc-ng;
+      o.push({l:nm+' · 路'+br.n+'（往'+['上','右','下','左'][br.d]+'）',s:'牛 '+nc+' 马 '+nh+(ng||S.grad?' 毕业生 '+ng:'')+' · 通往：'+br.to,dis:true,why:'路'+br.n+'通往：'+br.to,f:function(){}});
       o.push({row:1});
       o.push({inrow:1,l:'＋牛',s:'空闲 '+freeOf('cow'),dis:freeOf('cow')<1,why:'没有空闲的牛，去“牛马”菜单买',keep:1,f:function(){addHauler('cow',px,py,br.d);back()}});
       o.push({inrow:1,l:'＋马',s:'空闲 '+freeOf('horse'),dis:freeOf('horse')<1,why:'没有空闲的马，去“牛马”菜单买',keep:1,f:function(){addHauler('horse',px,py,br.d);back()}});
+      if(S.grad>0)o.push({inrow:1,l:'＋毕业生',s:'空闲 '+gradFree(),dis:gradFree()<1,why:'没有空闲的毕业生：去学校招生，读 10 天毕业',keep:1,f:function(){addHauler('grad',px,py,br.d);back()}});
       o.push({inrow:1,l:'－',s:'收回一只',dis:!hs.length,why:'路'+br.n+'上没有牛马',keep:1,f:function(){var h=hs.filter(function(x){return!x.carry})[0]||hs[0];if(h.carry)addCap(h.carry.item,h.carry.n);S.hl.splice(S.hl.indexOf(h),1);save();back()}});
     })});
   if(nor.length)o.push({l:nor.join('、')+' 外面还没有路',s:'用“铺路”从口往外修，每个口最多接 3 条路',dis:true,why:'先铺路，接上以后这里会出现派牛马的按钮',f:function(){}});
@@ -2539,7 +2567,7 @@ function drawBranchTags(){
   deps.forEach(function(b){m+=BD.depot.cost+(b.sp||0)});S.bld=S.bld.filter(function(b){return b.t!=='depot'});S.money+=m;rebuildGrid();
   runtime.haul=S.hl;runtime.depMsg='运输方式改了：每个建筑有“入口”和“出口”。用“铺路”把出口连到别的建筑的入口，再在建筑菜单里往路上派牛马。旧的运输队已拆除，退回 '+m+' 银币，牛马都回到了空闲。'})();
 
-function haulerMenu(h){menu('运货的'+(h.k==='horse'?'马':'牛'),(h.carry?'正在运：'+IT[h.carry.item][0]+' ×'+h.carry.n:'空着手')+(h.home!==undefined&&h.home!==null?'<br>负责：'+(function(){var ps=PORTS[h.home];if(!ps)return'?';var bb=ps[0].b,br=branchesOf(h.home%W,Math.floor(h.home/W),bb).filter(function(x){return x.d===h.br})[0];return bName(bb)+(ps[0].io==='in'?'入口':'出口')+' 的路'+(br?br.n:'?')})():'')+'<br><small>它只在自己那条路上走：到了出口装货，到了入口卸货，走到尽头就掉头。</small>',[
+function haulerMenu(h){menu('运货的'+HLN(h.k),(h.carry?'正在运：'+IT[h.carry.item][0]+' ×'+h.carry.n:'空着手')+(h.home!==undefined&&h.home!==null?'<br>负责：'+(function(){var ps=PORTS[h.home];if(!ps)return'?';var bb=ps[0].b,br=branchesOf(h.home%W,Math.floor(h.home/W),bb).filter(function(x){return x.d===h.br})[0];return bName(bb)+(ps[0].io==='in'?'入口':'出口')+' 的路'+(br?br.n:'?')})():'')+'<br><small>它只在自己那条路上走：到了出口装货，到了入口卸货，走到尽头就掉头。</small>',[
   {l:'聊两句',f:function(){h.bub={t:ppick(h.carry&&AQC[h.carry.item]?AQC[h.carry.item]:AQ[h.k]),l:3}}},
   {l:'收回（变成空闲）',s:h.carry?'手上的货送回仓库':'',f:function(){if(h.carry)addCap(h.carry.item,h.carry.n);S.hl.splice(S.hl.indexOf(h),1);save();toast('收回了')}}])}
 </script>
@@ -2585,6 +2613,7 @@ var UPDT='<b>进出口和路上运输</b>取代了运输队；<b>牛马市场</b
 /* ============ 更新公告：每次发新版本，在最上面加一条（v 要和 NMBUILD 一样） ============
    by：这次是听谁的指导；add 新增、chg 调整、fix 修复 */
 var NMLOG=[
+ {v:'0.57',d:'11月14日',by:'姜校长',w:'「以人为本，牛马为友」',add:['认真学习姜校长“丰富牧场、扩大规模”的指示：牧场新来了 <b>鸭子（羽毛）、蜜蜂（蜂蜜）、猪（拱松露，很值钱）</b>，牧场容量翻倍，产品库存也更大','围栏里每种动物只站一只代表，旁边标数量，看着清清爽爽','学校扩招：最高 Lv8，能同时收 24 名学生，毕业生上限更高','毕业生可以<b>上路运货</b>了（建筑路线那里点“＋毕业生”），比牛快','牛马可以<b>光荣退休</b>了：戴上小草帽，在村里晒太阳养老','姜校长不再天天站在校门口：按时间去食堂、工坊、仓库、牧场、宿舍巡视','转正以后，可以<b>换成姜校长来操控</b>；她走到建筑旁边能“视察”，机器干劲 +30%'],chg:['食堂厨师会自己采购牛肉了：食材不够时饭前自动去买，比叫外卖便宜（食堂菜单里可以关掉）']},
  {v:'0.56',d:'11月14日',by:'姜校长',w:'「急群众之所急」',add:['🔮 某个神秘的新内容还在秘密建设中……<b>敬请期待</b>'],fix:['根据群众反映，几个按钮太容易误触，已加上确认']},
  {v:'0.55',d:'11月14日',by:'姜校长',w:'「集中精力办大事」',add:['🔮 某个神秘的新内容还在秘密建设中……<b>敬请期待</b>'],chg:['响应姜校长“集中精力办大事”的号召：第一章通关（转正大会）以后，💡 不再弹牛马谷的玩法提示，左上角也换成新的目标']},
  {v:'0.54',d:'11月14日',by:'姜校长',w:'「从头再来，再创辉煌」',add:['响应姜校长“归零心态、重新出发”的号召，存档里加了<b>🔄 一键重开</b>：从第 1 天、1 级重新玩；重开前的进度会自动备份，后悔了能在“换回备份存档”找回来']},
@@ -2673,12 +2702,14 @@ function foodIn(b){var n=0;FOOD.forEach(function(k){n+=b.inb[k]||0});return n}
 function mealName(sl){return ['午饭','晚饭','早饭'][sl]}
 function doMeal(sl){var n=diners();if(!n)return;
   var cs=S.bld.filter(function(b){return b.t==='canteen'&&cooksOK(b)}),left=n,served=0,guard=0;
+  /* 食材不够：厨师饭前自己去买牛肉（可以在食堂菜单里关掉） */
+  var bbN=0,bbC=0,tot=0;cs.forEach(function(b){tot+=foodIn(b)});if(tot<n)cs.forEach(function(b){if(b.noBeef||tot>=n)return;var room=inLim(b)-(b.inb.beef||0),can=Math.min(n-tot,room,Math.floor(S.money/BEEFP));if(can>0){S.money-=can*BEEFP;b.inb.beef=(b.inb.beef||0)+can;tot+=can;bbN+=can;bbC+=can*BEEFP}});
   while(left>0&&guard++<999){var got=false;cs.forEach(function(b){if(left<=0)return;for(var i=0;i<FOOD.length;i++){var k=FOOD[i];if((b.inb[k]||0)>0){b.inb[k]--;left--;served++;got=true;if(k==='beef')runtime.beefN=(runtime.beefN||0)+1;return}}});if(!got)break}
   var cost=left*MEALP,paid=Math.min(S.money,cost),bought=Math.floor(paid/MEALP);S.money-=bought*MEALP;var hungry=left-bought;
   S.hungry=hungry>0?1:0;S.meal={day:S.day,sl:sl,n:n,served:served,bought:bought,cost:bought*MEALP,hungry:hungry};
   S.beefy=runtime.beefN>0?1:0;S.meal.beef=runtime.beefN||0;runtime.beefN=0;
   if(runtime.offline)return;
-  var msg=mealName(sl)+'：'+n+' 人就餐';if(served)msg+='，食堂供应 '+served+' 份';if(S.meal.beef)msg+='（有牛肉！孩子们特别开心）';if(bought)msg+='，外面采购 '+bought+' 份花了 '+bought*MEALP+' 币';if(hungry)msg+='，还有 '+hungry+' 人饿肚子！';
+  var msg=mealName(sl)+'：'+n+' 人就餐'+(bbN?'，厨师买了 '+bbN+' 份牛肉（'+bbC+' 币）':'');if(served)msg+='，食堂供应 '+served+' 份';if(S.meal.beef)msg+='（有牛肉！孩子们特别开心）';if(bought)msg+='，外面采购 '+bought+' 份花了 '+bought*MEALP+' 币';if(hungry)msg+='，还有 '+hungry+' 人饿肚子！';
   toast(msg);
   if(!cs.length&&bought&&!S.mealTip){S.mealTip=1;say('姜主任',['“唐老师，孩子们天天吃外卖，学校的钱都花在外卖上了。”','“建个食堂吧，派个毕业生当厨师，从仓库送鱼、水果、蔬菜过去。”'])}}
 var _g9=game2Step;game2Step=function(dt){_g9(dt);
@@ -2696,8 +2727,7 @@ var _bm9=bldMenu;bldMenu=function(b){if(b.t!=='canteen')return _bm9(b);
   o.push({row:1});
   o.push({inrow:1,l:'厨师（毕业生）'+cook+' ',s:'空闲毕业生 '+gradFree(),r:'＋',dis:gradFree()<1||cook>=maxs,why:cook>=maxs?'位置满了，升级才能多放':'没有空闲的毕业生，去学校招生，读 10 天毕业',keep:1,f:function(){b.w.grad=cook+1;bldMenu(b)}});
   o.push({inrow:1,l:'厨师',r:'－',dis:cook<1,keep:1,f:function(){b.w.grad=cook-1;bldMenu(b)}});
-  var room=lim-(b.inb.beef||0),nb=Math.min(10,room);
-  o.push({l:'🥩 采购牛肉 ×'+Math.max(nb,0),s:'直接送进食堂，每份 '+BEEFP+' 银币（比外面买饭便宜）· 吃到牛肉，学生到下一顿学习快 20%',r:nb*BEEFP+'币',dis:nb<1||S.money<nb*BEEFP,why:nb<1?'牛肉放满了':'银币不够',keep:1,f:function(){S.money-=nb*BEEFP;b.inb.beef=(b.inb.beef||0)+nb;toast('采购牛肉 ×'+nb);bldMenu(b)}});
+  o.push({l:'🥩 厨师自己采购牛肉：'+(b.noBeef?'关':'开'),s:(b.noBeef?'关着：食材不够就花钱叫外卖（每份 '+MEALP+' 币）':'开着：食材不够时，厨师饭前自己去买牛肉，每份 '+BEEFP+' 币，比外卖便宜')+' · 吃到牛肉，学生到下一顿学习快 20%',r:b.noBeef?'打开':'关掉',keep:1,f:function(){b.noBeef=!b.noBeef;save();bldMenu(b)}});
   portRows(b,o,function(){bldMenu(b)});
   o.push(upRow(b));
   o.push({l:'搬家',s:'换个位置 · 搬家费 '+moveFee(b)+' 币',r:'迁移',f:function(){startMove(b)}});
@@ -2880,7 +2910,7 @@ function occAgents(sc,list,opts){opts=opts||{};var dpx=[sc.door[0]*TS+8,(sc.h-1)
         kidSprite(a,a.mv);if(a.bub)drawBub(a,a.y-camy-20)}});
     a.ins=inside;a.tx=a.x;a.ty=a.y;a.wait=1e9})}
 /* 教室：12 张课桌（4 列 × 3 排），学生坐在桌子后面 */
-function classKids(sc){var L=[];for(var idx=0;idx<Math.min((S.stu||[]).length,12);idx++){var r=Math.floor(idx/4),c=idx%4;L.push({i:idx,key:'school',x:(2+c*2)*TS+8,y:(11+r)*TS+5})}
+function classKids(sc){var L=[];for(var idx=0;idx<Math.min((S.stu||[]).length,24);idx++){var r,c,xx,yy;if(idx<12){r=Math.floor(idx/4);c=idx%4;xx=(2+c*2)*TS+8;yy=(11+r)*TS+5}else{r=Math.floor((idx-12)/4);c=idx%4;xx=(3+c*2)*TS+8;yy=(11.5+r)*TS+5}L.push({i:idx,key:'school',x:xx,y:yy})}
   occAgents(sc,L,{lines:KIDL});
   sc.drawOver=function(ox,oy){var hr=(S.t/60)%24;if(isNight(hr)&&!schoolLit(hr,21.5)){cx.globalAlpha=0.5;rect(ox,oy,sc.w*TS,sc.h*TS,'#0a1020');cx.globalAlpha=1}}}
 /* 宿舍里面：6 张横着的上下铺（左右各 3 张），12 个床位 */
@@ -2925,6 +2955,8 @@ function sleepKid(px,ty,a,i){var hx=px+5,hy=ty-2,br=Math.sin(tAnim*1.6+i*1.3)>0?
    这里玩家操作的是「姜同学」，唐同学跟在身后。原来的打怪地图（加班荒原）现在从城堡外的迷雾林进去。
    地图怎么加：在 MGMAPS 里写一个 build 函数（画地面、墙、家具、门、人），门写清楚通到哪张图的哪一格。 */
 'use strict';
+/* 魔法学校总开关：false = 转正后不来天马、东边路口照旧去加班荒原（等需要开放时改成 true） */
+var MG_OPEN=false;
 /* ---- 地块：0 黑（走不了）1 墙 2 石地 3 草地 4 水 5 石板路 6 土路 7 地毯 8 木地板 9 树 ---- */
 var MGT={VOID:0,WALL:1,STONE:2,GRASS:3,WATER:4,PATH:5,DIRT:6,RUG:7,WOOD:8,TREE:9};
 var MGSOLID={0:1,1:1,4:1,9:1};
@@ -3252,11 +3284,11 @@ $('#scout').addEventListener('click',function(e){if(SC&&SC.kind==='mg'&&!busy())
 /* ============ 解锁：转正大会之后，天马送来密信 ============
    没转正前，东边路口还是去加班荒原（结局要打败加班巨兽）；转正后的第二天早上，天马送信，之后路口通往魔法学校。 */
 tryAdv=function(){var n=S.q.tang.n+S.q.jiang.n+S.q.jl.n+S.q.ds.n;
-  if(S.mgInv){PL.path=[];PL.job=null;mgEnter();return}
+  if(S.mgInv&&MG_OPEN){PL.path=[];PL.job=null;mgEnter();return}
   if(n<10){toast('路口的牌子：前方危险，先完成 10 条指令（现在 '+n+'）');PL.x=(W-3)*TS;PL.path=[];PL.job=null;return}
   PL.path=[];PL.job=null;enterAdv()};
-var _la22=leaveAdv;leaveAdv=function(){if(S.mgInv&&S.mg){leaveScene();mgGo('out',38,10);toast('从迷雾林回到了城堡外');return}leaveScene();PL.x=(W-3)*TS;PL.y=23*TS+10;PL.path=[];S.cx=PL.x;S.cy=PL.y};
-function mgInviteStep(){if(!S.end||S.mgInv||SC||busy()||runtime.offline||runtime.peg)return;var hr=(S.t/60)%24;if(S.day<=(S.endDay||0)||hr<8)return;
+var _la22=leaveAdv;leaveAdv=function(){if(MG_OPEN&&S.mgInv&&S.mg){leaveScene();mgGo('out',38,10);toast('从迷雾林回到了城堡外');return}leaveScene();PL.x=(W-3)*TS;PL.y=23*TS+10;PL.path=[];S.cx=PL.x;S.cy=PL.y};
+function mgInviteStep(){if(!MG_OPEN||!S.end||S.mgInv||SC||busy()||runtime.offline||runtime.peg)return;var hr=(S.t/60)%24;if(S.day<=(S.endDay||0)||hr<8)return;
   S.mgInv=1;save();runtime.peg={ph:'in',t:0,letter:1,last:0,sp:[]};toast('天上好像有什么东西飞过来了……')}
 function pegLanded(){var P=runtime.peg;
   say('',['清晨，天上传来一阵翅膀扇动的声音。','一匹雪白的天马从云里飞了下来——额头上还长着一只金色的角，像独角兽一样。','它稳稳落在学校门口，嘴里叼着一封信。信封上盖着金色的火漆，写着：“机密”。'],function(){
@@ -3868,7 +3900,7 @@ var _mr24=mgRender;mgRender=function(){_mr24();var m=SC.map;if(!curfew()||MGSAFE
    ⚠️ 魔法学校的内容先保密：更新公告里只写“敬请期待”。 */
 'use strict';
 /* ============ 通关后：牛马谷不再弹玩法提示 ============ */
-var _tip25=tipStep;tipStep=function(dt){if(S.end){if(S.tipNew&&Object.keys(S.tipNew).length){S.tipNew={};tipBadge()}tipQ.length=0;return}_tip25(dt)};
+var _tip25=tipStep;tipStep=function(dt){if(S.end&&MG_OPEN){if(S.tipNew&&Object.keys(S.tipNew).length){S.tipNew={};tipBadge()}tipQ.length=0;return}_tip25(dt)};
 
 /* ============ 主线 ============ */
 function mgG(){if(!S.mg)mgInit();var g=mgN();g.vis=g.vis||{};g.cdone=g.cdone||{};g.inv=g.inv||{};g.wand=g.wand||0;return g}
@@ -3924,7 +3956,7 @@ function storyPanel(){var g=mgG(),cur=storyIdx(),inMg=SC&&SC.kind==='mg';
   menu('📜 主线 · 第一学年（上）',list+(inMg&&cur<STORY.length-1?'<br><br><b>怎么走：</b>'+routeTxt():''),o)}
 
 /* ============ 牛马谷左上角：通关后改成第二章主线 ============ */
-var _trk25=trk;trk=function(){if(!S.end){_trk25();return}
+var _trk25=trk;trk=function(){if(!S.end||!MG_OPEN){_trk25();return}
   var hide=0;try{hide=localStorage.getItem('niumagu-trk')==='1'}catch(e){}var el=$('#trk');
   var line=!S.mgInv?'第二章 · 序：明天早上，学校门口好像会来一位特别的客人……':!(S.mg&&S.mg.seen)?'去村子最东边的路口，前往魔法学校':(storyCur().id==='end'?storyCur().t:'回魔法学校：'+storyCur().t);
   if(hide){var h0='<b>📜 主线 ▸</b>';el.classList.add('mini');if(el._h!==h0){el._h=h0;el.innerHTML=h0}return}
@@ -4040,6 +4072,105 @@ function mgLeaveAsk(){menu('回牛马谷？','你现在在魔法学校的'+(SC&&
 (function(){var sc=$('#scout');if(sc&&sc.parentNode){sc.parentNode.appendChild(sc);sc.style.marginTop='22px'}})();
 </script>
 <script>
+/* 牛马谷 · 26-village.js — 牛马谷第一批改进：
+   姜校长按时间在村里巡视、转正后可以换成姜校长来操控（还能“视察”建筑）、
+   毕业生能上路运货、牛马可以光荣退休、毕业生小人和退休牛马的画法。 */
+'use strict';
+function nowAbs(){return (S.day||1)*1440+S.t}
+
+/* ============ 姜校长：不再站在校门口不动，按时间到处走 ============ */
+NR.xz=1.6;
+var XZPLAN=[[0,'school'],[7.5,'school'],[8,'canteen'],[9,'tour'],[11.5,'canteen'],[13,'warehouse'],[14.5,'tour2'],[16,'pasture'],[17.5,'canteen'],[19,'dorm'],[20.5,'school']];
+var XZSAY={school:['“校门口要有人守着，这个人就是我。”','“早上好。迟到的同学，我都记着。”'],canteen:['“今天食堂吃什么？我先尝尝。”','“牛肉够不够？孩子们要吃饱。”','“厨师辛苦了。”'],
+  tour:['“我来视察一下，大家继续。”','“这台机器，转得还挺勤快。”','“谁在摸鱼？……没人？好。”'],tour2:['“下午也要有干劲。”','“降本增效，从这台机器开始。”'],
+  warehouse:['“仓库是学校的家底，要清点清楚。”','“这些货，够撑到下个月吗？”'],pasture:['“小羊，你今天产毛了吗？”','“这头猪看起来很有前途。”','“蜜蜂都比有些人勤快。”'],
+  dorm:['“熄灯前查一下宿舍。”','“被子叠好了没有？”','“那个说梦话的是谁？”']};
+function xzSpot(kind){var t={canteen:'canteen',warehouse:'warehouse',pasture:'pasture',dorm:'dorm'}[kind],list;
+  if(kind==='school')return SCHDOOR.slice();
+  list=t?S.bld.filter(function(b){return b.t===t}):S.bld.filter(function(b){var d=BD[b.t];return d&&d.t&&b.t!=='pasture'});
+  if(!list.length)return null;var b=list[((S.day||1)*7+(kind==='tour2'?3:0))%list.length];return doorOf(b)}
+function xzStep(){if(!S.end||S.asJ||dlgOpen||menuOpen)return;var N=NPCP.xz,hr=(S.t/60)%24,i=0;XZPLAN.forEach(function(p,j){if(hr>=p[0])i=j});
+  var key=S.day+'-'+i;if(N.pk===key)return;N.pk=key;var kind=XZPLAN[i][1],sp=xzSpot(kind)||SCHDOOR.slice();
+  N.hx=sp[0]*TS+8;N.hy=sp[1]*TS+12;N.kind=kind;var p=route(Math.floor(N.x/TS),Math.floor(N.y/TS),function(x,y){return x===sp[0]&&y===sp[1]},walkable);
+  if(p&&p.length){N.path=p;N.arr=1}else{N.x=N.hx;N.y=N.hy}}
+var _ns26=npcStep;npcStep=function(dt){xzStep();_ns26(dt);var N=NPCP.xz;if(S.end&&N.arr&&!N.path.length){N.arr=0;N.bub={t:ppick(XZSAY[N.kind]||XZSAY.school),l:4}}};
+var _on26=npcOn;npcOn=function(id){if(id==='xz'&&S.asJ)return false;return _on26(id)};
+
+/* ============ 转正以后：可以换成姜校长来操控 ============ */
+var TANGN={x:0,y:0,fx:1,mv:0,path:[],wait:2};
+var TANGL=['“校长好！”','“校长，今天的指令我一定落实。”','（唐老师小声）“当校长原来是这种感觉……”','“校长，您走路的样子好威严。”','“检讨我写好了，放您桌上了。”','“校长，食堂今天有牛肉，我给您留了一份。”'];
+function swBtnUpd(){var b=$('#swJ');if(!b)return;var on=S.end&&!SC&&!runtime.peg;b.style.display=on?'block':'none';if(on){var t=S.asJ?'👨‍🏫 换回唐老师':'👩‍💼 换成姜校长';if(b.textContent!==t)b.textContent=t}}
+(function(){var b=document.createElement('button');b.type='button';b.id='swJ';b.className='pill';b.style.cssText='position:absolute;right:8px;top:calc(max(6px,env(safe-area-inset-top)) + 168px);font-size:12px;display:none;z-index:5';document.body.appendChild(b);
+  tapBind(b,function(){if(busy())return;switchJ()})})();
+function switchJ(){var N=NPCP.xz;PL.path=[];PL.job=null;
+  if(!S.asJ){S.tangP={x:PL.x,y:PL.y};TANGN.x=PL.x;TANGN.y=PL.y;TANGN.path=[];PL.x=N.x;PL.y=N.y;S.asJ=1;N.path=[];
+    if(!S.asJtip){S.asJtip=1;say('',['你现在操控的是姜校长。','走到建筑旁边点它，可以“视察”：机器干劲 +30%，持续 2 小时，每栋每天一次。','唐老师会在原地等你，点他可以收他交的指令。'])}else toast('现在操控：姜校长')}
+  else{N.x=PL.x;N.y=PL.y;N.path=[];N.pk=null;PL.x=TANGN.x;PL.y=TANGN.y;S.asJ=0;toast('换回了唐老师')}
+  S.cx=PL.x;S.cy=PL.y-12;save();swBtnUpd()}
+if(S.asJ&&S.tangP){TANGN.x=S.tangP.x;TANGN.y=S.tangP.y}
+function tangNStep(dt){if(!S.asJ||dlgOpen||menuOpen)return;var T=TANGN;T.mv=0;
+  if(T.bub){T.bub.l-=dt;if(T.bub.l<=0)T.bub=null}else if(Math.random()<0.003)T.bub={t:ppick(TANGL),l:3.5};
+  if(T.path.length){var n=T.path[0],tx=n[0]*TS+8,ty=n[1]*TS+12,dx=tx-T.x,dy=ty-T.y,m=Math.hypot(dx,dy),sp=22*dt;if(m<=sp){T.x=tx;T.y=ty;T.path.shift()}else{T.x+=dx/m*sp;T.y+=dy/m*sp;T.mv=1;T.fx=dx>0?1:-1}return}
+  T.wait-=dt;if(T.wait>0)return;T.wait=3+Math.random()*5;var hx=(S.tangP||T).x,hy=(S.tangP||T).y;
+  for(var t=0;t<6;t++){var gx=Math.floor(hx/TS+rnd(-2,2)),gy=Math.floor(hy/TS+rnd(-1.5,1.5));if(!walkable(gx,gy))continue;var p=route(Math.floor(T.x/TS),Math.floor(T.y/TS),function(x,y){return x===gx&&y===gy},walkable);if(p&&p.length&&p.length<10){T.path=p;break}}}
+var _dg26=drawG2;drawG2=function(ents,x0,x1,y0,y1){_dg26(ents,x0,x1,y0,y1);
+  if(S.asJ)ents.push({y:TANGN.y,f:function(){var T=TANGN;person(T,{shirt:'#3d6fb5',hair:'#23232e',glass:1},T.mv);var px=T.x-camx,py=T.y-camy;cx.font='bold 7px sans-serif';cx.textAlign='center';cx.fillStyle='#fff';cx.fillText('唐老师',px,py-22);if(T.bub)drawBub(T,py-26);
+    var c=S.q.xz.cur;if(c&&qDone(c)){cx.fillStyle='#f6c744';cx.font='bold 10px sans-serif';cx.fillText('?',px,py-31-Math.abs(Math.sin(tAnim*4))*2)}}});
+  if(S.ret)drawRetirees(ents)};
+function tangNMenu(){var c=S.q.xz.cur,o=[];
+  o.push({l:'收唐老师交的指令',s:c?(qDone(c)?'材料齐了，可以交差':'还没凑齐：'+Object.keys(c.need).filter(function(k){return own(k)<c.need[k]}).map(function(k){return IT[k][0]}).join('、')):'给他布置一条新指令',r:c&&qDone(c)?'收':'',pri:!!(c&&qDone(c)),f:function(){talkNPC('xz')}});
+  if(S.praD!==S.day)o.push({l:'表扬唐老师',s:'每天一次',f:function(){S.praD=S.day;save();say('姜校长',[ppick(['“唐老师，最近表现不错。”','“唐老师，你是我们学校的骄傲。”','“唐老师，继续保持。……别骄傲。”'])],function(){say('唐老师',[ppick(['（唐老师脸红了）“谢谢校长！”','“为校长服务！”','（唐老师偷偷在本子上记下：校长表扬我了。）'])])})}});
+  o.push({l:'👨‍🏫 换回唐老师',f:switchJ});o.push({l:'没事'});
+  menu('唐老师',ppick(TANGL),o,true)}
+var _ts26=tapSpecial;tapSpecial=function(tx,ty,w){if(S.asJ&&Math.hypot(TANGN.x-w.x,TANGN.y-9-w.y)<16){PL.path=[];tangNMenu();return true}return _ts26(tx,ty,w)};
+
+/* 视察：姜校长走到建筑旁边点开，干劲 +30%，持续 2 小时 */
+function inspRow(b){var on=b.insU>nowAbs(),done=b.insD===S.day;
+  return{l:'🔍 校长视察',s:on?'视察效果中：干劲 +30%，还剩 '+Math.ceil((b.insU-nowAbs())/60*10)/10+' 小时':done?'今天已经视察过这里了':'机器干劲 +30%，持续 2 小时（每栋每天一次）',r:on||done?'':'视察',pri:!on&&!done,dis:on||done,why:on?'正在视察效果中':'明天再来',
+    f:function(){b.insD=S.day;b.insU=nowAbs()+120;save();var c=bcenter(b);runtime.floats.push({t:'校长视察 干劲+30%',x:c.x,y:b.y*TS,l:2.5});
+      for(var i=0;i<6;i++)runtime.parts.push({x:c.x+rnd(-8,8),y:b.y*TS+4,vx:rnd(-8,8),vy:-22,g:0,l:1.2,c:'#ffd34a',s:3,pop:1});
+      toast(ppick(['牛马们看见校长来了，干得飞快','机器好像也转得更起劲了','有人小声说：“校长来了，快干活！”']))}}}
+var _bm26=bldMenu;bldMenu=function(b){runtime.bm26=b;try{_bm26(b)}finally{runtime.bm26=null}};
+var _menu26=menu;menu=function(t,h,o,nc){var b=runtime.bm26;if(b&&o&&S.asJ){runtime.bm26=null;var d=BD[b.t];if(d&&d.t&&b.t!=='canteen')o.unshift(inspRow(b))}return _menu26(t,h,o,nc)};
+var _ms26=typeof magicSpd==='function'?magicSpd:function(){return 1};magicSpd=function(b){return _ms26(b)*(b.insU&&b.insU>nowAbs()?1.3:1)};
+
+/* ============ 毕业生取代牛马：上路运货、牛马光荣退休 ============ */
+CNT.grad='grad';ANM.grad='毕业生';
+AQ.grad=['我是毕业生，我搬的是知识……和木头。','姜老师说，劳动最光荣。','等我攒够钱，我要给姜老师买花。','牛马前辈退休了，现在换我们上。','毕业证上写着“牛马（合格）”，我很自豪。','唐老师好帅！……我是说，这车货好重。'];
+AQ.rcow=['退休了，每天晒太阳。','以前拉货，现在拉家常。','毕业生们干得不错，我放心了。','哞……养老真好。'];AQ.rhorse=['退休的马，跑得比以前还快——去食堂。','我在看夕阳。','现在年轻人都坐传送带了。'];
+var _ar26=animalRaw;animalRaw=function(e,carry){var k=e.k;
+  if(k==='grad'){var px=Math.round(e.x-camx),py=Math.round(e.y-camy),mv=!!(e.path&&e.path.length&&!(e.wait>0)),fr=mv?Math.floor(tAnim*10)%2:0,fl=e.fx<0?-1:1;
+    rect(px-3+(fr?1:0),py-3,2,3,'#2a2a3a');rect(px+1-(fr?1:0),py-3,2,3,'#2a2a3a');rect(px-3,py-9,6,6,'#2c4f86');rect(px-3,py-9,6,1,'#3a64a8');
+    rect(px-3,py-15,6,6,'#f1c9a5');rect(px-3,py-16,6,2,'#2a2a34');rect(px-4,py-17,8,2,'#1e2a40');rect(px+(fl>0?2:-3),py-12,1,1,'#222');rect(px+3,py-16,1,3,'#ffd34a');
+    if(carry){rect(px-3,py-22,7,5,'#6a4a2a');rect(px-2,py-21,5,3,carry);rect(px-4,py-14,1,4,'#f1c9a5');rect(px+4,py-14,1,4,'#f1c9a5')}return}
+  if(k==='rcow'||k==='rhorse'){var e2=Object.assign({},e,{k:k==='rcow'?'cow':'horse'});_ar26(e2,null);var hx=Math.round(e.x-camx)+(e.fx<0?-7:2),hy=Math.round(e.y-camy)-(k==='rcow'?15:17);
+    rect(hx-1,hy+2,8,1,'#e8c060');rect(hx+1,hy,4,2,'#f0d070');rect(hx+1,hy+1,4,1,'#c84a3a');return}
+  _ar26(e,carry)};
+S.ret=S.ret||{cow:0,horse:0};
+var RETS=[];
+function drawRetirees(ents){var want=[];for(var i=0;i<Math.min(6,S.ret.cow||0);i++)want.push('rcow');for(var j=0;j<Math.min(6,S.ret.horse||0);j++)want.push('rhorse');
+  while(RETS.length>want.length)RETS.pop();
+  want.forEach(function(k,i){var r=RETS[i];if(!r||r.k!==k){var p=ambSpot([10,32,10,34]);r=RETS[i]={k:k,x:p[0]*TS+8,y:p[1]*TS+10,fx:1,path:[],wait:Math.random()*4,q:AQ[k]}}
+    ents.push({y:r.y,f:function(){animal(r)}})})}
+function retStep(dt){RETS.forEach(function(r){if(r.bub){r.bub.l-=dt;if(r.bub.l<=0)r.bub=null}else if(Math.random()<0.002)r.bub={t:ppick(r.q),l:3};
+  if(r.path.length){var n=r.path[0],tx=n[0]*TS+8,ty=n[1]*TS+10,dx=tx-r.x,dy=ty-r.y,m=Math.hypot(dx,dy),sp=8*dt;if(m<=sp){r.x=tx;r.y=ty;r.path.shift()}else{r.x+=dx/m*sp;r.y+=dy/m*sp;r.fx=dx>0?1:-1}return}
+  r.wait-=dt;if(r.wait>0)return;r.wait=5+Math.random()*8;var gx=Math.floor(r.x/TS+rnd(-3,3)),gy=Math.floor(r.y/TS+rnd(-2,2));if(walkable(gx,gy)){var p=route(Math.floor(r.x/TS),Math.floor(r.y/TS),function(x,y){return x===gx&&y===gy},walkable);if(p&&p.length<12)r.path=p}})}
+function retireAni(k){var nm=k==='cow'?'牛':'马';if(aniIdle(k)<1)return;S[CNT[k]]--;S.ret[k]=(S.ret[k]||0)+1;save();
+  var first=(S.ret.cow||0)+(S.ret.horse||0)===1;
+  say(S.end?'姜校长':'姜主任',first?['“今天，我们为第一位光荣退休的'+nm+'举行欢送仪式。”','“它为牛马谷拉过木头、运过石头，任劳任怨。”','“以后运货交给毕业生和传送带，它就在村里晒太阳、养老。”','（'+nm+'戴上了一顶小草帽，看起来很满意。）']:['“又一位'+nm+'光荣退休，感谢它的付出。”'],function(){aniMenu()})}
+var _am26=aniMenu;aniMenu=function(){runtime.am26=1;try{_am26()}finally{runtime.am26=0}};
+var _menu26b=menu;menu=function(t,h,o,nc){if(runtime.am26&&o&&t==='牛马市场'){runtime.am26=0;
+    if(S.grad>0||S.end){o.push({hdr:'光荣退休（毕业生多了，牛马可以退休养老）'});['cow','horse'].forEach(function(k){var nm=k==='cow'?'牛':'马',fz=aniIdle(k);if(!(S[CNT[k]]>0))return;
+      o.push({l:'🎖️ 让一'+(k==='cow'?'头牛':'匹马')+'光荣退休',s:fz>0?'空闲的'+nm+' '+fz+' · 退休后戴草帽在村里溜达，不占名额，也不用干活':'没有空闲的'+nm+'：先从建筑或路上撤下来',r:'退休',dis:fz<1,why:'正在干活的不能退休，先撤下来',keep:1,f:function(){retireAni(k)}})});
+      var rt=(S.ret.cow||0)+(S.ret.horse||0);if(rt)o.push({l:'已退休：牛 '+(S.ret.cow||0)+'、马 '+(S.ret.horse||0),s:'它们在村里晒太阳',dis:true,why:'退休了，不回来上班',f:function(){}})}
+    h=(h||'')+(S.grad>0?'<br><small>毕业生也能上路运货：在建筑菜单的路线那里点“＋毕业生”。</small>':'')}
+  return _menu26b(t,h,o,nc)};
+/* 毕业生够多时，提示一次：牛马可以退休了 */
+var _g26=game2Step;game2Step=function(dt){_g26(dt);retStep(dt);tangNStep(dt);
+  if(!S.retTip&&S.grad>=3&&S.cows+S.horses>0&&!busy()&&!SC&&!runtime.offline){S.retTip=1;say(S.end?'姜校长':'姜主任',['“唐老师，毕业生越来越多了。”','“他们能上路运货，进工坊也比牛马快。”','“牛马辛苦了一辈子，可以考虑让它们光荣退休了。”','（在“牛马”菜单里可以让空闲的牛马退休；在建筑的路线那里可以派毕业生运货。）'])}};
+var _hud26=hud;hud=function(){_hud26();swBtnUpd()};
+</script>
+<script>
 /* 牛马谷 · 18-main.js — 仓库详情、主循环、存档导出导入、网页应用更新、启动 */
 'use strict';
 /* ============ 仓库详情（点右上角） ============ */
@@ -4058,7 +4189,7 @@ function invMenu(){
   var fr=cowsFree(),wc=0,wh=0;S.bld.forEach(function(b){wc+=b.w.cow||0;wh+=b.w.horse||0});
   var rc=(S.hl||[]).filter(function(h){return h.k==='cow'}).length,rh=(S.hl||[]).length-rc;
   var ani='<div style="margin-top:8px;font-weight:bold;color:#7a5a2a">牛马（上限 '+aniCap()+'）</div><div style="font-size:12px;line-height:1.6">牛 '+S.cows+'：干活 '+wc+'、运货 '+rc+'、空闲 '+fr[0]+'<br>马 '+S.horses+'：干活 '+wh+'、运货 '+rh+'、空闲 '+fr[1]+
-    ((S.dairy||S.hens||S.sheep)?'<br>牧场：奶牛 '+(S.dairy||0)+'、鸡 '+(S.hens||0)+'、羊 '+(S.sheep||0)+'（容量 '+livCap()+'）':'')+((S.dogs||S.cats)?'<br>宠物：狗 '+(S.dogs||0)+'、猫 '+(S.cats||0):'')+'</div>';
+    (livTot()?'<br>牧场：'+LIV.filter(function(z){return S[CNT[z.k]]}).map(function(z){return z.n+' '+S[CNT[z.k]]}).join('、')+'（容量 '+livCap()+'）':'')+((S.dogs||S.cats)?'<br>宠物：狗 '+(S.dogs||0)+'、猫 '+(S.cats||0):'')+'</div>';
   menu('仓库详情','总数 '+fmt(tot)+' · 每样最多放 '+c+'（价格是小卖部现价）'+html+ani,[
     {l:'管理仓库',s:'卖货、扩容、进出口和运货牛马',r:'打开',keep:1,f:function(){whMenu()}},
     {l:'牛马市场',s:'买牛马、看解锁',r:'打开',keep:1,f:function(){aniMenu()}}]);
@@ -4158,7 +4289,7 @@ function restoreView(){var bk=bakInfo();if(!bk){saveMenu();return}
 /* 点左上角指令栏：打开指令面板（领导指令 + 紧急通知） */
 var trkArrow=false;$('#trk').addEventListener('pointerdown',function(e){trkArrow=!!(e.target.closest&&e.target.closest('.tka'))});
 function trkSet(v){try{localStorage.setItem('niumagu-trk',v?'1':'0')}catch(e){}$('#trk')._h='';trk()}
-tapBind($('#trk'),function(){if(busy())return;if($('#trk').classList.contains('mini')){trkSet(0);return}if(trkArrow){trkSet(1);return}if(S.end&&typeof storyPanel==='function')storyPanel();else taskPanel()});
+tapBind($('#trk'),function(){if(busy())return;if($('#trk').classList.contains('mini')){trkSet(0);return}if(trkArrow){trkSet(1);return}if(S.end&&MG_OPEN&&typeof storyPanel==='function')storyPanel();else taskPanel()});
 /* 右边的 ＋ / － ：放大缩小地图 */
 (function(){var box=document.createElement('div');box.id='zoomb';document.body.appendChild(box);
   [['＋',1],['－',-1]].forEach(function(q){var bt=document.createElement('button');bt.type='button';bt.className='pill';bt.textContent=q[0];box.appendChild(bt);

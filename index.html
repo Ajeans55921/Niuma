@@ -56,7 +56,7 @@ window.addEventListener('error',function(e){try{if(window.__nmErr)return;window.
   d.innerHTML='<b>游戏出错了</b>（存档还在，不会丢）<br>请截图发给开发者：<br><small style="word-break:break-all">'+String(e.message||e).slice(0,160)+'<br>'+String(e.filename||'').split('/').pop()+':'+(e.lineno||'')+'</small><br><button type="button" style="margin-top:8px;font-size:15px;padding:6px 12px;border-radius:8px;border:2px solid #5a2a1a;background:#ffe28a">检查有没有修好的新版本</button>';document.body.appendChild(d);
   d.querySelector('button').onclick=function(){var t=this,sw=navigator.serviceWorker;if(!sw||!sw.controller){location.reload();return}t.textContent='正在检查…';
     sw.addEventListener('message',function(m){var x=m.data||{};if(x.type==='nm-update')location.reload();else if(x.type==='nm-none')t.textContent='还没有新版本，过一会儿再点';else if(x.type==='nm-fail')t.textContent='连不上网，检查网络后再点'});sw.controller.postMessage({type:'nm-check'})}}catch(_){}});
-var NMBUILD='0.51'; /* 版本号：每次改游戏都要改这里 */
+var NMBUILD='0.52'; /* 版本号：每次改游戏都要改这里 */
 /* 游戏代码文件，按这个顺序加载。顺序不能乱：后面的文件会用到、甚至改写前面文件里的东西 */
 var NMJS=[];
 </script>
@@ -2584,8 +2584,9 @@ var UPDT='<b>进出口和路上运输</b>取代了运输队；<b>牛马市场</b
 /* ============ 更新公告：每次发新版本，在最上面加一条（v 要和 NMBUILD 一样） ============
    by：这次是听谁的指导；add 新增、chg 调整、fix 修复 */
 var NMLOG=[
- {v:'0.51',d:'11月14日',by:'姜布利多校长',w:'「保密工作无小事」',chg:['魔法学校改到<b>转正大会之后</b>才开放：转正后的第二天早上，一匹天马送来密信，姜校长把成绩最好的 10 名学生叫进办公室：“你们被选中了，这件事不要告诉唐老师。”','转正之前，东边路口还是去加班荒原；转正之后改通魔法学校，荒原从迷雾林进','魔法学校画面<b>重新画了</b>：城堡有尖顶塔楼、玫瑰窗、钟楼、学院旗帜和大门火把；室内有彩色玻璃窗、照进来的光、火把、护墙板、花纹地毯和石板地'],add:['魔法学校有了<b>春夏秋冬</b>（每 7 天换一季）：春天飘花瓣、夏夜有萤火虫、秋天落叶、<b>冬天下雪</b>，湖面结冰，屋顶和塔尖积雪，树也跟着变']},
- {v:'0.50',d:'11月14日',by:'姜布利多校长',w:'「开门办学、魔法赋能」',add:['<b>第二张地图：魔法学校</b>（第一部分）。原来去加班荒原的东边路口，现在通往魔法学校；加班荒原改从城堡外的<b>迷雾林</b>进去','在魔法学校里你是<b>姜同学</b>，唐同学一直跟在身后','能去的地方：船坞、城堡外（钟楼庭院、石桥、镜湖、魔法温室、飞行场、魔法牧场、唐老师的小木屋、魔法小卖部）、门厅、礼堂、变幻楼梯大厅、三层走廊、魔咒课教室、地下走廊、魔药教室、金牛院宿舍、变形课教室','每张地图会<b>记住你的位置</b>；右上角“回牛马谷”随时回去，下次从原地接着走','老师全都姓姜、长得一样，只能靠配饰认；宿舍门口的画像要说口令（官话）'],chg:['分院仪式、上课、宵禁巡逻、会转的楼梯、两边资源互通：下一步再做']},
+ {v:'0.52',d:'11月14日',by:'姜董事',w:'「保密工作无小事」',add:['🔮 某个神秘的新内容还在秘密建设中……<b>敬请期待</b>']},
+ {v:'0.51',d:'11月14日',by:'姜校长',w:'「保密工作无小事」',add:['🔮 某个神秘的新内容还在秘密建设中……<b>敬请期待</b>']},
+ {v:'0.50',d:'11月14日',by:'姜校长',w:'「守口如瓶」',add:['🔮 某个神秘的新内容还在秘密建设中……<b>敬请期待</b>']},
  {v:'0.45',d:'11月14日',by:'姜经理',w:'「人尽其才、物畅其流」',fix:['运货的牛马手上的货<b>送不出去</b>（比如仓库草料满了）就一直扛着不动；现在等一会儿会把多的货<b>半价卖掉</b>，接着干活','运货的牛马<b>点不中</b>（站在进出口上时点到的是建筑）；现在点它身上就能打开它的菜单，拆除模式下点它也能收回']},
  {v:'0.44',d:'11月14日',by:'姜主任',w:'「温暖关怀、细节育人」',chg:['宿舍的床改短了，学生睡觉时<b>裹成圆圆的一团</b>，只露出小脑袋，被子还会随呼吸一鼓一鼓']},
  {v:'0.43',d:'11月14日',by:'姜主任',w:'「改善伙食、关爱学生」',add:['食堂加了一道菜：<b>牛肉</b>🥩。在食堂菜单里<b>采购</b>，每份 12 银币（比外面买饭便宜），吃到牛肉的学生到下一顿学习快 20%'],chg:['宿舍里睡觉的学生改成了<b>可爱的样子</b>：圆脑袋、闭着眼、红脸蛋，盖着小花被子']},
@@ -3341,6 +3342,7 @@ mgRender=function(){var m=SC.map,pal=m.pal,MW=m.w*TS,MH=m.h*TS;
   for(var y2=y0;y2<=y1;y2++)for(var x2=x0;x2<=x1;x2++)if(m.g[y2*m.w+x2]===MGT.TREE)(function(x,y){ents.push({y:(y+1)*TS-1,f:function(){mgTree(x,y)}})})(x2,y2);
   m.props.forEach(function(p){ents.push({y:(p.y+p.h)*TS+(p.flatY||0),f:function(){mgDrawProp(m,p,p.x*TS-camx,p.y*TS-camy)}})});
   m.npcs.forEach(function(n){ents.push({y:n.y,f:function(){if(n.look==='tang')person(n,{shirt:'#3d6fb5',hair:'#23232e',glass:1},n.mv);else drawJiang(n,JLOOK[n.look],n.mv);if(n.bub)drawBub(n,n.y-camy-24)}})});
+  if(typeof mgExtraEnts==='function')mgExtraEnts(m,ents);
   ents.push({y:SC.fl.y,f:function(){drawStu(SC.fl,'#23232e',0,myScarf(),SC.fl.mv,0);if(SC.fl.bub)drawBub(SC.fl,SC.fl.y-camy-24)}});
   ents.push({y:SC.py,f:function(){drawStu({x:SC.px,y:SC.py,fx:SC.fx},'#3a2622',1,myScarf(),SC.mv,0)}});
   ents.sort(function(a,b){return a.y-b.y});ents.forEach(function(e){e.f()});
@@ -3438,6 +3440,150 @@ function _mt22Detail(m,x,y,px,py,se,h){
   if(se===2&&h>800){rect(px+(h%11)+2,py+(h%7)+3,2,1,['#e8702a','#c8402a','#f0b030'][h%3]);rect(px+(h%9)+5,py+(h%5)+9,1,2,['#c8402a','#e8702a'][h%2])}}
 /* 地图名放到顶部信息栏下面，不被挡住 */
 var _mr22=mgRender;mgRender=function(){var keep=cx.fillText;_mr22();var m=SC.map,y=Math.round(190/scaleCss);cx.font='bold 8px sans-serif';cx.textAlign='center';rect(VW/2-50,y-9,100,12,'#00000090');cx.fillStyle='#fff';cx.fillText('✨ '+m.name+(m.out?' · '+SEAN[season()]+'天':''),VW/2,y)};
+</script>
+<script>
+/* 牛马谷 · 23-magic-class.js — 魔法学校第 3 步：分院仪式、同学、课表、上课小游戏、属性、学院分
+   ⚠️ 魔法学校的内容先保密：更新公告里只写“敬请期待”，等作者说可以了再写。 */
+'use strict';
+/* ============ 同学（8 个，名字都是原创） ============ */
+var MATES=[
+  {id:'yan',n:'严书言',t:'学霸',h:'ma',hair:'#23232e',long:0,glass:1,lines:['“课表我已经背下来了，连姜老师们的配饰我都做了表格。”','“考试？我已经预习到第三学年了。”']},
+  {id:'bao',n:'包大饱',t:'吃货',h:'niu',hair:'#6a4a2a',long:0,lines:['“礼堂的饭比牛马谷食堂好吃一点点……就一点点。”','“厨房在地下，我闻得出来。”']},
+  {id:'su',n:'苏小怯',t:'胆小',h:'quan',hair:'#3a2622',long:1,lines:['“你、你受伤了吗？我会治疗咒……虽然我很怕血。”','“姜管理员的猫刚才看了我一眼……”']},
+  {id:'chen',n:'陈叨叨',t:'话痨',h:'mao',hair:'#3a2622',long:1,lines:['“我跟你说，我听说姜防御每年都换人，但换来的还是姜！”','“唐老师在牧场数牛，数到一半又从头数，我看了一下午。”','“听说四楼有个检讨室，只有带着检讨书才能看见门。”']},
+  {id:'feng',n:'风一阵',t:'运动健将',h:'ma',hair:'#23232e',long:0,lines:['“飞行课什么时候上？我等不及了！”','“我骑天马绕城堡一圈只要三分钟。”']},
+  {id:'jin',n:'金多多',t:'富二代',h:'mao',hair:'#c8a040',long:0,lines:['“哼，我家的魔杖是定制的。”','“……你上次魔药课做得还行。就还行。”']},
+  {id:'mi',n:'米糊糊',t:'迷糊',h:'quan',hair:'#6a4a2a',long:1,lines:['“浮浮浮起来——咦，怎么沉下去了？”','“我把咒语念反了，现在我的作业在湖底。”']},
+  {id:'mo',n:'墨无言',t:'神秘转学生',h:'niu',hair:'#14141c',long:0,lines:['“……”','“这座城堡，比你们想的要老。”']}
+];
+function mgS(){S.mg.st=S.mg.st||{mp:0,kn:0,hp:0,soc:0};S.mg.done=S.mg.done||{};S.mg.pts=S.mg.pts||{niu:0,ma:0,quan:0,mao:0};return S.mg}
+var STN={mp:'魔力',kn:'学识',hp:'体力',soc:'人缘'};
+
+/* ============ 分院老黄牛（站在礼堂老师桌前面） ============ */
+var _mb23=mgBuild;mgBuild=function(id){var fresh=!MGM[id],m=_mb23(id);
+  if(fresh&&id==='great')mgNpc(m,'ox',11,5,{look:'ox',still:1,lines:['“哞。我闻过一千个新生了。”','“你身上有牛马谷的味道。哞，熟悉。”','“唐同学身上有饼干味。”']});
+  if(fresh&&id==='out')mgNpc(m,'fly2',32,22,{look:'fly',still:1,cls:'fly',lines:['“飞行课在这里上。骑天马要先系安全带！”']});
+  return m};
+function drawOx(n){var a={x:n.x,y:n.y,k:'cow',fx:-1,mv:0};animal(a);var px=Math.round(n.x-camx),py=Math.round(n.y-camy);
+  rect(px-12,py-16,10,2,'#5a3a24');rect(px-10,py-19,6,3,'#5a3a24');rect(px-9,py-23,4,4,'#5a3a24');rect(px-8,py-26,2,3,'#5a3a24');rect(px-10,py-17,6,1,'#ffd34a')}
+
+/* ============ 分院仪式 ============ */
+function sortingStart(){mgS();if(S.mg.house)return;var Q=[
+   ['分院老黄牛：“哞。先回答我三个问题。第一个：你更想要哪一样？”',[['一身使不完的力气','niu'],['一个答案永远正确的脑子','ma'],['一个永远不会背叛你的朋友','quan'],['一扇只有你知道的暗门','mao']]],
+   ['分院老黄牛：“第二个：考试前一晚，你在干什么？”',[['去操场跑十圈，练体力','niu'],['把书背了三遍','ma'],['帮同学划重点','quan'],['研究怎么溜进禁书区','mao']]],
+   ['分院老黄牛：“第三个：发现姜老师们都长一样，你第一反应是？”',[['直接冲上去问','niu'],['默默记下每个人的配饰','ma'],['谁都叫“老师”，绝不出错','quan'],['怀疑她们是同一个人','mao']]]],sc={niu:0,ma:0,quan:0,mao:0},qi=0;
+  say('姜副校长',['“新生排好队。分院老黄牛会闻一闻你们，然后告诉你们去哪个学院。”'],function(){
+   say('唐同学',['（小声）“闻一闻？它会不会把我吃了？”'],function(){
+    say('分院老黄牛',['“哞。我吃素。”'],function(){
+     var ann=MATES.map(function(p){return '（老黄牛闻了闻'+p.n+'）“哞——'+HOUSES[p.h].n+'！”'+(p.id==='mo'?'（它闻了很久，眉头皱了起来）':'')});
+     say('',ann,function(){say('分院老黄牛',['“下一个：姜同学。”','（它凑过来闻了闻你，打了个喷嚏。）'],ask)})})})});
+  function ask(){if(qi>=Q.length){done();return}var q=Q[qi++];menu('分院仪式',q[0],q[1].map(function(o){return{l:o[0],f:function(){sc[o[1]]++;ask()}}}),true)}
+  function done(){var best='niu',bv=-1;['niu','ma','quan','mao'].forEach(function(h){var v=sc[h]+Math.random()*0.5;if(v>bv){bv=v;best=h}});S.mg.house=best;S.mg.pts[best]+=10;save();
+   var H=HOUSES[best];
+   say('分院老黄牛',['“哞——'+H.n+'！”'],function(){
+    say('',[H.n+'的长桌那边欢呼起来，有人给你围上了'+H.n+'的围巾。'],function(){
+     say('分院老黄牛',['（它闻了闻唐同学）“……哞，这个跟着前面那个。'+H.n+'！”'],function(){
+      say('唐同学',['“太好了！姜同学，以后我还跟着你！”'],function(){
+       say('姜布利多校长',['“分院结束。欢迎你们，新生们。”','“课表在右上角的“课表”里。上课别迟到——尤其是魔药课。”','“好了，开饭！”'],function(){toast('你被分到了'+H.n+'！');mgTimetable()})})})})})}}
+/* 进礼堂就开始（还没分院时） */
+var _mg23=mgGo;mgGo=function(id,tx,ty,silent){_mg23(id,tx,ty,silent);if(id==='great'&&S.mg&&!S.mg.house&&!busy())setTimeout(function(){if(SC&&SC.kind==='mg'&&SC.map.id==='great'&&!S.mg.house&&!busy())sortingStart()},300)};
+
+/* ============ 课表：周一到周五，上午 9:00–11:00、下午 14:00–16:00；周末休息 ============ */
+var CLS={trans:{n:'变形课',room:'trans',t:'vice',st:'mp'},potion:{n:'魔药课',room:'potion',t:'potion',st:'kn'},charm:{n:'魔咒课',room:'charm',t:'charm',st:'mp'},herb:{n:'草药课',room:'green',t:'herb',st:'kn'},fly:{n:'飞行课',room:'out',t:'fly',st:'hp'}};
+var WEEK=[['trans','potion'],['charm','herb'],['fly','trans'],['potion','charm'],['herb','fly'],null,null],WDN=['周一','周二','周三','周四','周五','周六','周日'];
+var SLOT=[[9,11],[14,16]];
+function wday(){return((S.day||1)-1)%7}
+function clsNow(){var w=WEEK[wday()],hr=(S.t/60)%24;if(!w)return null;for(var i=0;i<2;i++)if(hr>=SLOT[i][0]-0.25&&hr<SLOT[i][1])return{c:w[i],slot:i,late:hr>SLOT[i][0]+0.5,key:S.day+'-'+i};return null}
+function mgTimetable(){mgS();var w=WEEK[wday()],hr=(S.t/60)%24,cn=clsNow(),st=S.mg.st,H=S.mg.house&&HOUSES[S.mg.house],p=S.mg.pts;
+  var today=w?w.map(function(c,i){var k=S.day+'-'+i,dn=S.mg.done[k];return (i?'下午 14:00':'上午 9:00')+' '+CLS[c].n+'（'+mgBuild(CLS[c].room).name.replace(/（.*）/,'')+'）'+(dn?' ✅ '+dn+' 分':(hr>=SLOT[i][1]?' ❌ 没上':''))}).join('<br>'):'周末不上课，可以随便逛（魔法小卖部周末集市还没开张）';
+  var rank=['niu','ma','quan','mao'].sort(function(a,b){return p[b]-p[a]}).map(function(h,i){return (i+1)+'. '+HOUSES[h].n+' '+p[h]+(h===S.mg.house?' ← 你':'')}).join('　');
+  menu('📅 课表 · 第 '+S.day+' 天（'+WDN[wday()]+'）',(H?'<b style="color:'+H.c+'">'+H.n+'</b> · ':'还没分院（去礼堂）· ')+'魔力 '+st.mp+' · 学识 '+st.kn+' · 体力 '+st.hp+' · 人缘 '+st.soc+
+    '<br><br><b>今天</b><br>'+today+(cn&&!S.mg.done[cn.key]?'<br><b style="color:#c4442a">现在：'+CLS[cn.c].n+(cn.late?'（已经迟到了！）':'')+' → 去'+mgBuild(CLS[cn.c].room).name+'找姜老师</b>':'')+
+    '<br><br><b>学院杯</b><br>'+rank+
+    '<br><br><small>一周课表：'+WEEK.map(function(d,i){return WDN[i]+' '+(d?CLS[d[0]].n+'/'+CLS[d[1]].n:'休息')}).join('；')+'</small>',
+    (cn&&!S.mg.done[cn.key]&&S.mg.house?[{l:'带我去上课',s:CLS[cn.c].n,pri:1,f:function(){mgGoClass(cn.c)}}]:[]).concat([{l:'关闭'}]))}
+function mgGoClass(c){var r=CLS[c].room,m=mgBuild(r);if(SC.map.id===r){toast('就在这里，找'+JLOOK[CLS[c].t].n+'说话');return}
+  var d=m.doors[0];var tx=d.x,ty=d.y;for(var q=0;q<4;q++){var nx=d.x+DX[q],ny=d.y+DY[q];if(nx>=0&&ny>=0&&nx<m.w&&ny<m.h&&!MGSOLID[m.g[ny*m.w+nx]]){tx=nx;ty=ny;break}}
+  if(c==='fly'){tx=31;ty=24}mgGo(r,tx,ty);toast('（唐同学：“快快快，要迟到了！”）')}
+
+/* ============ 上课：找老师说话就开始 ============ */
+var _mt23=mgTalk;mgTalk=function(n){mgS();
+  if(n.look==='ox'){if(!S.mg.house)sortingStart();else say('分院老黄牛',[ppick(n.lines)]);return}
+  if(n.mate){var p=n.mate;S.mg.st.soc=Math.min(999,S.mg.st.soc+(S.mg.chat&&S.mg.chat[p.id]===S.day?0:1));S.mg.chat=S.mg.chat||{};S.mg.chat[p.id]=S.day;say(p.n+'（'+p.t+' · '+HOUSES[p.h].n+'）',[ppick(p.lines)]);return}
+  var cn=clsNow();
+  if(cn&&S.mg.house&&!S.mg.done[cn.key]&&CLS[cn.c].t===n.look&&CLS[cn.c].room===SC.map.id){startClass(cn);return}
+  if(cn&&!S.mg.house&&CLS[cn.c].t===n.look){say(JLOOK[n.look].n,['“新生先去礼堂分院，分完院再来上课。”']);return}
+  _mt23(n)};
+function startClass(cn){var c=cn.c,T=JLOOK[CLS[c].t].n,late=cn.late;
+  var go=function(){MINI[c](function(score){finishClass(cn,score)})};
+  if(late&&c==='potion'){S.mg.pts[S.mg.house]=Math.max(0,S.mg.pts[S.mg.house]-5);say(T,['“迟到。'+HOUSES[S.mg.house].n+'扣 5 分。”','“坐下。”'],go);return}
+  if(late){say(T,['“迟到了。下不为例。”'],go);return}
+  say(T,[{trans:'“今天练习变形：看清楚我的动作顺序，然后照着做。”',potion:'“今天熬一锅提神药水。按配方加材料，顺序错了会炸。”',charm:'“今天练习飘浮咒。注意，咒语念错一个字，后果自负。”',herb:'“今天给尖叫萝卜换盆。拔的时候要看准时机，不然它会尖叫。”',fly:'“哔——！今天练习骑天马穿圆环，看准了再冲！”'}[c]],go)}
+function finishClass(cn,score){var c=cn.c,s=mgS(),st=CLS[c].st,pts=score*5;s.done[cn.key]=score;s.st[st]+=score;if(c==='fly')s.st.hp+=1;s.pts[s.house]+=pts;save();
+  var T=JLOOK[CLS[c].t].n,cm=score>=3?'“满分！'+HOUSES[s.house].n+'加 '+pts+' 分。”':score===2?'“不错。加 '+pts+' 分。”':score===1?'“还行吧。加 '+pts+' 分。”':'“……下次努力。”';
+  var tq=score>=3?'唐同学：“姜同学你太厉害了！”':score===0?'唐同学：“没事没事，我也不会。”':'唐同学：“我只拿了一分……”';
+  say(T,[cm],function(){say('',[tq,STN[st]+' +'+score+(c==='fly'?'，体力 +1':'')])})}
+
+/* ============ 小游戏 ============ */
+var MINI={};
+/* 变形课：记住顺序（看 2 秒，再按顺序点） */
+MINI.trans=function(cb){var pool=['🫖','🐄','🐎','🕯️','📕','🐈'],round=0,score=0;
+  function next(){if(round>=3){cb(score);return}round++;var n=2+round,seq=[];for(var i=0;i<n;i++)seq.push(pick(pool));
+    menu('变形课 · 第 '+round+'/3 轮','<div style="font-size:30px;text-align:center;letter-spacing:6px">'+seq.join('')+'</div><p style="text-align:center">记住顺序！</p>',[],true);
+    setTimeout(function(){var got=[];function pickOne(){menu('变形课 · 第 '+round+'/3 轮','按刚才的顺序点（'+got.length+'/'+n+'）：<div style="font-size:24px;text-align:center">'+got.join('')+'</div>',pool.map(function(e){return{l:'<span style="font-size:22px">'+e+'</span>',keep:1,f:function(){got.push(e);if(got.length<n){pickOne();return}var ok=got.join('')===seq.join('');if(ok)score++;toast(ok?'✨ 变形成功！':'💥 变成了一头'+pick(['会说话的茶杯','长角的蜡烛','穿裙子的牛']));next()}}}),true)}pickOne()},1600+round*400)}
+  next()};
+/* 魔药课：按配方顺序加材料 */
+MINI.potion=function(cb){var ING=[['🥛','牛奶'],['🍎','水果'],['🧶','羊毛'],['🌿','草药'],['🥚','鸡蛋'],['🔄','搅拌']],round=0,score=0;
+  function next(){if(round>=3){cb(score);return}round++;var n=2+round,rec=[];for(var i=0;i<n;i++)rec.push(pick(ING));var got=0,bad=false;
+    function step(){menu('魔药课 · 第 '+round+'/3 锅','配方：'+rec.map(function(r,i){return (i<got?'<s>':'')+r[0]+r[1]+(i<got?'</s>':'')}).join(' → ')+'<br><small>按顺序加，加错就炸</small>',ING.map(function(r){return{l:r[0]+' '+r[1],keep:1,f:function(){if(r[0]===rec[got][0]){got++;if(got>=n){score++;toast('🧪 药水冒出了漂亮的泡泡！');next()}else step()}else{toast('💥 砰！锅炸了，'+pick(['姜魔药的眉毛被熏黑了','唐同学的头发竖起来了','坩埚飞到了天花板上']));next()}}}}),true)}step()}
+  next()};
+/* 魔咒课：选出正确的咒语（米糊糊老念错的那种） */
+MINI.charm=function(cb){var SP=[['飘浮咒','浮浮浮起来',['浮起来浮浮','服服服气来','浮浮浮沉下']],['开锁咒','芝麻开一下',['芝麻关一下','麻芝开一下','芝麻开两下']],['照明咒','亮亮亮起来',['亮起来亮亮','凉凉凉起来','亮亮亮下去']],['加速咒','快快快快快',['快快快快慢','块块块块块','快快快乐乐']],['安静咒','嘘嘘别说话',['嘘嘘说别话','虚虚别说话','嘘嘘别睡觉']]],round=0,score=0,used=[];
+  function next(){if(round>=3){cb(score);return}round++;var sp;do{sp=pick(SP)}while(used.indexOf(sp)>=0);used.push(sp);var opts=[sp[1]].concat(sp[2]).sort(function(){return Math.random()-0.5});
+    menu('魔咒课 · 第 '+round+'/3 题','姜魔咒：“'+sp[0]+'的咒语是哪一句？”',opts.map(function(o){return{l:'“'+o+'”',keep:1,f:function(){if(o===sp[1]){score++;toast('✨ 念对了！')}else toast('💥 念错了：'+pick(['羽毛沉到了地板下面','米糊糊的书飞走了','你把自己的帽子变成了一只鸡']));next()}}}),true)}
+  next()};
+/* 草药课、飞行课：看准时机（指针在绿色区域时点） */
+function timingGame(title,tip,btn,okMsg,badMsgs,cb){var round=0,score=0;
+  function next(){if(round>=3){cb(score);return}round++;var w=26-round*4,start=10+Math.random()*(80-w),pos=0,dir=1,sp=1.2+round*0.5,raf=0,alive=true;
+    menu(title+' · 第 '+round+'/3 次',tip+'<div id="tgbar" style="position:relative;height:22px;margin:12px 4px;background:#e8dcc8;border-radius:11px;overflow:hidden;border:2px solid #5a3a24"><div style="position:absolute;left:'+start+'%;width:'+w+'%;top:0;bottom:0;background:#7ed957"></div><div id="tgm" style="position:absolute;left:0;width:4px;top:-2px;bottom:-2px;background:#c4442a"></div></div>',
+      [{l:btn,pri:1,keep:1,f:function(){if(!alive)return;alive=false;cancelAnimationFrame(raf);var hit=pos>=start&&pos<=start+w;if(hit){score++;toast(okMsg)}else toast(pick(badMsgs));setTimeout(next,350)}}],true);
+    function tick(){if(!alive)return;pos+=dir*sp;if(pos>=100){pos=100;dir=-1}if(pos<=0){pos=0;dir=1}var mk=document.getElementById('tgm');if(!mk){alive=false;return}mk.style.left=pos+'%';raf=requestAnimationFrame(tick)}tick()}
+  next()}
+MINI.herb=function(cb){timingGame('草药课','给尖叫萝卜换盆：红线走到<b style="color:#2e8a3e">绿色区域</b>时拔！','🌱 拔！','🌱 拔出来了，它只是打了个哈欠。',['😱 尖叫萝卜尖叫了！全班耳朵嗡嗡响','😱 它尖叫着咬了唐同学一口'],cb)};
+MINI.fly=function(cb){timingGame('飞行课','骑天马穿圆环：红线到<b style="color:#2e8a3e">绿色区域</b>时冲！','🐴 冲！','🐴 嗖——穿过去了！',['💫 撞到圆环上了，天马翻了个白眼','💫 冲过头了，差点撞上钟楼'],cb)};
+
+/* ============ 课堂上的同学、礼堂里的学生 ============ */
+function mgExtraEnts(m,ents){if(!S.mg||!S.mg.house)return;var cn=clsNow(),hr=(S.t/60)%24;
+  function put(x,y,p,fx){ents.push({y:y,f:function(){drawStu({x:x,y:y,fx:fx||1},p.hair,p.long,[HOUSES[p.h].c,HOUSES[p.h].c2],0,p.glass)}})}
+  var mates=MATES;
+  if(cn&&CLS[cn.c].room===m.id){
+    if(m.id==='out'){mates.forEach(function(p,i){put((30+(i%4)*1.4)*TS,(23+Math.floor(i/4)*1.5)*TS,p)});return}
+    var seats=[];m.props.forEach(function(p){if(p.kind==='desk'||p.kind==='cauldron'||p.kind==='planter'){seats.push([p.x*TS+6,p.y*TS+4]);if(p.w>1)seats.push([p.x*TS+22,p.y*TS+4])}});
+    mates.forEach(function(p,i){if(seats[i])put(seats[i][0],seats[i][1],p)});return}
+  if(m.id==='great'){var tables={niu:3,ma:7,quan:11,mao:15},cnt={niu:0,ma:0,quan:0,mao:0};
+    var eat=(hr>=7&&hr<9)||(hr>=11.5&&hr<13)||(hr>=17.5&&hr<19.5);
+    mates.forEach(function(p){var i=cnt[p.h]++,tx=tables[p.h];put((tx+(i%2?2.3:-0.3))*TS,(7+i*1.5)*TS,p,i%2?-1:1)});
+    if(eat)for(var h in tables)for(var j=0;j<4;j++){var ex={hair:['#23232e','#6a4a2a','#3a2622'][j%3],long:j%2,h:h};put((tables[h]+(j%2?2.3:-0.3))*TS,(10+j*1.2)*TS,ex,j%2?-1:1)}}}
+/* 点同学能聊天：把同学当成临时 NPC */
+var _tp23=mgTap;mgTap=function(w){if(S.mg&&S.mg.house){var cn=clsNow(),m=SC.map,hit=null;
+    var pos=[];if(m.id==='great'){var tables={niu:3,ma:7,quan:11,mao:15},cnt={niu:0,ma:0,quan:0,mao:0};MATES.forEach(function(p){var i=cnt[p.h]++;pos.push([p,(tables[p.h]+(i%2?2.3:-0.3))*TS,(7+i*1.5)*TS])})}
+    else if(cn&&CLS[cn.c].room===m.id&&m.id!=='out'){var seats=[];m.props.forEach(function(p){if(p.kind==='desk'||p.kind==='cauldron'||p.kind==='planter'){seats.push([p.x*TS+6,p.y*TS+4]);if(p.w>1)seats.push([p.x*TS+22,p.y*TS+4])}});MATES.forEach(function(p,i){if(seats[i])pos.push([p,seats[i][0],seats[i][1]])})}
+    pos.forEach(function(q){if(Math.hypot(q[1]-w.x,q[2]-8-w.y)<12)hit=q});
+    if(hit){mgTalk({mate:hit[0]});return}}
+  _tp23(w)};
+/* 老黄牛的画法 */
+var _dj23=drawJiang;drawJiang=function(n,look,mv){if(n.look==='ox'){drawOx(n);return}_dj23(n,look,mv)};
+JLOOK.ox={n:'分院老黄牛'};
+
+/* ============ 每天别的学院也会加分 ============ */
+var _g23=game2Step;game2Step=function(dt){_g23(dt);if(!S.mg||!S.mg.house)return;if(S.mg.ptDay!==S.day){S.mg.ptDay=S.day;['niu','ma','quan','mao'].forEach(function(h){if(h!==S.mg.house)S.mg.pts[h]+=5+Math.floor(Math.random()*16);else S.mg.pts[h]+=Math.floor(Math.random()*6)})}};
+
+/* ============ 右上角“课表”按钮（只在魔法学校显示） ============ */
+(function(){var b=document.createElement('button');b.type='button';b.id='scsch';b.className='pill';b.style.cssText='font-size:12px;display:none';b.textContent='📅 课表';$('#scb').appendChild(b);tapBind(b,function(){if(busy())return;mgTimetable()})})();
+var _sb23=sceneBtns;sceneBtns=function(){_sb23();$('#scsch').style.display=SC&&SC.kind==='mg'?'block':'none'};
+var _ls23=leaveScene;leaveScene=function(){_ls23();var b=$('#scsch');if(b)b.style.display='none'};
+/* 门厅告示：上课提醒 */
+var _mb23b=mgBuild;mgBuild=function(id){var fresh=!MGM[id],m=_mb23b(id);if(fresh&&id==='hall')mgProp(m,6,2,1,1,'sign',{solid:false,label:'课表',tap:function(){mgTimetable()}});return m};
 </script>
 <script>
 /* 牛马谷 · 18-main.js — 仓库详情、主循环、存档导出导入、网页应用更新、启动 */

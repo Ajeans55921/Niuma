@@ -56,7 +56,7 @@ window.addEventListener('error',function(e){try{if(window.__nmErr)return;window.
   d.innerHTML='<b>游戏出错了</b>（存档还在，不会丢）<br>请截图发给开发者：<br><small style="word-break:break-all">'+String(e.message||e).slice(0,160)+'<br>'+String(e.filename||'').split('/').pop()+':'+(e.lineno||'')+'</small><br><button type="button" style="margin-top:8px;font-size:15px;padding:6px 12px;border-radius:8px;border:2px solid #5a2a1a;background:#ffe28a">检查有没有修好的新版本</button>';document.body.appendChild(d);
   d.querySelector('button').onclick=function(){var t=this,sw=navigator.serviceWorker;if(!sw||!sw.controller){location.reload();return}t.textContent='正在检查…';
     sw.addEventListener('message',function(m){var x=m.data||{};if(x.type==='nm-update')location.reload();else if(x.type==='nm-none')t.textContent='还没有新版本，过一会儿再点';else if(x.type==='nm-fail')t.textContent='连不上网，检查网络后再点'});sw.controller.postMessage({type:'nm-check'})}}catch(_){}});
-var NMBUILD='0.58'; /* 版本号：每次改游戏都要改这里 */
+var NMBUILD='0.60'; /* 版本号：每次改游戏都要改这里 */
 /* 游戏代码文件，按这个顺序加载。顺序不能乱：后面的文件会用到、甚至改写前面文件里的东西 */
 var NMJS=[];
 </script>
@@ -1187,7 +1187,7 @@ function drawB(b){
   if(b.pw){rect(px+Z-6,py+1,4,4,'#ffe84a');rect(px+Z-5,py+2,2,2,'#fff')}
   var lv=lvl(b);if(lv>=2){var fc=['','#e8553a','#e8553a','#3ad66a','#b85ad6'][lv-1];rect(px-1,py+Z-5,Z+2,2,lv>=3?'#ffd34a':'#e8b82a');rect(px+1,py-3,1,13,'#7a5a3a');var fw=Math.round(Math.sin(tAnim*5));rect(px+2,py-3,6+fw,4,fc);if(lv>=3){rect(px+Z-2,py-3,1,13,'#7a5a3a');rect(px+Z-8-fw,py-3,6+fw,4,'#3a8ad6');rect(px+Z/2-8,py+Z-5,16,1,'#fff3a8')}if(lv>=5){for(var s2=0;s2<3;s2++)rect(px+Z/2-6+s2*5,py-6+Math.round(Math.sin(tAnim*4+s2)),3,3,'#ffe84a')}}
   if(b.t==='pasture')drawPen(b,px,py);
-  drawWorkers(b,px,py);cx.font='6px sans-serif';cx.textAlign='center';cx.fillStyle='#ffffffdd';cx.fillText(d.n+(lv>1?' Lv'+lv:''),px+Z/2,py-14);
+  drawWorkers(b,px,py);if(!d.deco){cx.font='6px sans-serif';cx.textAlign='center';cx.fillStyle='#ffffffdd';cx.fillText(d.n+(lv>1?' Lv'+lv:''),px+Z/2,py-14)}
 }
 function headIcon(x,y,kind,on,bob){
   var by=y+(on?bob:0);
@@ -1785,7 +1785,7 @@ function renderScene(){
   var ents=[];
   SC.props.forEach(function(p){var qx=p.x*TS+ox,qy=p.y*TS+oy;if(p.solid)rect(qx+3,qy+p.h*TS-2,p.w*TS,4,'#00000026');ents.push({y:(p.y+p.h)*TS+(p.dy||0),f:function(){if(p.solid&&!p.flat)outlined(function(){p.draw(qx,qy,p)},'#3a2e2a');else p.draw(qx,qy,p)}})});
   SC.ag.forEach(function(a){ents.push({y:a.y,f:function(){a.draw(a)}})});
-  ents.push({y:SC.py,f:function(){person({x:SC.px,y:SC.py,fx:SC.fx},{shirt:'#3d6fb5',hair:'#23232e',glass:1},SC.mv)}});
+  ents.push({y:SC.py,f:function(){person({x:SC.px,y:SC.py,fx:SC.fx},S.asJ?NPCP.xz:{shirt:'#3d6fb5',hair:'#23232e',glass:1},SC.mv)}});
   ents.sort(function(a,b){return a.y-b.y});ents.forEach(function(e){e.f()});
   if(SC.drawOver)SC.drawOver(ox,oy);
   cx.font='bold 8px sans-serif';cx.textAlign='center';cx.fillStyle='#fff';cx.fillText(SC.title,VW/2,oy-8);
@@ -2037,7 +2037,7 @@ function renderAdv(){
   ACHEST.forEach(function(c){if(S.found[c.id])return;ents.push({y:(c.y+1)*TS,f:function(){var px=c.x*TS-camx,py=c.y*TS-camy,bl=Math.sin(tAnim*3+c.x)>0.6;rect(px+2,py+7,12,3,'#00000030');rect(px+3,py+5,10,8,'#8a5a2a');rect(px+3,py+5,10,3,'#a8702f');rect(px+7,py+7,2,3,'#ffd34a');if(bl){rect(px+12,py+2,1,3,'#fff6a0');rect(px+11,py+3,3,1,'#fff6a0')}}})});
   AMON.forEach(function(m){if(!m.dead)ents.push({y:m.y,f:function(){drawMon(m)}})});
   ents.push({y:20*TS+14,f:function(){var px=4*TS-camx,py=20*TS-camy;person({x:4*TS+8,y:20*TS+14},{shirt:'#c4742a',hair:'#6a4a2a',hat:'#f0a020',beard:1},0);cx.font='bold 5px sans-serif';cx.textAlign='center';cx.fillStyle='#fff';cx.fillText('营地商人',px+8,py-12);cx.fillStyle='#f6c744';cx.font='bold 8px sans-serif';cx.fillText('!',px+8,py-18-Math.abs(Math.sin(tAnim*4))*2);rect(px+14,py+6,12,10,'#c4442a');rect(px+14,py+4,12,3,'#e8553a')}});
-  ents.push({y:SC.py,f:function(){var blink=SC.hurt>0&&Math.floor(tAnim*20)%2;if(!blink)person({x:SC.px,y:SC.py},{shirt:S.buff>0?'#d9a030':'#3d6fb5',hair:'#23232e',glass:1},SC.mv);if(SC.hitT>0){var m=SC.hit;if(m){cx.strokeStyle='#fff';cx.lineWidth=1;cx.beginPath();cx.moveTo(SC.px-camx,SC.py-camy-8);cx.lineTo(m.x-camx,m.y-camy-6);cx.stroke()}}}});
+  ents.push({y:SC.py,f:function(){var blink=SC.hurt>0&&Math.floor(tAnim*20)%2;if(!blink)person({x:SC.px,y:SC.py},S.asJ?Object.assign({},NPCP.xz,S.buff>0?{shirt:'#d9a030'}:{}):{shirt:S.buff>0?'#d9a030':'#3d6fb5',hair:'#23232e',glass:1},SC.mv);if(SC.hitT>0){var m=SC.hit;if(m){cx.strokeStyle='#fff';cx.lineWidth=1;cx.beginPath();cx.moveTo(SC.px-camx,SC.py-camy-8);cx.lineTo(m.x-camx,m.y-camy-6);cx.stroke()}}}});
   ents.sort(function(a,b){return a.y-b.y});ents.forEach(function(e){e.f()});
   cx.font='bold 6px sans-serif';cx.textAlign='left';cx.fillStyle='#ffe28a';cx.fillText('← 回村',4-camx,19*TS-camy+4);
   SC.fl.forEach(function(f){cx.font='bold 7px sans-serif';cx.textAlign='center';cx.fillStyle='#000a';cx.fillText(f.t,f.x-camx+1,f.y-camy+1);cx.fillStyle=f.c;cx.fillText(f.t,f.x-camx,f.y-camy)});
@@ -2066,6 +2066,14 @@ function livCnt(b){var s=0;LIV.forEach(function(z){s+=(b.w[z.k]||0)});return s}
 function livProd(b){var c=outCap(b);return LIV.filter(function(z){return(b.w[z.k]||0)>0&&(b.out[z.it]||0)<c}).map(function(z){return[z.it,(b.w[z.k]||0)*z.pw]})}
 function livTot(){var s=0;LIV.forEach(function(z){s+=S[CNT[z.k]]||0});return s}
 ['ducks','bees','pigs'].forEach(function(k){if(S[k]===undefined)S[k]=0});
+/* 装饰（没有进出口，不用派工；靠“美观度”给附近工坊加干劲） */
+var DECO={flowerbed:{n:'花坛',col:'#e86a9a',cost:300,w:1,be:1,desc:'小花开得正好'},lamp:{n:'路灯',col:'#e8d03a',cost:500,w:1,be:1,desc:'晚上会亮'},bench:{n:'长椅',col:'#a87a45',cost:400,w:1,be:1,desc:'给牛马歇脚'},
+  sakura:{n:'樱花树',col:'#f4a8c8',cost:900,w:1,be:2,desc:'一年四季都开花（反正是装饰）'},fountain:{n:'喷泉',col:'#7ac0e8',cost:6000,w:2,be:5,desc:'会喷水，很有面子'},
+  windmill:{n:'风车',col:'#e8d8b8',cost:9000,w:2,be:5,desc:'慢慢转，很治愈'},pavilion:{n:'凉亭',col:'#c8302a',cost:15000,w:2,be:6,desc:'红柱子、翘屋檐，适合赏月'},
+  statue:{n:'姜老师雕像',col:'#d8a84a',cost:40000,w:2,be:8,one:1,desc:'全村干劲再 +3%（只能建一座）'},ferris:{n:'摩天轮',col:'#e85a6a',cost:120000,w:3,be:10,one:1,desc:'每天早上有游客来玩，带来门票收入（只能建一座）'},
+  f_arch:{n:'樱花拱门',col:'#f4a8c8',cost:3000,w:2,be:4,fest:0,desc:'春耕节限定'},f_melon:{n:'西瓜摊',col:'#4aa04a',cost:3000,w:1,be:3,fest:1,desc:'夏夜烟花节限定'},
+  f_rabbit:{n:'兔子灯',col:'#fff3d0',cost:3000,w:1,be:3,fest:2,desc:'中秋节限定'},f_snowman:{n:'雪人',col:'#ffffff',cost:3000,w:1,be:3,fest:3,desc:'新年年会限定'}};
+Object.keys(DECO).forEach(function(k){var d=DECO[k];BD[k]={n:d.n,ch:d.n[0],col:d.col,cost:d.cost,w:d.w,h:d.w,deco:1,be:d.be,one:d.one,fest:d.fest,desc:d.desc,id:k}});
 Object.keys(BD).forEach(function(k){var d=BD[k];var a=Object.assign({},d.inp||{},d.opt||{});d.all=Object.keys(a).length?a:null});
 UNL.jiang[6]='渔场（湖边）';UNL.tang[12]='堆肥坊';UNL.jiang[3]=(UNL.jiang[3]?UNL.jiang[3]+'、':'')+'菜园';UNL.jiang[5]=(UNL.jiang[5]?UNL.jiang[5]+'、':'')+'果园';
 STY.fishery='farm';STY.orchard='farm';STY.garden='farm';STY.compost='farm';
@@ -2155,7 +2163,7 @@ function fishCast(){
   if(r<0.18){toast(pick(['钓上来一只旧靴子','钓上来一份三年前的周报','什么都没钓到，但领导以为你在思考']))}
   else if(addCap('fish',1)){runtime.floats.push({x:PL.x,y:PL.y-14,l:1.2,t:'鲜鱼×1',c:'#7ac0e8'});toast('钓到一条鲜鱼')}else toast('仓库满了');
 }
-function goFish(tx,ty){
+function goFish(tx,ty){return false;
   var path=bfs(function(x,y){return Math.abs(x-tx)+Math.abs(y-ty)<=1&&G[gi(x,y)]!==2});
   if(!path){toast('走不过去');return true}
   PL.path=path;PL.job={kind:'fish'};if(!path.length)arriveJob();return true;
@@ -2587,7 +2595,7 @@ var TIPS=[
  {id:'school',nd:'姜组长+姜主任共落实 3 条指令',t:'学校',x:'在“任务”里打开学校，可以招生。<br>学生毕业后成为毕业生，在机器上干活的效率大约是牛的 1.8 倍。',c:function(){return S.q.tang.n+S.q.jiang.n>=3}},
  {id:'stone',nd:'姜经理落实 2 条指令',t:'石板路',x:'“铺路”按钮可以切换土路和石板路。<br>石板路 5 币一格，走得更快。',c:function(){return S.q.jl.n>=2}},
  {id:'power',nd:'姜组长落实 6 条指令',t:'发电厂和传送带',x:'发电厂烧煤发电，按千瓦算：Lv1 发 60 千瓦，满级 280 千瓦，升级后占地变 3×3。<br>工坊菜单里点“⚡ 接通电源”：速度 ×1.6，采矿伐木这类每次多产 1 个，没牛马也能转。工坊等级越高越耗电（Lv1 10 千瓦 … Lv5 50 千瓦）。<br>有电以后，石板路的路灯晚上会亮。<br>传送带和牛马一样：只能从出口接货，只能往入口送货。',c:function(){return S.q.tang.n>=6}},
- {id:'fish',nd:'姜主任落实 6 条指令',t:'钓鱼和渔场',x:'点湖面，唐老师会走到岸边钓鱼。<br>渔场要建在湖边，喂草料产量翻倍。',c:function(){return S.q.jiang.n>=6}},
+ {id:'fish',nd:'姜主任落实 6 条指令',t:'渔场',x:'渔场要建在湖边，喂草料产量翻倍。',c:function(){return S.q.jiang.n>=6}},
  {id:'adv',nd:'所有领导共落实 10 条指令',t:'加班荒原',x:'村子最东边的路口通往加班荒原。<br>那里可以打怪、采草药、挖水晶，最深处有 Boss。打不过就回村，“补给”按钮能吃东西回血。',c:function(){return S.q.tang.n+S.q.jiang.n+S.q.jl.n+S.q.ds.n>=10}},
  {id:'shop',nd:'第一次拿到金币或宝石',t:'金币、宝石和小卖部',x:'金币来自领导的奖励，也能用金锭换；宝石只有姜主任（姜校长）肯给。<br>在小卖部建筑的“兑换柜台”或“任务”菜单里，可以换金币、扩仓库、延长离线时间。',c:function(){return S.gold>0||S.gems>0}},
  {id:'notice',nd:'第一次响应紧急通知',t:'紧急通知',x:'像“赈灾粮”这样的通知，交了物资后，奖励要 2 天才到账。<br>奖励比订单高，还可能有金币和宝石。',c:function(){return S.mail.length>0}},
@@ -2613,6 +2621,8 @@ var UPDT='<b>进出口和路上运输</b>取代了运输队；<b>牛马市场</b
 /* ============ 更新公告：每次发新版本，在最上面加一条（v 要和 NMBUILD 一样） ============
    by：这次是听谁的指导；add 新增、chg 调整、fix 修复 */
 var NMLOG=[
+ {v:'0.60',d:'11月14日',by:'姜校长',w:'「细节决定成败」',add:['🔮 听说，村子里藏着一段秘密。它从一个清晨的钟声开始……（这一条，要你自己去发掘）'],fix:['根据群众反映：用姜校长走进建筑以后，会变回唐老师。已修好','钓鱼取消了，湖面恢复安静']},
+ {v:'0.59',d:'11月14日',by:'姜校长',w:'「工作要干好，生活也要过好」',add:['响应姜校长“美化家园”的号召，建造菜单里开了<b>🌸 装饰商店</b>：花坛、路灯、樱花树、喷泉、风车、凉亭……摆在工坊旁边，工坊干活更起劲','重磅推出<b>姜老师雕像</b>（全村干劲 +3%）和<b>摩天轮</b>（每天有游客买门票）','每个季节第 4 天过节：春耕节、夏夜烟花节、中秋节、新年年会！楼顶挂灯笼，有庙会抽奖、烟花、红包和节日限定装饰','牛马偶尔会跑出来放风，点它三下抓回来有奖励','姜主任会不定期突击抽查，答对有奖']},
  {v:'0.58',d:'11月14日',by:'姜校长',w:'「颜值也是生产力」',add:['按照姜校长“提升村容村貌”的要求，16 种工坊全部<b>重新精修</b>，细节翻倍：','伐木场斧头会劈柴、采石场吊车会吊石头、矿车在铁轨上来回跑、锯木坊圆锯飞转、熔炉火光闪烁、齿轮坊屋顶齿轮咬着转、发电厂烟囱冒烟还会冒电火花','门口的成品堆会随库存变高，晚上窗户会亮灯']},
  {v:'0.57',d:'11月14日',by:'姜校长',w:'「以人为本，牛马为友」',add:['认真学习姜校长“丰富牧场、扩大规模”的指示：牧场新来了 <b>鸭子（羽毛）、蜜蜂（蜂蜜）、猪（拱松露，很值钱）</b>，牧场容量翻倍，产品库存也更大','围栏里每种动物只站一只代表，旁边标数量，看着清清爽爽','学校扩招：最高 Lv8，能同时收 24 名学生，毕业生上限更高','毕业生可以<b>上路运货</b>了（建筑路线那里点“＋毕业生”），比牛快','牛马可以<b>光荣退休</b>了：戴上小草帽，在村里晒太阳养老','姜校长不再天天站在校门口：按时间去食堂、工坊、仓库、牧场、宿舍巡视','转正以后，可以<b>换成姜校长来操控</b>；她走到建筑旁边能“视察”，机器干劲 +30%'],chg:['食堂厨师会自己采购牛肉了：食材不够时饭前自动去买，比叫外卖便宜（食堂菜单里可以关掉）']},
  {v:'0.56',d:'11月14日',by:'姜校长',w:'「急群众之所急」',add:['🔮 某个神秘的新内容还在秘密建设中……<b>敬请期待</b>'],fix:['根据群众反映，几个按钮太容易误触，已加上确认']},
@@ -4331,6 +4341,236 @@ HIART.market=function(R,px,py,wk,A,b){var lit=hNight()>0.35;
 /* 接到渲染里：这些建筑用高清画法 */
 var _dbs27=drawBsprite;drawBsprite=function(b,px,py,wk,A){var f=HIART[b.t];if(!f||S.oldArt)return _dbs27(b,px,py,wk,A);
   cx.save();cx.translate(px,py);cx.scale(0.5,0.5);rect(2,58,60,6,'#00000022');f(hiR(0,0),0,0,wk,A,b);cx.restore()};
+</script>
+<script>
+/* 牛马谷 · 28-fun.js — 第三批（上）：装饰商店（美观度给附近工坊加干劲）、摩天轮门票、四季节日（庙会抽奖、烟花、红包、限定装饰） */
+'use strict';
+/* ============ 装饰：价格固定、没有进出口、建筑菜单简化 ============ */
+var _co28=costOf;costOf=function(t){var d=BD[t];if(d&&d.deco){if(S.dcp&&S.dcp[t]>0)return 0;return d.cost}return _co28(t)};
+var _pl28=place;place=function(t,x,y){var d=BD[t];if(d&&d.deco){if(d.one&&countB(t)>0){toast(d.n+'只能建一座');return false}var free=S.dcp&&S.dcp[t]>0,n0=S.bld.length,r=_pl28(t,x,y);if(S.bld.length>n0&&free){S.dcp[t]--;save()}return r}return _pl28(t,x,y)};
+function decoMenu(){var o=[],fz=festToday();
+  o.push({hdr:'小装饰（摆在工坊旁边，附近工坊干活更起劲）'});
+  ['flowerbed','lamp','bench','sakura'].forEach(function(k){o.push(decoRow(k))});
+  o.push({hdr:'大件（贵，但很有面子）'});['fountain','windmill','pavilion','statue','ferris'].forEach(function(k){o.push(decoRow(k))});
+  o.push({hdr:'节日限定'+(fz?'（今天是'+fz.n+'，可以买'+BD[fz.deco].n+'）':'（节日当天才能买，庙会抽奖也能抽到）')});
+  ['f_arch','f_melon','f_rabbit','f_snowman'].forEach(function(k){var d=BD[k],cp=(S.dcp&&S.dcp[k])||0,can=(fz&&fz.deco===k)||cp>0;
+    o.push({l:d.n+(cp?'（有 '+cp+' 张免费券）':''),s:d.desc+' · 美观 +'+d.be,r:cp?'免费':can?d.cost+'币':'🔒',dis:!can||(!cp&&S.money<d.cost),why:can?'银币不够':'节日当天才能买',f:function(){startGhost(k)}})});
+  o.push({l:'返回建造菜单',f:buildMenu});
+  menu('🌸 装饰商店','银币 '+fmt(S.money)+' · 全村美观度 '+beautyAll()+'<br><small>装饰摆在工坊 4 格以内，每 1 点美观度让它干活快 2%（最多 +25%）。</small>',o)}
+function decoRow(k){var d=BD[k],cp=(S.dcp&&S.dcp[k])||0,one=d.one&&countB(k)>0;
+  return{l:d.n+(cp?'（有 '+cp+' 张免费券）':''),s:d.desc+' · 美观 +'+d.be+' · 占 '+d.w+'×'+d.w,r:one?'已建':cp?'免费':fmt(d.cost)+'币',dis:one||(!cp&&S.money<d.cost),why:one?'只能建一座':'银币不够，要 '+fmt(d.cost)+' 币',f:function(){startGhost(k)}}}
+var _bmn28=buildMenu;buildMenu=function(){runtime.bm28m=1;try{_bmn28()}finally{runtime.bm28m=0}};
+var _menu28=menu;menu=function(t,h,o,nc){
+  if(runtime.bm28m&&o&&t==='建造'){runtime.bm28m=0;o.unshift({l:'🌸 装饰商店',s:'花坛、路灯、喷泉、风车、摩天轮……摆在工坊旁边能加干劲',r:'逛逛',pri:true,keep:1,f:decoMenu})}
+  if(runtime.bm28b&&o){var b=runtime.bm28b;runtime.bm28b=null;var d=BD[b.t];if(d&&d.t&&!d.deco){var pb=decoBonus(b);if(pb>0)o.push({l:'🌸 附近的装饰：干劲 +'+Math.round(pb*100)+'%',s:'附近 4 格内的装饰越好看，干活越快',dis:true,why:'摆更多装饰能再加',f:function(){}})}}
+  return _menu28(t,h,o,nc)};
+var _bm28=bldMenu;bldMenu=function(b){var d=BD[b.t];
+  if(d&&d.deco){var rf=Math.floor((b.pc||0)*0.5);menu(d.n,d.desc+'<br>美观 +'+d.be+(b.t==='ferris'?'<br>今天的门票收入：'+(S.ferT===S.day?'已经到账':'早上 9 点到账'):''),[
+      {l:'搬家',s:'换个位置（免费）',r:'迁移',f:function(){startMove(b)}},
+      {l:'收起来',s:rf?'退回 '+rf+' 银币':'免费券换的，收起不退钱',r:'拆除',f:function(){removeB(b)}},{l:'关闭'}]);return}
+  runtime.bm28b=b;try{_bm28(b)}finally{runtime.bm28b=null}};
+var _mf28=typeof moveFee==='function'?moveFee:null;if(_mf28)moveFee=function(b){return BD[b.t]&&BD[b.t].deco?0:_mf28(b)};
+/* 美观度 */
+function beautyAll(){var n=0;S.bld.forEach(function(b){var d=BD[b.t];if(d&&d.deco)n+=d.be});return n}
+var _dbC={};
+function decoBonus(b){var c=_dbC[b.id];if(c&&c.t>tAnim-2)return c.v;var n=0,cxb=b.x+bw(b)/2,cyb=b.y+bw(b)/2;
+  S.bld.forEach(function(o){var d=BD[o.t];if(!d||!d.deco)return;var dx=Math.abs(o.x+bw(o)/2-cxb)-(bw(o)+bw(b))/2,dy=Math.abs(o.y+bw(o)/2-cyb)-(bw(o)+bw(b))/2;if(Math.max(dx,dy)<=4)n+=d.be});
+  var v=Math.min(0.25,n*0.02);if(countB('statue'))v+=0.03;_dbC[b.id]={t:tAnim,v:v};return v}
+var _ms28=magicSpd;magicSpd=function(b){var d=BD[b.t];return _ms28(b)*(1+(d&&d.t?decoBonus(b):0))*(S.fwBuff===S.day?1.1:1)};
+
+/* ============ 节日：每季第 4 天 ============ */
+var FEST=[{n:'春耕节',deco:'f_arch',col:'#f4a8c8',say:['“今天是春耕节！一年之计在于春。”','“学校门口办庙会，大家去抽个奖，图个好彩头。”']},
+  {n:'夏夜烟花节',deco:'f_melon',col:'#4ab8e8',say:['“今天是夏夜烟花节！”','“晚上 9 点学校请大家看烟花。想看更大的？可以自己掏钱再加一场。”']},
+  {n:'中秋节',deco:'f_rabbit',col:'#ffd34a',say:['“中秋节快乐！”','“今晚月亮最圆。给孩子们发月饼——我是说，发红包。”']},
+  {n:'新年年会',deco:'f_snowman',col:'#e84a3a',say:['“新年年会开始了！”','“今年大家辛苦了。庙会、烟花、红包，都安排上。”','“唐老师，年终奖……你看着办。”']}];
+function festToday(){if(((S.day||1)-1)%7!==3)return null;return FEST[season()]}
+function bossN(){return S.end?'姜校长':'姜主任'}
+(function(){var b=document.createElement('button');b.type='button';b.id='festB';b.className='pill';b.style.cssText='position:absolute;right:8px;top:calc(max(6px,env(safe-area-inset-top)) + 212px);font-size:12px;display:none;z-index:5;border-color:#ffd34a';document.body.appendChild(b);
+  tapBind(b,function(){if(busy())return;festMenu()})})();
+function festBtnUpd(){var b=$('#festB');if(!b)return;var f=festToday(),on=!!f&&!SC;b.style.display=on?'block':'none';if(on){var t='🎪 '+f.n;if(b.textContent!==t)b.textContent=t}}
+function festMenu(){var f=festToday();if(!f){toast('今天不是节日');return}var o=[],np=(S.stu||[]).length+(S.grad||0),hb=np*50;
+  o.push({l:'🎰 庙会抽奖',s:'500 币抽一次：材料、银币、宝石，还可能抽到节日限定装饰的免费券',r:'500币',pri:true,dis:S.money<500,why:'银币不够',keep:1,f:festDraw});
+  o.push({l:'🎆 加放一场烟花',s:S.fwBuff===S.day?'今天已经放过了，全村干劲 +10%':'2000 币，晚上放一场大烟花；放完全村今天干劲 +10%',r:S.fwBuff===S.day?'':'2000币',dis:S.fwBuff===S.day||S.money<2000,why:S.fwBuff===S.day?'今天放过了':'银币不够',keep:1,f:function(){S.money-=2000;S.fwBuff=S.day;S.fwBig=S.day;save();
+    var h=(S.t/60)%24;if(h>=19||h<5){fwStart(40);toast('烟花点着了！全村干劲 +10%')}else toast('烟花买好了，晚上 8 点放！全村今天干劲 +10%');festMenu()}});
+  if(np)o.push({l:'🧧 给学生和毕业生发红包',s:S.hbDay===S.day?'今天已经发过了，学生今天学习快 30%':'每人 50 币，共 '+np+' 人；学生今天学习快 30%，大家都很开心',r:S.hbDay===S.day?'':hb+'币',dis:S.hbDay===S.day||S.money<hb,why:S.hbDay===S.day?'发过了':'银币不够',keep:1,f:function(){S.money-=hb;S.hbDay=S.day;save();toast(ppick(['孩子们：“谢谢唐老师！姜老师也谢谢！”','有个孩子把红包供在了姜老师照片前面','毕业生们说：“这是我们收到过最大的红包。”']));festMenu()}});
+  o.push({l:'🛍️ 买节日限定：'+BD[f.deco].n,s:BD[f.deco].desc+' · 美观 +'+BD[f.deco].be,r:BD[f.deco].cost+'币',dis:S.money<BD[f.deco].cost,why:'银币不够',f:function(){startGhost(f.deco)}});
+  o.push({l:'关闭'});
+  menu('🎪 '+f.n,'今天全村过节！<br><small>庙会抽奖、烟花、红包都在这里。节日每个季节的第 4 天一次。</small>',o,true)}
+function festDraw(){S.money-=500;var r=Math.random(),f=festToday(),msg;
+  if(r<0.3)msg=ppick(['谢谢参与。'+bossN()+'：“重在参与。”','谢谢参与。纸条背面写着：再接再厉。','谢谢参与。抽奖的牛马安慰地拍了拍你。']);
+  else if(r<0.55){var ks=IORD.filter(function(k){return IT[k]&&IT[k][1]>=6&&IT[k][1]<=60}),k=ppick(ks),n=10+Math.floor(Math.random()*11);addCap(k,n);msg='抽到 '+IT[k][0]+' ×'+n+'（已放进仓库）'}
+  else if(r<0.75){S.money+=1200;msg='抽到 1200 银币！'}
+  else if(r<0.88){S.gems=(S.gems||0)+1;msg='抽到 1 颗宝石！'}
+  else if(r<0.98){S.dcp=S.dcp||{};var dk=f?f.deco:'f_arch';S.dcp[dk]=(S.dcp[dk]||0)+1;msg='抽到「'+BD[dk].n+'」免费券！在装饰商店里免费放'}
+  else{S.gems=(S.gems||0)+5;msg='🎉 头奖！5 颗宝石！'}
+  save();toast('🎰 '+msg);festMenu()}
+/* 节日早上的广播 */
+var _g28=game2Step;game2Step=function(dt){_g28(dt);var f=festToday(),h=(S.t/60)%24;
+  if(f&&S.festAnn!==S.day&&h>=7&&!busy()&&!SC&&!runtime.offline&&!runtime.peg){S.festAnn=S.day;save();say(bossN(),f.say,function(){toast('右边的 🎪 按钮：庙会抽奖、烟花、红包')})}
+  if(S.hbDay===S.day)(S.stu||[]).forEach(function(st){st.t+=dt*0.3});
+  if(f&&h>=21&&h<21.05&&S.fwAuto!==S.day&&!runtime.offline){S.fwAuto=S.day;fwStart(f===FEST[1]?30:14)}
+  if(S.fwBig===S.day&&h>=20&&h<20.05&&S.fwBigOn!==S.day&&!runtime.offline){S.fwBigOn=S.day;fwStart(40)}
+  if(countB('ferris')&&S.ferT!==S.day&&h>=9&&!runtime.offline){S.ferT=S.day;var inc=600+Math.round(beautyAll()*15);S.money+=inc;if(!SC)toast('🎡 摩天轮今天来了不少游客，门票收入 +'+inc+' 银币')}
+  festBtnUpd()};
+
+/* ============ 节日画面：楼顶挂灯笼、春天花瓣、中秋大月亮、烟花 ============ */
+var FWP=[];
+function fwStart(sec){runtime.fwT=Math.max(runtime.fwT||0,sec)}
+var _rd28=render;render=function(){_rd28();if(SC)return;var f=festToday(),h=(S.t/60)%24,nk=nightK(h);cx.save();cx.setTransform(scale,0,0,scale,0,0);
+  if(f){S.bld.forEach(function(b){var d=BD[b.t];if(!d||d.deco)return;var px=b.x*TS-camx,py=b.y*TS-camy,Z=bw(b)*TS;if(px<-Z||py<-Z||px>VW+Z||py>VH+Z)return;
+      for(var i=0;i<4;i++){var lx=Math.round(px+4+i*(Z-8)/3),ly=Math.round(py+3+Math.abs(i-1.5)*1.5),sw=Math.round(Math.sin(tAnim*2+i)*1);rect(lx-2+sw,ly,4,5,f.col);rect(lx-1+sw,ly-1,2,1,'#3a2a1a');if(nk>0.3){cx.globalAlpha=0.35;rect(lx-4+sw,ly-2,8,9,'#ffd88a');cx.globalAlpha=1}}});
+    if(f===FEST[0])for(var p=0;p<24;p++){var x=((p*53+tAnim*14)%(VW+20))-10,y=((p*97+tAnim*(18+p%5))%(VH+20))-10;rect(x+Math.sin(tAnim+p)*4,y,2,2,'#ffb8d8')}
+    if(f===FEST[2]&&nk>0.2){var mx=VW-60,my=70;cx.globalAlpha=nk*0.25;rect(mx-24,my-24,48,48,'#fff3c0');cx.globalAlpha=nk;rect(mx-14,my-14,28,28,'#fff3c0');rect(mx-16,my-10,32,20,'#fff3c0');rect(mx-10,my-16,20,32,'#fff3c0');rect(mx-6,my-6,4,4,'#f0dfa0');rect(mx+5,my+3,5,3,'#f0dfa0');cx.globalAlpha=1}}
+  if(runtime.fwT>0){runtime.fwT-=1/60;if(Math.random()<0.06)FWP.push({x:30+Math.random()*(VW-60),y:VH,ty:40+Math.random()*VH*0.3,c:ppick(['#ff5a5a','#ffd34a','#5ad6ff','#b85aff','#7aff8a','#ffffff']),st:0})}
+  for(var i=FWP.length-1;i>=0;i--){var q=FWP[i];if(q.st===0){q.y-=4;rect(q.x,q.y,2,4,'#ffe8a0');if(q.y<=q.ty){q.st=1;q.r=0}}else{q.r+=1.3;var a=Math.max(0,1-q.r/40);cx.globalAlpha=a;for(var k=0;k<14;k++){var an=k/14*6.283;rect(q.x+Math.cos(an)*q.r,q.y+Math.sin(an)*q.r+q.r*q.r*0.006,2,2,q.c)}cx.globalAlpha=1;if(a<=0)FWP.splice(i,1)}}
+  cx.restore()};
+
+/* ============ 装饰的画法（64×64 高清格子） ============ */
+function hLine(R,x0,y0,x1,y1,w,c){var n=Math.max(1,Math.round(Math.hypot(x1-x0,y1-y0)));for(var i=0;i<=n;i++)R(Math.round(x0+(x1-x0)*i/n-w/2),Math.round(y0+(y1-y0)*i/n-w/2),w,w,c)}
+HIART.flowerbed=function(R,px,py,wk,A){R(4,36,56,24,'#8a5a35');R(8,32,48,26,'#5a3a20');if(!OUTC)R(4,36,56,2,'#a87a45');
+  [['#e8503a',10],['#ffd34a',20],['#f28ac8',30],['#ffffff',40],['#b85ad6',50]].forEach(function(c,i){var sw=Math.round(Math.sin(A*2+i)*2);R(c[1]+1+sw/2,20,2,14,'#3a8a3a');R(c[1]-3+sw,12,10,10,c[0]);if(!OUTC){R(c[1]+sw,15,4,4,'#ffe08a');R(c[1]-1+sw,24,4,2,'#4aa04a')}})};
+HIART.lamp=function(R,px,py,wk,A){var on=hNight()>0.25;R(29,14,6,46,'#4a4f5a');R(24,56,16,6,'#3a3f49');R(20,4,24,14,'#2a2f39');R(23,6,18,10,on?'#ffe08a':'#c8c8b0');R(26,0,12,4,'#2a2f39');if(on)hGlow(R,32,14,22,'#ffd88a',0.3)};
+HIART.bench=function(R,px,py,wk,A){R(4,30,56,6,'#a87a45');R(4,38,56,6,'#a87a45');R(4,18,56,6,'#8a5a35');if(!OUTC){R(4,30,56,1,'#c8945a');R(4,18,56,1,'#a87a45')}R(8,24,4,34,'#4a4f5a');R(52,24,4,34,'#4a4f5a')};
+HIART.sakura=function(R,px,py,wk,A){R(28,30,8,30,'#6b4426');R(22,40,6,3,'#6b4426');R(4,4,56,30,'#f4a8c8');R(10,0,44,8,'#f8c0d8');R(0,14,10,14,'#f4a8c8');R(54,12,10,16,'#f4a8c8');if(!OUTC){R(12,8,8,4,'#ffd8e8');R(36,20,10,4,'#e888b0');R(20,24,6,3,'#e888b0')}
+  if(!OUTC)for(var i=0;i<4;i++){var ph=(A*0.3+i/4)%1;R(10+i*14+Math.sin(A*2+i)*4,30+ph*30,3,2,'#ffc8e0')}};
+HIART.fountain=function(R,px,py,wk,A){R(6,34,52,24,'#a8aeb8');R(2,40,60,14,'#a8aeb8');R(10,38,44,14,'#4a8ab8');if(!OUTC){R(6,34,52,2,'#d8dce4');R(14,42,10,2,'#7ac0e8');R(36,46,8,2,'#7ac0e8')}R(28,18,8,26,'#c8ccd4');R(22,16,20,4,'#c8ccd4');
+  if(!OUTC){var j=Math.round(Math.sin(A*6)*2);R(30,2+j,4,16,'#bfe8ff');R(22,8+j,2,10,'#bfe8ff');R(40,8+j,2,10,'#bfe8ff');for(var i=0;i<6;i++){var ph=(A*1.5+i/6)%1;R(18+i*6,10+ph*30,2,2,'#e8f8ff')}}};
+HIART.windmill=function(R,px,py,wk,A){R(20,20,24,40,'#e8d8b8');R(16,56,32,6,'#a87a45');if(!OUTC){R(20,20,4,40,'#ffffff40');R(38,20,6,40,'#00000018')}R(16,10,32,12,'#9a4a3a');R(22,4,20,8,'#9a4a3a');hDoor(R,28,46,8,14,'#6a4422','#3a2412');hWin(R,29,28,6,6,hNight()>0.35);
+  var a0=A*1.2;for(var i=0;i<4;i++){var an=a0+i*Math.PI/2,ex=32+Math.cos(an)*30,ey=14+Math.sin(an)*30;hLine(R,32,14,ex,ey,2,'#6b4a2a');var mx=32+Math.cos(an)*20,my=14+Math.sin(an)*20;hLine(R,mx,my,ex,ey,5,'#f4f0e8')}R(30,12,4,4,'#3a2a1a')};
+HIART.pavilion=function(R,px,py,wk,A){R(4,56,56,6,'#a8aeb8');R(10,26,4,32,'#c8302a');R(50,26,4,32,'#c8302a');R(24,26,3,32,'#a82a22');R(37,26,3,32,'#a82a22');R(6,46,52,3,'#8a2a22');
+  R(2,18,60,8,'#2f6a5a');R(10,10,44,8,'#2f6a5a');R(20,4,24,6,'#2f6a5a');R(0,16,6,4,'#2f6a5a');R(58,16,6,4,'#2f6a5a');R(-2,13,4,4,'#2f6a5a');R(62,13,4,4,'#2f6a5a');if(!OUTC){R(2,24,60,2,'#ffd34a');R(30,0,4,4,'#ffd34a');R(10,10,44,1,'#4a8a7a')}};
+HIART.statue=function(R,px,py,wk,A){R(8,46,48,14,'#a8aeb8');R(4,56,56,6,'#8b8f99');if(!OUTC){R(8,46,48,2,'#d8dce4');R(20,50,24,7,'#e8d8b8')}
+  var G='#d8a84a',G2='#b8862a';R(24,10,16,14,G);R(22,12,4,18,G2);R(38,12,4,18,G2);R(26,24,12,22,G);R(23,26,4,14,G);R(37,26,4,14,G);R(28,40,3,8,G2);R(33,40,3,8,G2);if(!OUTC){R(26,12,10,3,'#f0d080');R(28,16,2,2,'#8a6a2a');R(34,16,2,2,'#8a6a2a');R(30,20,4,1,'#c86a5a')}
+  if(!OUTC&&Math.sin(A*2)>0.7){R(40,8,1,5,'#ffffff');R(38,10,5,1,'#ffffff')}[[10,44],[50,44]].forEach(function(p){R(p[0],p[1],6,4,'#3a8a3a');R(p[0]+1,p[1]-2,4,3,'#f28ac8')});
+  if(!OUTC){cx.font='bold 6px sans-serif';cx.textAlign='center';cx.fillStyle='#6a4426';cx.fillText('姜老师',px+32,py+56)}};
+HIART.ferris=function(R,px,py,wk,A){var on=hNight()>0.3,a0=A*0.25;R(30,30,4,30,'#6a6f79');hLine(R,32,30,14,60,3,'#6a6f79');hLine(R,32,30,50,60,3,'#6a6f79');R(6,58,52,5,'#8b8f99');
+  for(var i=0;i<8;i++){var an=a0+i*Math.PI/4,ex=32+Math.cos(an)*26,ey=30+Math.sin(an)*26;hLine(R,32,30,ex,ey,1,'#c8ccd4')}
+  for(var j=0;j<24;j++){var a2=j/24*6.283;R(Math.round(32+Math.cos(a2)*26)-1,Math.round(30+Math.sin(a2)*26)-1,2,2,on&&j%2?'#ffe08a':'#e85a6a')}
+  for(var k=0;k<8;k++){var an2=a0+k*Math.PI/4,cxx=Math.round(32+Math.cos(an2)*26),cyy=Math.round(30+Math.sin(an2)*26);R(cxx-4,cyy,8,7,['#e85a6a','#4ab8e8','#ffd34a','#7ed957'][k%4]);R(cxx-3,cyy+1,6,3,on?'#ffe08a':'#e8f4ff')}
+  R(29,27,6,6,'#3a3f49');if(on)hGlow(R,32,30,26,'#ffd88a',0.12)};
+HIART.f_arch=function(R,px,py,wk,A){R(4,20,6,40,'#8a5a35');R(54,20,6,40,'#8a5a35');R(0,4,64,20,'#f4a8c8');R(6,0,52,6,'#f8c0d8');if(!OUTC){R(4,8,8,4,'#ffd8e8');R(40,12,10,4,'#e888b0');cx.font='bold 7px sans-serif';cx.textAlign='center';cx.fillStyle='#a8305a';cx.fillText('春耕节',px+32,py+18)}
+  if(!OUTC)for(var i=0;i<3;i++){var ph=(A*0.4+i/3)%1;R(16+i*16,24+ph*32,3,2,'#ffc8e0')}};
+HIART.f_melon=function(R,px,py,wk,A){R(6,30,52,26,'#a87a45');R(2,20,60,12,'#4aa04a');for(var s=0;s<6;s++)R(2+s*10,20,5,12,'#7ed957');R(10,34,16,12,'#2f8a3a');R(12,34,12,4,'#e84a4a');R(30,34,20,12,'#2f8a3a');if(!OUTC){R(13,35,1,1,'#222');R(18,36,1,1,'#222');R(32,36,16,1,'#4aa04a')}R(8,56,4,6,'#6b4426');R(52,56,4,6,'#6b4426')};
+HIART.f_rabbit=function(R,px,py,wk,A){var on=hNight()>0.25,sw=Math.round(Math.sin(A*2)*2);R(31,0,2,14,'#6b4426');R(14+sw,18,36,26,'#fff3d0');R(18+sw,6,6,14,'#fff3d0');R(38+sw,6,6,14,'#fff3d0');R(20+sw,8,2,10,'#f4a8b8');R(40+sw,8,2,10,'#f4a8b8');R(24+sw,26,3,3,'#e84a4a');R(38+sw,26,3,3,'#e84a4a');R(30+sw,32,4,2,'#f4a8b8');if(on)hGlow(R,32+sw,30,18,'#ffd88a',0.3)};
+HIART.f_snowman=function(R,px,py,wk,A){R(12,32,40,28,'#ffffff');R(18,10,28,24,'#ffffff');if(!OUTC){R(40,32,12,28,'#e0e8f0');R(24,18,3,3,'#222');R(36,18,3,3,'#222');R(30,23,8,3,'#f28a3a');R(30,40,3,3,'#222');R(30,48,3,3,'#222')}R(16,4,32,6,'#c8302a');R(22,0,20,6,'#c8302a');R(18,32,28,4,'#e84a3a');R(40,32,4,12,'#e84a3a')};
+</script>
+<script>
+/* 牛马谷 · 29-games.js — 第三批（下）：村里的小游戏
+   钓鱼（看准时机收杆，有稀有鱼）、抓跑掉的牛（点它三下）、姜主任突击抽查（三道题） */
+'use strict';
+/* 一轮“看准时机”的小游戏：红线来回跑，到绿色区域时点按钮 */
+function oneTiming(title,tip,btn,w,sp,cb){var start=8+Math.random()*(84-w),pos=0,dir=1,raf=0,alive=true;
+  menu(title,tip+'<div style="position:relative;height:24px;margin:12px 4px;background:#cfe6f2;border-radius:12px;overflow:hidden;border:2px solid #2a5a7a"><div style="position:absolute;left:'+start+'%;width:'+w+'%;top:0;bottom:0;background:#7ed957"></div><div id="otm" style="position:absolute;left:0;width:4px;margin-left:-2px;top:0;bottom:0;background:#d63a3a"></div></div>',
+    [{l:btn,pri:1,keep:1,f:function(){if(!alive)return;alive=false;cancelAnimationFrame(raf);closeMenu();cb(pos>=start&&pos<=start+w)}},{l:'不钓了',f:function(){alive=false}}],true);
+  function tick(){if(!alive)return;pos+=dir*sp;if(pos>=100){pos=100;dir=-1}if(pos<=0){pos=0;dir=1}var mk=document.getElementById('otm');if(!mk){alive=false;return}mk.style.left=pos+'%';raf=requestAnimationFrame(tick)}tick()}
+
+/* 钓鱼已取消（0.60）：点湖面不再钓鱼 */
+/* ============ 抓跑掉的牛：点它三下 ============ */
+var ESCQ=['我要自由！','哞！抓不到我！','我就出来透透气','今天不想上班！','让我看看外面的世界'];
+function escSpawn(){var vx=camx+VW*0.25+Math.random()*VW*0.5,vy=camy+VH*0.3+Math.random()*VH*0.35,tx=Math.floor(vx/TS),ty=Math.floor(vy/TS);
+  for(var r=0;r<6;r++)for(var dy=-r;dy<=r;dy++)for(var dx=-r;dx<=r;dx++)if(walkable(tx+dx,ty+dy)){runtime.esc={x:(tx+dx)*TS+8,y:(ty+dy)*TS+10,vx:0,vy:0,t:25,hit:0,k:Math.random()<0.75?'cow':'horse',fx:1,mv:1,bub:{t:ppick(ESCQ),l:3},q:ESCQ,dt:0};return true}return false}
+function escStep(dt){var e=runtime.esc;if(!e)return;if(dlgOpen||menuOpen)return;e.t-=dt;
+  if(e.t<=0){runtime.esc=null;toast((e.k==='cow'?'牛':'马')+'自己溜达回去了。它看起来很满足。');return}
+  if(e.bub){e.bub.l-=dt;if(e.bub.l<=0)e.bub=null}else if(Math.random()<0.01)e.bub={t:ppick(ESCQ),l:2};
+  e.dt-=dt;if(e.dt<=0){e.dt=0.6+Math.random()*1.2;var a=Math.random()*6.283,s=(28+e.hit*10)*(e.k==='horse'?1.3:1);e.vx=Math.cos(a)*s;e.vy=Math.sin(a)*s}
+  var nx=e.x+e.vx*dt,ny=e.y+e.vy*dt;if(walkable(Math.floor(nx/TS),Math.floor(ny/TS))&&nx>camx+8&&nx<camx+VW-8&&ny>camy+30&&ny<camy+VH-40){e.x=nx;e.y=ny}else{e.vx=-e.vx;e.vy=-e.vy}if(Math.abs(e.vx)>1)e.fx=e.vx>0?1:-1}
+var _ts29=tapSpecial;tapSpecial=function(tx,ty,w){var e=runtime.esc;if(e&&Math.hypot(e.x-w.x,e.y-8-w.y)<20){e.hit++;e.dt=0;
+    for(var i=0;i<5;i++)runtime.parts.push({x:e.x,y:e.y-8,vx:rnd(-20,20),vy:rnd(-30,-10),g:40,l:0.6,c:'#ffffff',s:2,pop:1});
+    if(e.hit>=3){runtime.esc=null;var rw=200+Math.floor(Math.random()*300);S.money+=rw;S.escN=(S.escN||0)+1;save();say(e.k==='cow'?'牛':'马',[ppick(['“好吧好吧，我回去上班。”','“我只是想出去看看。”','“下次我还跑。”'])],function(){toast('抓回来了！'+bossN()+'奖励你 '+rw+' 银币')})}
+    else{e.bub={t:ppick(['差一点！','哞哈哈！','还有 '+(3-e.hit)+' 下！']),l:1.2}}return true}
+  return _ts29(tx,ty,w)};
+var _dg29=drawG2;drawG2=function(ents,x0,x1,y0,y1){_dg29(ents,x0,x1,y0,y1);var e=runtime.esc;if(e)ents.push({y:e.y,f:function(){animal(e);var px=e.x-camx,py=e.y-camy;cx.font='bold 8px sans-serif';cx.textAlign='center';cx.fillStyle='#ffd34a';cx.fillText('!',px,py-22-Math.abs(Math.sin(tAnim*6))*2);
+  for(var i=0;i<3;i++)rect(px-6+i*5,py+3,3,2,i<e.hit?'#7ed957':'#ffffff80')}})};
+
+/* ============ 姜主任突击抽查：三道题 ============ */
+var QUIZ=[['学校门口左边的牌子写着什么？',['禁止摸鱼','欢迎光临','闲人免进']],['学生要读几天才能毕业？',['10 天','3 天','30 天']],['唐老师当年差点绊倒姜主任，写了几份检讨？',['三份','一份','没写过']],
+  ['孩子们最常夸的是谁？',['姜老师','唐老师','食堂阿姨']],['猪在牧场里能产出什么？',['松露','猪肉','泥巴']],['节日是每个季节的第几天？',['第 4 天','第 1 天','第 7 天']],
+  ['齿轮坊要哪两样原料？',['铁锭和木板','金矿和煤','草料和羊毛']],['姜老师雕像最多能建几座？',['一座','三座','想建几座建几座']],['厨师食材不够时会去买什么？',['牛肉','外卖','空气']],
+  ['奶牛在牧场里产什么？',['牛奶','羊毛','蜂蜜']],['熔炉把铁矿和煤炼成什么？',['铁锭','金锭','齿轮']],['摩天轮每天几点有门票收入？',['早上 9 点','半夜 12 点','从来没有']]];
+function quizStart(){var qs=QUIZ.slice().sort(function(){return Math.random()-0.5}).slice(0,3),i=0,ok=0,B=bossN();
+  function ask(){if(i>=3){fin();return}var q=qs[i++],right=q[1][0],opts=q[1].slice().sort(function(){return Math.random()-0.5});
+    menu('📋 '+B+'突击抽查 · 第 '+i+'/3 题',q[0],opts.map(function(o){return{l:o,keep:1,f:function(){if(o===right){ok++;toast('✅ 答对了')}else toast('❌ 答案是：'+right);ask()}}}),true)}
+  function fin(){closeMenu();if(typeof secQuiz==='function')secQuiz(ok);var rw=ok*300;S.money+=rw;if(ok===3)S.gems=(S.gems||0)+1;S.quizN=(S.quizN||0)+1;save();
+    say(B,ok===3?['“全对！唐老师，业务很熟练嘛。”','（奖励 '+rw+' 银币和 1 颗宝石）']:ok>0?['“答对 '+ok+' 道，还行。”','（奖励 '+rw+' 银币）']:['“一道都没答对？”','“……写份检讨吧。开玩笑的。下次加油。”'])}
+  say(B,['“唐老师，突击抽查！”','“三道题，答对一道奖励 300 银币，全对再加 1 颗宝石。”'],ask)}
+
+/* 随机触发：每隔一阵会有牛跑出来、偶尔突击抽查 */
+var _g29=game2Step;game2Step=function(dt){_g29(dt);escStep(dt);if(SC||busy()||runtime.offline||runtime.peg)return;var h=(S.t/60)%24;if(h<8||h>19)return;
+  S.escT=(S.escT===undefined?240:S.escT)-dt;if(S.escT<=0&&S.cows+S.horses>0&&!runtime.esc){S.escT=300+Math.random()*400;if(escSpawn())toast('🐮 有头'+(runtime.esc.k==='cow'?'牛':'马')+'跑出来了！快点它三下，把它抓回来')}
+  S.qzT=(S.qzT===undefined?500:S.qzT)-dt;if(S.qzT<=0&&S.q.tang.n+S.q.jiang.n>=4){S.qzT=900+Math.random()*900;quizStart()}};
+</script>
+<script>
+/* 牛马谷 · 30-secret.js — 隐藏剧情「约定」
+   ⚠️ 这一段特别隐藏：更新公告只写一句“村子里藏着一段秘密”，不提怎么触发。
+   一共 8 件小事，一件牵出下一件（每件最后一行是下一件的线索），最后在深夜找姜老师，做一个约定，然后是「欢迎姜桑来到新西兰」。
+   线头：清晨 7 点到 8 点之间，连点三下学校钟楼的钟。 */
+'use strict';
+S.sec=S.sec||{n:0};
+function secHr(){return (S.t/60)%24}
+function secNight(){var h=secHr();return h>=19||h<5}
+var SECM=[
+ {t:'热牛奶',l:['早上七点半，钟楼刚刚敲过。','姜老师的办公桌上，又放着一杯热牛奶。杯子上贴着一张便利贴：“趁热喝。”','全校都在猜是谁放的。只有牛马们知道——每天早上，唐老师都比它们起得早。'],h:'便利贴背面还有一行小字：“今天会下雨，记得带伞。”'},
+ {t:'一把伞',l:['雨下得很大。','学校门口的伞架上，多了一把伞，伞柄上系着一根红绳。','姜老师拿起伞的时候，唐老师正好从门口路过，装作什么都没看见。'],h:'伞里夹着一张纸条：“听说你想看樱花。”'},
+ {t:'樱花',l:['她只是随口说了一句：要是村里有樱花就好了。','第二天，村里就多了一棵樱花树。','唐老师说，是姜主任批的预算。姜主任说：我没批过。'],h:'樱花树下埋着一张字条：“月亮最圆的那天晚上，凉亭见。”'},
+ {t:'两杯茶',l:['那天晚上，凉亭里有两杯茶。','一杯是她的，加了一勺蜂蜜；一杯是他的，凉了也没喝。','他们聊了很久，从牛马谷的牛，聊到很远很远的地方。'],h:'茶杯底下压着一根羊毛。牧场里，好像有一只羊是有名字的。'},
+ {t:'姜小绵',l:['牧场里有一只羊，脖子上系着一个蝴蝶结。','小木牌上写着它的名字：“姜小绵”。','唐老师说，它最乖、最白、最会撒娇。说的到底是羊，还是别人，他没说。'],h:'羊毛里卷着一张小纸条：“抽查的题，他偷偷背了很多遍。”'},
+ {t:'背过的题',l:['突击抽查，又是全对。','其实那些题，唐老师每一道都背过很多遍。','不是怕扣钱。是想看出题的人，笑一下。'],h:'他办公室的抽屉没有关严，好像夹着什么东西。'},
+ {t:'明信片',l:['抽屉里有一沓明信片，一张都没有寄出去。','每一张都画着同一个地方：很高的雪山，很蓝的湖，满天的星星，还有一只圆滚滚、没有尾巴的小鸟。','每一张背面，都只写了三个字：“等你来。”'],h:'最后一张上写着：“夜里去水边，往远处看。”'},
+ {t:'远方',l:['夜里的湖水很安静，倒映着整片星空。','唐老师说过，在世界的另一边，星星是倒过来的，南十字星一整夜都亮着，给走夜路的人指方向。','他还说，那里的夏天，是从一月开始的。'],h:'他说，等忙完这一阵，想跟她做一个约定。要等夜深了，月亮出来以后，再去找她。'}];
+function secReveal(i){var m=SECM[i];S.sec.n=i+1;S.sec.last=i;save();
+  for(var k=0;k<14;k++)runtime.parts.push({x:PL.x+rnd(-12,12),y:PL.y-10,vx:rnd(-10,10),vy:rnd(-30,-10),g:0,l:1.6,c:ppick(['#ffd8e8','#fff3c0','#cfe8ff']),s:2,pop:1});
+  say('📖 第 '+(i+1)+' 件小事 ·「'+m.t+'」',m.l.concat(['（'+m.h+'）']))}
+/* 钟楼：线头在这里；以后点它也能想起上一件小事的线索 */
+var CLOCKW={x:17*TS+88,y:18*TS};
+function secClock(){var now=Date.now();runtime.ck=(runtime.ck||[]).filter(function(t){return now-t<4000});runtime.ck.push(now);
+  runtime.floats.push({x:CLOCKW.x,y:CLOCKW.y-18,l:1,t:runtime.ck.length>=3?'当——':'滴答',c:'#fff3c0'});
+  if(runtime.ck.length<3)return;runtime.ck=[];var h=secHr();
+  if(S.sec.n===0){if(h>=7&&h<8)secReveal(0);return}
+  if(S.sec.done){secFinale(true);return}
+  var m=SECM[S.sec.n-1];say('',['你想起了「'+m.t+'」。','（'+m.h+'）'])}
+var _ts30=tapSpecial;tapSpecial=function(tx,ty,w){var n=S.sec.n;
+  if(Math.abs(w.x-CLOCKW.x)<15&&w.y>CLOCKW.y-16&&w.y<CLOCKW.y+14){secClock();return true}
+  if(n===1&&S.wx>=2&&Math.abs(w.x-(22*TS+8))<26&&w.y>21.5*TS&&w.y<24.8*TS){secReveal(1);return true}
+  var b=tx>=0&&ty>=0&&tx<W&&ty<H?BLG[gi(tx,ty)]:null;
+  if(b&&n===2&&b.t==='sakura'&&secNight()){secReveal(2);return true}
+  if(b&&n===3&&(b.t==='pavilion'||b.t==='f_rabbit')&&secNight()){secReveal(3);return true}
+  if(n===7&&secNight()&&tx>=0&&ty>=0&&tx<W&&ty<H&&G[gi(tx,ty)]===2){secReveal(7);return true}
+  return _ts30(tx,ty,w)};
+/* 第 5 件：牧场里多一行，只有到这一步、牧场里有羊才会出现 */
+var _bm30=bldMenu;bldMenu=function(b){runtime.bm30=b;try{_bm30(b)}finally{runtime.bm30=null}};
+var _menu30=menu;menu=function(t,h,o,nc){var b=runtime.bm30;if(b&&o){runtime.bm30=null;if(b.t==='pasture'&&S.sec.n===4&&(b.w.sheep||0)>0)o.push({l:'🐑（有一只羊，一直在看着你）',f:function(){secReveal(4)}})}return _menu30(t,h,o,nc)};
+/* 第 6 件：突击抽查全对（到这一步以后，抽查会来得快一些） */
+function secQuiz(ok){if(S.sec.n===5&&ok===3)runtime.secPQ=1}
+var _g30=game2Step;game2Step=function(dt){_g30(dt);if(S.sec.n===5&&S.qzT>150)S.qzT=150;if(runtime.secPQ&&!busy()){runtime.secPQ=0;secReveal(5)}};
+/* 第 7 件：学校里，唐老师办公室的桌子 */
+var _es30=enterSchool;enterSchool=function(){_es30();if(!SC)return;var p=(SC.props||[]).filter(function(p){return p.x===6&&p.y===3})[0];
+  if(p&&!p.tap){p.stand=[6,4];p.tap=function(){if(S.sec.n===6){secReveal(6)}else if(S.sec.n>6)toast('抽屉里那沓明信片还在。');else toast('唐老师的办公桌，收拾得很整齐。')}}
+  if(S.asJ){var j=(SC.props||[]).filter(function(p){return p.x===2&&p.y===2})[0];if(j){j.tap=function(){tangNMenu()};j.draw=function(px,py){var o2={x:px+8+camx,y:py+14+camy};person(o2,{shirt:'#3d6fb5',hair:'#23232e',glass:1},0);cx.font='bold 5px sans-serif';cx.textAlign='center';cx.fillStyle='#fff';cx.fillText('唐老师',px+8,py-8)}}}};
+/* 最后：深夜找姜老师，做一个约定 */
+var _tk30=talkNPC;talkNPC=function(id){var h=secHr();if(S.sec.n>=8&&!S.sec.done&&!S.asJ&&(id==='jiang'||id==='xz')&&(h>=21||h<4)){secPromise(id);return}_tk30(id)};
+function secPromise(id){var J=id==='xz'?'姜校长':'姜主任';
+  say('唐老师',['“姜老师，这么晚了，还没走？”'],function(){say(J,['“在等一个人。”','“……他好像有话要说。”'],function(){
+   say('唐老师',['“那些热牛奶、那把伞、樱花树、凉亭里的茶……”'],function(){say(J,['“我都知道。”','“羊的名字，我也知道。”'],function(){
+    menu('唐老师','“那……我们能做个约定吗？”',[{l:'“嗯，你说。”',pri:1,f:go},{l:'“让我想想。”',f:function(){say(J,['（她想了三秒。）','“好了，想好了。你说。”'],go)}}],true)})})})});
+  function go(){say('唐老师',['“等忙完这一阵，我们一起去看明信片上的那个地方。”','“很高的雪山，很蓝的湖，倒过来的星星，还有那只没有尾巴的小鸟。”','“这一次，不用寄明信片了。我在那边，等你来。”'],function(){
+    say(J,['“拉钩。”'],function(){say('',['（两个人拉了钩。）','（不远处，牛马们都假装在认真干活。有一头牛偷偷擦了擦眼睛。）'],function(){S.sec.done=1;S.sec.day=S.day;save();secFinale(false)})})})}}
+/* 结局画面：欢迎姜桑来到新西兰 */
+function secFinale(replay){var d=document.getElementById('secFin');if(d)d.remove();d=document.createElement('div');d.id='secFin';
+  d.style.cssText='position:fixed;inset:0;z-index:60;overflow:hidden;background:linear-gradient(#0b1030 0%,#1b2a5a 45%,#2a4a7a 62%,#0e2238 63%,#0a1a2c 100%);color:#fff;font-family:inherit;opacity:0;transition:opacity 1.6s';
+  var st='';for(var i=0;i<90;i++){var x=Math.random()*100,y=Math.random()*58,s=Math.random()<0.15?3:Math.random()<0.5?2:1,dl=(Math.random()*4).toFixed(2);st+='<i style="position:absolute;left:'+x+'%;top:'+y+'%;width:'+s+'px;height:'+s+'px;border-radius:50%;background:#fff;animation:secTw 3s '+dl+'s infinite alternate"></i>'}
+  var sc=[[72,14,5],[75,24,5],[70,20,4],[78,19,4],[74.5,21.5,2]].map(function(p){return '<i style="position:absolute;left:'+p[0]+'%;top:'+p[1]+'%;width:'+p[2]+'px;height:'+p[2]+'px;border-radius:50%;background:#fffbe0;box-shadow:0 0 8px 2px #fff6c0;animation:secTw 2.4s infinite alternate"></i>'}).join('');
+  d.innerHTML='<style>@keyframes secTw{from{opacity:.35}to{opacity:1}}@keyframes secUp{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}</style>'+st+sc+
+   '<svg viewBox="0 0 400 200" preserveAspectRatio="none" style="position:absolute;left:0;right:0;top:34%;width:100%;height:30%"><polygon points="0,200 0,120 40,90 70,110 110,50 140,80 170,40 205,95 240,60 275,100 310,45 345,85 375,70 400,95 400,200" fill="#1a2440"/><polygon points="110,50 98,72 108,68 118,74 124,66" fill="#e8eef8"/><polygon points="170,40 158,62 168,58 178,64 184,56" fill="#e8eef8"/><polygon points="310,45 298,66 308,62 318,68 323,60" fill="#e8eef8"/><polygon points="0,200 0,150 60,135 120,150 200,130 280,148 340,135 400,150 400,200" fill="#121a30"/></svg>'+
+   '<div style="position:absolute;left:0;right:0;top:63%;height:12%;background:linear-gradient(rgba(120,160,220,.25),rgba(0,0,0,0));"></div>'+
+   '<svg viewBox="0 0 60 40" style="position:absolute;right:10%;top:64%;width:64px;height:44px"><ellipse cx="26" cy="22" rx="16" ry="12" fill="#6a4a2e"/><circle cx="40" cy="15" r="6" fill="#6a4a2e"/><line x1="45" y1="16" x2="58" y2="22" stroke="#d8c08a" stroke-width="2"/><line x1="22" y1="33" x2="20" y2="39" stroke="#d8c08a" stroke-width="2"/><line x1="30" y1="33" x2="31" y2="39" stroke="#d8c08a" stroke-width="2"/><circle cx="42" cy="13" r="1.2" fill="#111"/></svg>'+
+   '<div style="position:absolute;left:0;right:0;top:12%;text-align:center;animation:secUp 2s .8s both">'+
+    '<div style="font-size:14px;letter-spacing:4px;color:#cfe0ff;opacity:.85">牛马谷 · 隐藏结局「约定」</div>'+
+    '<div style="font-size:30px;font-weight:bold;margin-top:14px;text-shadow:0 0 12px #8ab8ff">欢迎姜桑<br>来到新西兰</div>'+
+    '<div style="font-size:16px;margin-top:10px;color:#ffe9a8">Kia ora, 姜桑 🌿</div></div>'+
+   '<div style="position:absolute;left:8%;right:8%;bottom:16%;text-align:center;font-size:14px;line-height:1.9;color:#e8f0ff;animation:secUp 2s 2.6s both">雪山、湖水、倒过来的星星，<br>还有那只圆滚滚的小鸟，<br>都在这里等你。<br><span style="color:#ffd8e8">—— 唐老师</span></div>'+
+   '<button type="button" id="secOk" style="position:absolute;left:50%;bottom:6%;transform:translateX(-50%);padding:10px 22px;border-radius:20px;border:2px solid #ffe9a8;background:rgba(255,233,168,.12);color:#ffe9a8;font-size:15px;animation:secUp 1.5s 4s both">'+(replay?'再看一遍，真好':'收下这个约定')+'</button>';
+  document.body.appendChild(d);requestAnimationFrame(function(){d.style.opacity='1'});
+  document.getElementById('secOk').addEventListener('click',function(){d.style.opacity='0';setTimeout(function(){d.remove()},1200);if(!replay)setTimeout(function(){toast('（以后清晨或者任何时候，连点三下钟楼的钟，还能再看一遍。）')},1400)})}
 </script>
 <script>
 /* 牛马谷 · 18-main.js — 仓库详情、主循环、存档导出导入、网页应用更新、启动 */

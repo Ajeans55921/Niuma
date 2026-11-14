@@ -56,7 +56,7 @@ window.addEventListener('error',function(e){try{if(window.__nmErr)return;window.
   d.innerHTML='<b>游戏出错了</b>（存档还在，不会丢）<br>请截图发给开发者：<br><small style="word-break:break-all">'+String(e.message||e).slice(0,160)+'<br>'+String(e.filename||'').split('/').pop()+':'+(e.lineno||'')+'</small><br><button type="button" style="margin-top:8px;font-size:15px;padding:6px 12px;border-radius:8px;border:2px solid #5a2a1a;background:#ffe28a">检查有没有修好的新版本</button>';document.body.appendChild(d);
   d.querySelector('button').onclick=function(){var t=this,sw=navigator.serviceWorker;if(!sw||!sw.controller){location.reload();return}t.textContent='正在检查…';
     sw.addEventListener('message',function(m){var x=m.data||{};if(x.type==='nm-update')location.reload();else if(x.type==='nm-none')t.textContent='还没有新版本，过一会儿再点';else if(x.type==='nm-fail')t.textContent='连不上网，检查网络后再点'});sw.controller.postMessage({type:'nm-check'})}}catch(_){}});
-var NMBUILD='0.40'; /* 版本号：每次改游戏都要改这里 */
+var NMBUILD='0.44'; /* 版本号：每次改游戏都要改这里 */
 /* 游戏代码文件，按这个顺序加载。顺序不能乱：后面的文件会用到、甚至改写前面文件里的东西 */
 var NMJS=[];
 </script>
@@ -98,7 +98,8 @@ var BD={
   power:{n:'发电厂',ch:'电',col:'#e8d03a',cost:520,w:2,h:2,inp:{coal:1},un:'tang6',desc:'烧煤发电（Lv1 60 千瓦，满级 280 千瓦）；工坊菜单里“接通电源”就能用电。还会解锁传送带'}
 };
 Object.keys(BD).forEach(function(k){BD[k].w=BD[k].w||2;BD[k].h=BD[k].h||2;BD[k].id=k});
-BD.canteen={n:'食堂',ch:'食',col:'#e8a24a',cost:800,w:3,h:3,slots:2,un:'jiang6',all:{fish:1,fruit:1,veg:1,egg:1,milk:1},
+IT.beef=['牛肉',30];ICOL.beef='#b8433a';
+BD.canteen={n:'食堂',ch:'食',col:'#e8a24a',cost:800,w:3,h:3,slots:2,un:'jiang6',all:{beef:1,fish:1,fruit:1,veg:1,egg:1,milk:1},
   desc:'学生和毕业生 8:00、11:30、17:30 在这吃饭；要毕业生当厨师；把仓库接到它唯一的入口送食材'};
 BD.dorm={n:'学生宿舍',ch:'宿',col:'#7a6ad6',cost:900,w:3,h:3,un:'jiang6',desc:'住 12 个学生；晚上要有电才有灯（每栋 15 千瓦）'};
 var BORD=['woodcutter','quarry','hayfield','sawmill','warehouse','market','coalmine','ironmine','furnace','power','house','pasture','gearshop','coppermine','goldmine','goldfurnace'];
@@ -1318,6 +1319,7 @@ function drawItemPx(k,x,y){var O='#1c1a22',c=ICOL[k]||'#ccc';
     case 'milk':R(-3,-3,6,7,O);R(-2,-4,4,1,O);R(-2,-2,4,5,'#ffffff');R(-2,-3,4,1,'#3a8ad6');R(-1,0,2,1,'#cfe4f8');break;
     case 'hay':R(-4,-3,8,6,O);R(-3,-2,6,4,'#d9c04a');R(-3,-2,6,1,'#f0dc7a');R(-1,-2,1,4,'#a8902a');R(-3,1,6,1,'#b8a03a');break;
     case 'wool':R(-4,-2,8,5,O);R(-3,-3,6,7,O);R(-3,-2,6,5,'#f4f1ea');R(-2,-3,4,1,'#f4f1ea');R(-2,-2,2,1,'#ffffff');R(1,1,2,1,'#d8d2c4');break;
+    case 'beef':R(-4,-3,8,6,O);R(-3,-2,6,4,'#b8433a');R(-3,-2,6,1,'#d8605a');R(-2,0,4,1,'#f4e0d0');R(1,-1,1,2,'#f4e0d0');break;
     case 'fish':R(-4,-2,7,4,O);R(3,-2,2,4,O);R(-3,-1,5,2,'#7ac0e8');R(3,-1,1,2,'#5a9ac8');R(-2,-1,1,1,'#1c1a22');R(-1,0,3,1,'#b8e0f8');break;
     default:R(-3,-3,6,6,O);R(-2,-2,4,4,c);R(-2,-2,4,1,'#ffffff70');R(-2,1,4,1,'#00000030');}
 }
@@ -1679,6 +1681,7 @@ ICOL.kpi='#f4efe0';ICOL.crystal='#7ae0ff';ICOL.relic='#d9b45a';ICOL.herb='#5ad06
 function addCap(k,n){var m=Math.min(n,Math.max(0,cap()-have(k)));if(m>0){add(k,m);S.made[k]=(S.made[k]||0)+m}return m}
 var STY={canteen:'canteen',woodcutter:'farm',hayfield:'farm',pasture:'farm',quarry:'mine',coalmine:'mine',ironmine:'mine',coppermine:'mine',goldmine:'mine',sawmill:'work',furnace:'work',goldfurnace:'work',gearshop:'work',power:'work',house:'home',warehouse:'store',market:'shop',depot:'stable'};
 var PAL={
+  dorm:{fl:['#c8b090','#c2aa8a'],wl:'#d8d0e8',wt:'#ece6f6',wb:'#a8a0c0'},
   canteen:{fl:['#e8d8b8','#e2d2b0'],wl:'#f0d8a8',wt:'#fbe8c0',wb:'#c8a878'},
   school:{fl:['#d8c9a0','#d2c297'],wl:'#e9dfc6',wt:'#f6efd8',wb:'#b8ad90'},
   farm:{fl:['#7cbc5a','#78b856'],wl:'#9a6a3a',wt:'#b8864a',wb:'#6b4a2a'},
@@ -1767,6 +1770,7 @@ function renderScene(){
   SC.ag.forEach(function(a){ents.push({y:a.y,f:function(){a.draw(a)}})});
   ents.push({y:SC.py,f:function(){person({x:SC.px,y:SC.py,fx:SC.fx},{shirt:'#3d6fb5',hair:'#23232e',glass:1},SC.mv)}});
   ents.sort(function(a,b){return a.y-b.y});ents.forEach(function(e){e.f()});
+  if(SC.drawOver)SC.drawOver(ox,oy);
   cx.font='bold 8px sans-serif';cx.textAlign='center';cx.fillStyle='#fff';cx.fillText(SC.title,VW/2,oy-8);
   if(SC.hint){cx.font='6px sans-serif';cx.fillStyle='#ffffffaa';cx.fillText(SC.hint(),VW/2,oy+SC.h*TS+10)}
   var nk=nightK((S.t/60)%24);if(nk>0){cx.globalCompositeOperation='multiply';cx.fillStyle='rgb('+Math.round(255-nk*60)+','+Math.round(255-nk*55)+','+Math.round(255-nk*30)+')';cx.fillRect(0,0,VW,VH);cx.globalCompositeOperation='source-over'}
@@ -1851,7 +1855,8 @@ function enterSchool(){
   sc.sol[7*sc.w+2]=false;sc.sol[7*sc.w+8]=false;
   if(npcOn('ds'))npcProp('ds',5,7,5,8);
   addProp(sc,{x:3,y:9,w:6,h:1,solid:false,up:2,tap:function(){schoolMenu()},stand:[5,10],draw:function(px,py){rect(px,py-4,96,17,'#5a4630');rect(px+2,py-2,92,13,'#2f5a3a');cx.font='bold 6px sans-serif';cx.textAlign='center';cx.fillStyle='#f2f2e8';cx.fillText('今日作业：准时下班',px+48,py+4);cx.fillText('点我招生',px+48,py+10)}});
-  var seat=0;for(var r=0;r<3;r++)for(var c=0;c<4;c++){(function(r,c,idx){var X=2+c*2,Y=11+r;addProp(sc,{x:X,y:Y,w:1,h:1,solid:true,dy:2,draw:function(px,py){rect(px+1,py+6,14,8,'#a8702f');rect(px+1,py+6,14,2,'#c98a40');if(idx<S.stu.length){var by=Math.sin(tAnim*3+idx)>0.8?1:0;rect(px+4,py-6-by,8,8,'#f1c9a5');rect(px+3,py-8-by,10,4,['#23232e','#6a4a2a','#3a2622'][idx%3]);if(S.stu[idx]&&S.stu[idx].g==='g'){var hc=['#23232e','#6a4a2a','#3a2622'][idx%3];rect(px+1,py-6-by,2,5,hc);rect(px+13,py-6-by,2,5,hc);rect(px+11,py-9-by,3,2,'#e8553a')}rect(px+4,py+1-by,8,6,['#3d8a5a','#8a4a9a','#c4742a','#2c7ab8'][idx%4])}}})})(r,c,seat++)}
+  var seat=0;for(var r=0;r<3;r++)for(var c=0;c<4;c++){(function(r,c,idx){var X=2+c*2,Y=11+r;addProp(sc,{x:X,y:Y,w:1,h:1,solid:true,dy:2,draw:function(px,py){rect(px+1,py+6,14,8,'#a8702f');rect(px+1,py+6,14,2,'#c98a40');if(false){var by=Math.sin(tAnim*3+idx)>0.8?1:0;rect(px+4,py-6-by,8,8,'#f1c9a5');rect(px+3,py-8-by,10,4,['#23232e','#6a4a2a','#3a2622'][idx%3]);if(S.stu[idx]&&S.stu[idx].g==='g'){var hc=['#23232e','#6a4a2a','#3a2622'][idx%3];rect(px+1,py-6-by,2,5,hc);rect(px+13,py-6-by,2,5,hc);rect(px+11,py-9-by,3,2,'#e8553a')}rect(px+4,py+1-by,8,6,['#3d8a5a','#8a4a9a','#c4742a','#2c7ab8'][idx%4])}}})})(r,c,seat++)}
+  if(typeof classKids==='function')classKids(sc);
   for(var q=0;q<0;q++)mkAgent(sc,'grad',(2+q*3)*TS,7.6*TS,roamPick(1.5*TS,7.3*TS,9*TS,8.6*TS),{sp:16,lines:['我毕业了，工牌呢？','我正在被安排。','老师好，我现在也是牛马了。']});
   enterScene(sc);
 }
@@ -2035,7 +2040,7 @@ IT.fish=['鲜鱼',16];IT.wool=['羊毛',20];ICOL.wool='#f4f1ea';IORD.push('wool'
 ICOL.fish='#7ac0e8';ICOL.fert='#7a5a34';ICOL.fruit='#e8503a';ICOL.veg='#6cc04a';
 ['fish','fert','fruit','veg'].forEach(function(k){IORD.push(k)});
 Object.keys(BD).forEach(function(k){var d=BD[k];var a=Object.assign({},d.inp||{},d.opt||{});d.all=Object.keys(a).length?a:null});
-UNL.jiang[6]='渔场（湖边）';UNL.tang[12]='堆肥坊';UNL.jiang[9]='果园';UNL.jiang[11]='菜园';
+UNL.jiang[6]='渔场（湖边）';UNL.tang[12]='堆肥坊';UNL.jiang[3]=(UNL.jiang[3]?UNL.jiang[3]+'、':'')+'菜园';UNL.jiang[5]=(UNL.jiang[5]?UNL.jiang[5]+'、':'')+'果园';
 STY.fishery='farm';STY.orchard='farm';STY.garden='farm';STY.compost='farm';
 S.gold=S.gold||0;S.gems=S.gems||0;S.capx=S.capx||0;S.offx=S.offx||0;S.mail=S.mail||[];S.fcd=0;
 /* 精灵 */
@@ -2047,12 +2052,29 @@ var NSPR={
  compost:function(px,py,wk,A){rect(px+3,py+14,26,13,'#5a3d22');rect(px+7,py+9,18,8,'#6b4a2a');rect(px+11,py+6,10,5,'#7a5a34');rect(px+2,py+26,28,3,'#00000025');
   if(wk){var a=Math.floor(A*8)%4;rect(px+8+a*4,py+3+(a%2)*2,2,2,'#222');rect(px+22-a*3,py+5,2,2,'#222')}rect(px+1,py+16,3,10,'#8a5a35')}
 };
-var _dbs=drawBsprite;drawBsprite=function(b,px,py,wk,A){var f=NSPR[b.t];if(f)f(px,py,wk,A);else _dbs(b,px,py,wk,A)};
+var _dbs=drawBsprite;drawBsprite=function(b,px,py,wk,A){var f=NSPR[b.t];if(f)f(px,py,wk,A,b);else _dbs(b,px,py,wk,A)};
+/* 果园：四棵果树，果子随生产进度一个个长出来；树下有一筐摘好的水果 */
+NSPR.orchard=function(px,py,wk,A,b){var g=b?(wk?0.35+0.65*b.p:0.75):0.75,fc=['#e8503a','#f2a23a','#f28aa0','#d63a3a'],sw=Math.round(Math.sin(A*1.5));
+  rect(px,py+2,32,28,'#79c25a');for(var i=0;i<8;i++)rect(px+((i*7)%30)+1,py+4+((i*11)%24),1,2,'#5aa44a');
+  rect(px,py+2,32,1,'#8a5a35');rect(px,py+29,32,1,'#8a5a35');rect(px,py+2,1,28,'#8a5a35');rect(px+31,py+2,1,28,'#8a5a35');for(var q=0;q<5;q++){rect(px+q*7+1,py+1,1,3,'#6b4426');rect(px+q*7+1,py+28,1,3,'#6b4426')}
+  [[2,3],[17,4],[3,15],[17,16]].forEach(function(p,i){var x=px+p[0],y=py+p[1];rect(x+5,y+9,3,6,'#6b4426');rect(x+4,y+14,5,1,'#00000030');
+    rect(x+1+sw*0,y+1,11,8,'#3f8a3a');rect(x+2,y,9,1,'#3f8a3a');rect(x,y+2,13,5,'#3f8a3a');rect(x+2,y+1,6,3,'#52a248');rect(x+1,y+8,11,1,'#2f6a2a');
+    var n=1+Math.floor(g*5);[[2,3],[8,2],[5,5],[10,5],[3,6],[7,7]].slice(0,n).forEach(function(f){rect(x+f[0],y+f[1],2,2,fc[i]);rect(x+f[0],y+f[1],1,1,'#ffffffa0')})});
+  var fr=b&&b.out&&b.out.fruit||0;rect(px+13,py+24,7,4,'#a8702f');rect(px+13,py+24,7,1,'#c98a40');if(fr>0){rect(px+14,py+23,2,2,fc[0]);if(fr>3)rect(px+16,py+22,2,2,fc[1]);if(fr>6)rect(px+17,py+23,2,2,fc[2])}};
+/* 菜园：三垄菜（白菜、胡萝卜、西红柿）跟着生产进度长大，旁边站着稻草人 */
+NSPR.garden=function(px,py,wk,A,b){var g=b?(wk?0.3+0.7*b.p:0.75):0.75,st=Math.min(3,Math.floor(g*4));
+  rect(px,py+2,32,28,'#79c25a');rect(px+2,py+5,23,23,'#6b4a2a');for(var r=0;r<3;r++)rect(px+2,py+11+r*7,23,1,'#5a3d22');
+  for(var c=0;c<4;c++){var x=px+4+c*5;
+    /* 白菜 */var s1=2+Math.min(2,st);rect(x,py+10-s1,s1+1,s1,'#6cc04a');rect(x+1,py+10-s1+1,s1-1,s1-1,'#9ee07a');rect(x+1,py+10-s1,Math.max(1,s1-1),1,'#d0f4a8');
+    /* 胡萝卜 */rect(x+1,py+14-st,1,st+2,'#4fa83a');rect(x,py+15-st,1,st+1,'#5cb84a');rect(x+2,py+15-st,1,st+1,'#6cc04a');if(st>=1)rect(x,py+17,3,1,'#f28a2a');
+    /* 西红柿 */rect(x+1,py+19,1,6,'#9a7a54');rect(x,py+19+(3-st),3,st+2,'#3f8a3a');if(st>=1){rect(x+2,py+21,1,1,'#e8403a');if(st>=2)rect(x,py+23,1,1,'#e8403a');if(st>=3)rect(x+2,py+24,1,1,'#ff6a4a')}}
+  var sw=Math.round(Math.sin(A*2));rect(px+27,py+12,1,14,'#8a5a35');rect(px+24,py+15,7,1,'#8a5a35');rect(px+25,py+16+sw,5,6,'#c4742a');rect(px+26,py+8,3,4,'#f0d070');rect(px+25,py+7,5,2,'#a8702f');rect(px+27,py+10,1,1,'#222');
+  var vg=b&&b.out&&b.out.veg||0;if(vg>0){rect(px+25,py+25,6,4,'#a8702f');rect(px+26,py+24,2,2,'#8ed46a');if(vg>4)rect(px+28,py+24,2,2,'#f28a2a')}};
 /* 阅读：新建筑 */
 BD.fishery={n:'渔场',ch:'渔',col:'#4a8ab8',cost:200,res:'~',out:'fish',t:6,slots:2,un:'jiang6',desc:'要建在湖边；投喂草料产量翻倍',opt:{hay:1},w:2,h:2,id:'fishery'};
 BD.compost={n:'堆肥坊',ch:'肥',col:'#7a5a34',cost:160,inp:{hay:2},out:'fert',t:6,slots:2,un:'tang12',w:2,h:2,id:'compost'};
-BD.orchard={n:'果园',ch:'果',col:'#d8503a',cost:320,out:'fruit',t:9,slots:2,un:'jiang9',desc:'种果树；施肥产量翻倍',opt:{fert:1},w:2,h:2,id:'orchard'};
-BD.garden={n:'菜园',ch:'菜',col:'#5cb84a',cost:200,out:'veg',t:5,slots:2,un:'jiang11',desc:'种蔬菜；施肥产量翻倍',opt:{fert:1},w:2,h:2,id:'garden'};
+BD.orchard={n:'果园',ch:'果',col:'#d8503a',cost:320,out:'fruit',t:9,slots:2,un:'jiang5',desc:'种果树；施肥产量翻倍',opt:{fert:1},w:2,h:2,id:'orchard'};
+BD.garden={n:'菜园',ch:'菜',col:'#5cb84a',cost:200,out:'veg',t:5,slots:2,un:'jiang3',desc:'种蔬菜；施肥产量翻倍',opt:{fert:1},w:2,h:2,id:'garden'};
 ['fishery','compost','orchard','garden'].forEach(function(k){var d=BD[k];var a=Object.assign({},d.inp||{},d.opt||{});d.all=Object.keys(a).length?a:null;BORD.push(k)});
 /* 金币宝石 */
 function giveBonus(id,n){
@@ -2301,7 +2323,7 @@ ACH.push({n:'转正了',d:'召开转正大会',rw:1000,c:function(){return!!S.en
    第 1~2 条：1~2 种；第 3~5 条：2~3 种；第 6 条以后：3~4 种。
    农牧渔的货（鸡蛋、牛奶、羊毛、鱼、水果、蔬菜）只有你已经能产出时才会要。
    奖励：最多 500 银币；金币、宝石见 giveBonus（每单最多 3 金币、1 宝石）。 */
-function canMake(k){if(have(k)>0||(S.made&&S.made[k]>0))return true;return S.bld.some(function(b){var d=BD[b.t];return d.out===k||(b.t==='pasture'&&((k==='milk'&&b.w.dairy)||(k==='egg'&&b.w.hen)||(k==='wool'&&b.w.sheep)))})}
+function canMake(k){return S.bld.some(function(b){var d=BD[b.t];return d.out===k||(b.t==='pasture'&&((k==='milk'&&b.w.dairy)||(k==='egg'&&b.w.hen)||(k==='wool'&&b.w.sheep)))})}
 function farmPool(n){return[['egg',10+n*3],['milk',8+n*3],['wool',6+n*2],['fish',6+n*2],['fruit',6+n*2],['veg',8+n*3]].filter(function(q){return IT[q[0]]&&canMake(q[0])})}
 var _nq3=newQuest;newQuest=function(id){_nq3(id);var q=S.q[id],c=q&&q.cur;if(!c)return;var n=q.n;
   if(n>0){var want=n>=6?3+(Math.random()<0.5?1:0):n>=3?2+(Math.random()<0.5?1:0):1+(Math.random()<0.4?1:0);
@@ -2320,6 +2342,12 @@ var _gb2=giveBonus;giveBonus=function(id,n){
   _gb2(id,n)};
 /* 老存档里已经领到的指令：奖励也封顶 500 */
 (function(){for(var id in S.q){var c=S.q[id]&&S.q[id].cur;if(c&&c.rw>500)c.rw=500}})();
+
+/* 0.41：手上已经领到的指令里，要的是还产不出来的货（比如蔬菜），换掉 */
+(function(){var farm=['egg','milk','wool','fish','fruit','veg'];for(var id in S.q){var q=S.q[id],c=q&&q.cur;if(!c||!c.need)continue;
+  var bad=Object.keys(c.need).filter(function(k){return farm.indexOf(k)>=0&&!canMake(k)});if(!bad.length)continue;
+  if(bad.length>=Object.keys(c.need).length){try{newQuest(id)}catch(e){}continue}
+  bad.forEach(function(k){delete c.need[k]})}})();
 </script>
 <script>
 /* 牛马谷 · 16-transport.js — 进出料口、铺路运输、牛马运货、A/B/C 分支 */
@@ -2548,6 +2576,10 @@ var UPDT='<b>进出口和路上运输</b>取代了运输队；<b>牛马市场</b
 /* ============ 更新公告：每次发新版本，在最上面加一条（v 要和 NMBUILD 一样） ============
    by：这次是听谁的指导；add 新增、chg 调整、fix 修复 */
 var NMLOG=[
+ {v:'0.44',d:'11月14日',by:'姜主任',w:'「温暖关怀、细节育人」',chg:['宿舍的床改短了，学生睡觉时<b>裹成圆圆的一团</b>，只露出小脑袋，被子还会随呼吸一鼓一鼓']},
+ {v:'0.43',d:'11月14日',by:'姜主任',w:'「改善伙食、关爱学生」',add:['食堂加了一道菜：<b>牛肉</b>🥩。在食堂菜单里<b>采购</b>，每份 12 银币（比外面买饭便宜），吃到牛肉的学生到下一顿学习快 20%'],chg:['宿舍里睡觉的学生改成了<b>可爱的样子</b>：圆脑袋、闭着眼、红脸蛋，盖着小花被子']},
+ {v:'0.42',d:'11月14日',by:'姜主任',w:'「精细化育人、一个都不能少」',add:['<b>学生宿舍</b>可以进去看了：6 张横着的<b>上下铺</b>，有电时灯亮着，没电黑漆漆的'],chg:['宿舍、教室、食堂里的学生<b>跟着作息走</b>：到点一个个从门口进来坐下（或上床睡觉），时间到了再一个个出去；不在的时候里面是空的','晚上下了晚自习，教室会熄灯']},
+ {v:'0.41',d:'11月14日',by:'姜主任',w:'「菜篮子工程」',chg:['<b>菜园</b>提前到姜主任第 3 条指令解锁，<b>果园</b>提前到第 5 条','果园画上了<b>四棵果树</b>，果子会一个个长出来；菜园画上了<b>白菜、胡萝卜、西红柿</b>和稻草人，会跟着慢慢长大'],fix:['还没有菜园、果园，领导的指令就要蔬菜、水果（现在只要你能产出的货；已经领到的这种指令会自动换掉）']},
  {v:'0.40',d:'11月14日',by:'姜主任',w:'「以生为本、全面发展」',add:['新建筑<b>学生宿舍</b>：每栋住 12 人；晚上要用电才有灯（每栋 15 千瓦），没电学生会抱怨','学生有了<b>作息</b>：早上从宿舍去学校早读，<b>8:00 早饭</b>、11:30 午饭、17:30 晚饭都会从学校门口走去食堂、吃完走回来，课间在操场玩，晚自习下课后回宿舍','<b>学校会损坏</b>：大约 20 天一次，要花至少 500 银币维修，修好前学生学习慢 30%'],chg:['学校最高扩建到 <b>Lv6</b>，最多同时收 <b>12 名学生</b>','<b>上学免费</b>（反正以后都是你的牛马）','食堂食材不够时，每人每顿采购费改成 <b>15 银币</b>']},
  {v:'0.39',d:'11月14日',by:'姜主任',w:'「稳字当头、安全第一」',fix:['建了<b>食堂</b>（或果园、菜园、渔场）以后，再打开游戏<b>画面空白</b>、什么都没有'],add:['万一游戏出错，会显示出错提示，不会再是一片空白（存档不会丢）']},
  {v:'0.38',d:'11月14日',by:'姜主任',w:'「立德树人、吃饱饭才能读好书」',add:['新建筑<b>食堂</b>（姜主任第 6 条指令后解锁）：学生和毕业生每天 <b>11:30、17:30</b> 吃饭；要派毕业生当<b>厨师</b>；仓库用路或传送带接到它唯一的<b>入口</b>，送鱼、水果、蔬菜、鸡蛋、牛奶','没有食堂、没人做饭或者断粮：差的饭<b>花钱在外面采购</b>（每份 25 银币）；钱也不够就饿肚子，学生学得慢、毕业生干活慢一半','食堂可以<b>进去看</b>：饭点孩子们坐着吃饭','<b>牛马可以出售</b>：牛马菜单里，空闲的可以半价卖掉','学校<b>随机事件</b>：学生打架、发烧、作业被牛吃了、家长来访、晚自习说话，可以唐老师处理，也可以请姜主任处理'],chg:['学生读 <b>10 天</b>才毕业','学生画成了<b>小孩</b>，有男孩有女孩','没工作的毕业生不再在学校附近闲逛']},
@@ -2613,9 +2645,9 @@ var STUD=6000; /* 一天 = 600 秒（游戏里 6:00 到第二天 2:00），10 �
    食堂要有毕业生当厨师才开伙；食材从唯一的入口送进来（鱼、水果、蔬菜、鸡蛋、牛奶）。
    没有食堂、没人做饭、或者食材不够：差的份数花钱在外面采购（每份 15 银币）。
    钱也不够：饿肚子到下一顿——学生学得慢，毕业生干活慢一半。 */
-var FOOD=['fish','fruit','veg','egg','milk'],MEALP=15;
+var FOOD=['beef','fish','fruit','veg','egg','milk'],MEALP=15,BEEFP=12;
 /* BD.canteen 定义在 01-core.js（别的文件加载时就要认识它，不然老存档里有食堂会打不开） */
-BD.canteen.all={fish:1,fruit:1,veg:1,egg:1,milk:1}; /* 01-core 会按 inp/opt 重算 all，这里补回来 */
+BD.canteen.all={beef:1,fish:1,fruit:1,veg:1,egg:1,milk:1};if(IORD.indexOf('beef')<0)IORD.push('beef'); /* 01-core 会按 inp/opt 重算 all，这里补回来 */
 if(S.bld.some(function(b){return b.t==='canteen'}))rebuildGrid(); /* 老存档里的食堂：补上它的入口 */
 BORD.push('canteen');SZT.canteen=[3,3,4,4,4];SLT.canteen=[2,3,4,5,6];
 function diners(){return (S.stu||[]).length+(S.grad||0)}
@@ -2624,11 +2656,12 @@ function foodIn(b){var n=0;FOOD.forEach(function(k){n+=b.inb[k]||0});return n}
 function mealName(sl){return ['午饭','晚饭','早饭'][sl]}
 function doMeal(sl){var n=diners();if(!n)return;
   var cs=S.bld.filter(function(b){return b.t==='canteen'&&cooksOK(b)}),left=n,served=0,guard=0;
-  while(left>0&&guard++<999){var got=false;cs.forEach(function(b){if(left<=0)return;for(var i=0;i<FOOD.length;i++){var k=FOOD[i];if((b.inb[k]||0)>0){b.inb[k]--;left--;served++;got=true;return}}});if(!got)break}
+  while(left>0&&guard++<999){var got=false;cs.forEach(function(b){if(left<=0)return;for(var i=0;i<FOOD.length;i++){var k=FOOD[i];if((b.inb[k]||0)>0){b.inb[k]--;left--;served++;got=true;if(k==='beef')runtime.beefN=(runtime.beefN||0)+1;return}}});if(!got)break}
   var cost=left*MEALP,paid=Math.min(S.money,cost),bought=Math.floor(paid/MEALP);S.money-=bought*MEALP;var hungry=left-bought;
   S.hungry=hungry>0?1:0;S.meal={day:S.day,sl:sl,n:n,served:served,bought:bought,cost:bought*MEALP,hungry:hungry};
+  S.beefy=runtime.beefN>0?1:0;S.meal.beef=runtime.beefN||0;runtime.beefN=0;
   if(runtime.offline)return;
-  var msg=mealName(sl)+'：'+n+' 人就餐';if(served)msg+='，食堂供应 '+served+' 份';if(bought)msg+='，外面采购 '+bought+' 份花了 '+bought*MEALP+' 币';if(hungry)msg+='，还有 '+hungry+' 人饿肚子！';
+  var msg=mealName(sl)+'：'+n+' 人就餐';if(served)msg+='，食堂供应 '+served+' 份';if(S.meal.beef)msg+='（有牛肉！孩子们特别开心）';if(bought)msg+='，外面采购 '+bought+' 份花了 '+bought*MEALP+' 币';if(hungry)msg+='，还有 '+hungry+' 人饿肚子！';
   toast(msg);
   if(!cs.length&&bought&&!S.mealTip){S.mealTip=1;say('姜主任',['“唐老师，孩子们天天吃外卖，学校的钱都花在外卖上了。”','“建个食堂吧，派个毕业生当厨师，从仓库送鱼、水果、蔬菜过去。”'])}}
 var _g9=game2Step;game2Step=function(dt){_g9(dt);
@@ -2646,6 +2679,8 @@ var _bm9=bldMenu;bldMenu=function(b){if(b.t!=='canteen')return _bm9(b);
   o.push({row:1});
   o.push({inrow:1,l:'厨师（毕业生）'+cook+' ',s:'空闲毕业生 '+gradFree(),r:'＋',dis:gradFree()<1||cook>=maxs,why:cook>=maxs?'位置满了，升级才能多放':'没有空闲的毕业生，去学校招生，读 10 天毕业',keep:1,f:function(){b.w.grad=cook+1;bldMenu(b)}});
   o.push({inrow:1,l:'厨师',r:'－',dis:cook<1,keep:1,f:function(){b.w.grad=cook-1;bldMenu(b)}});
+  var room=lim-(b.inb.beef||0),nb=Math.min(10,room);
+  o.push({l:'🥩 采购牛肉 ×'+Math.max(nb,0),s:'直接送进食堂，每份 '+BEEFP+' 银币（比外面买饭便宜）· 吃到牛肉，学生到下一顿学习快 20%',r:nb*BEEFP+'币',dis:nb<1||S.money<nb*BEEFP,why:nb<1?'牛肉放满了':'银币不够',keep:1,f:function(){S.money-=nb*BEEFP;b.inb.beef=(b.inb.beef||0)+nb;toast('采购牛肉 ×'+nb);bldMenu(b)}});
   portRows(b,o,function(){bldMenu(b)});
   o.push(upRow(b));
   o.push({l:'搬家',s:'换个位置 · 搬家费 '+moveFee(b)+' 币',r:'迁移',f:function(){startMove(b)}});
@@ -2676,18 +2711,16 @@ var _eb9=enterBuilding;enterBuilding=function(b){if(!b||b.t!=='canteen')return _
   /* 打饭窗口 */
   addProp(sc,{x:1,y:2,w:9,h:1,solid:true,up:14,tap:function(){bldMenu(b)},stand:[5,3],draw:function(px,py){
     rect(px,py-14,9*TS,30,'#c9b08a');rect(px,py-14,9*TS,3,'#e8d4b0');rect(px,py+8,9*TS,8,'#9a7a54');
-    FOOD.forEach(function(k,i){var bx=px+6+i*28;rect(bx,py-6,20,10,'#e8e8ee');rect(bx+1,py-5,18,8,ICOL[k]||'#ccc');rect(bx+1,py-5,18,2,'#ffffff60');cx.font='5px sans-serif';cx.textAlign='center';cx.fillStyle='#3a2a1a';cx.fillText(IT[k][0]+' '+(b.inb[k]||0),bx+10,py+13)});
+    FOOD.forEach(function(k,i){var bx=px+4+i*23;rect(bx,py-6,20,10,'#e8e8ee');rect(bx+1,py-5,18,8,ICOL[k]||'#ccc');rect(bx+1,py-5,18,2,'#ffffff60');cx.font='5px sans-serif';cx.textAlign='center';cx.fillStyle='#3a2a1a';cx.fillText(IT[k][0]+' '+(b.inb[k]||0),bx+10,py+13)});
     cx.font='bold 6px sans-serif';cx.textAlign='center';cx.fillStyle='#7a3a1a';cx.fillText('打饭窗口 · 一人一份 · 不许插队',px+4.5*TS,py-8)}});
   /* 餐桌 */
   var seats=[];[[2,5],[6,5],[2,7.5],[6,7.5]].forEach(function(q){addProp(sc,{x:q[0],y:q[1],w:3,h:1,solid:true,dy:2,draw:function(px,py){rect(px+2,py+4,44,9,'#b8864a');rect(px+2,py+4,44,2,'#d9a566');rect(px+4,py+13,3,4,'#6b4426');rect(px+41,py+13,3,4,'#6b4426');
-      if(mealSoon()&&cooksOK(b))for(var i=0;i<4;i++){rect(px+6+i*10,py+5,6,3,'#fffaf0');rect(px+7+i*10,py+5,4,2,ICOL[FOOD[i%5]])}}});
+      if(mealSoon()&&cooksOK(b))for(var i=0;i<4;i++){rect(px+6+i*10,py+5,6,3,'#fffaf0');rect(px+7+i*10,py+5,4,2,ICOL[FOOD[i%6]])}}});
     for(var i=0;i<4;i++)seats.push([(q[0]+0.4+i*0.7)*TS,(q[1]+1.25)*TS])});
   /* 厨师（毕业生） */
   for(var c=0;c<Math.min(b.w.grad||0,3);c++)mkAgent(sc,'grad',(3+c*2.5)*TS,1.8*TS,roamPick(1.5*TS,1.6*TS,9.5*TS,1.9*TS),{sp:14,lines:['今天的鱼很新鲜。','排好队！','我毕业了，现在掌勺。','多吃蔬菜，长得高。']});
-  /* 学生：饭点坐着吃，其他时间偶尔来转转 */
-  var ns=Math.min((S.stu||[]).length,seats.length),eat=mealSoon();
-  for(var k=0;k<ns;k++)(function(k){var s0=seats[k];mkAgent(sc,'kid',eat?s0[0]:(2+Math.random()*7)*TS,eat?s0[1]:(9+Math.random())*TS,function(a){if(mealSoon()){a.tx=s0[0];a.ty=s0[1];a.sp=18}else{a.tx=(1.5+Math.random()*8)*TS;a.ty=(8.8+Math.random()*1)*TS;a.sp=14}},
-    {g:S.stu[k].g,sh:['#3d8a5a','#8a4a9a','#c4742a','#2c7ab8'][k%4],hr:['#23232e','#6a4a2a','#3a2622'][k%3],lines:['好吃！','我还要一碗。','不想吃胡萝卜。','食堂阿姨……不对，食堂毕业生好！','吃饱了才有力气写作业。'],draw:function(a){kidSprite(a,a.mv);if(a.bub)drawBub(a,a.y-camy-20)}})})(k);
+  /* 学生：按作息一个个进来坐下吃饭，吃完一个个出去 */
+  if(typeof occAgents==='function')occAgents(sc,(S.stu||[]).slice(0,seats.length).map(function(st,k){return{i:k,key:'canteen'+b.id,x:seats[k][0],y:seats[k][1]}}),{lines:['好吃！','今天有牛肉吗？','我还要一碗。','不想吃胡萝卜。','食堂的饭比姜老师做的差一点点。','吃饱了才有力气写作业。','姜老师吃饭了吗？']});
   sc.drawBack=function(ox,oy){cx.font='bold 7px sans-serif';cx.textAlign='center';cx.fillStyle='#fffaf0';rect(ox+W2/2-30,oy+3,60,10,'#00000066');cx.fillText('牛马谷食堂',ox+W2/2,oy+11)};
   enterScene(sc)};
 
@@ -2809,16 +2842,72 @@ function dmgMenu(){if(!S.dmg)return;var d=S.dmg;menu('🔧 学校需要维修','
 function repairSchool(){var d=S.dmg;if(!d||S.money<d.c)return;S.money-=d.c;S.dmg=null;S.dmgNext=S.day+18+Math.floor(Math.random()*5);
   say('姜主任',['“'+d.n+'修好了。唐老师，钱花在孩子身上，值。”'])}
 /* 学习速度：损坏时 ×0.7 */
-var _g20b=game2Step;game2Step=function(dt){if(S.dmg)(S.stu||[]).forEach(function(st){st.t-=dt*0.3*(S.hungry?0.3:1)});_g20b(dt)};
+var _g20b=game2Step;game2Step=function(dt){if(S.dmg)(S.stu||[]).forEach(function(st){st.t-=dt*0.3*(S.hungry?0.3:1)});if(S.beefy&&!S.hungry)(S.stu||[]).forEach(function(st){st.t+=dt*0.2});_g20b(dt)};
 /* 学校菜单、任务面板里也能修 */
 var _sm20=schoolMenu;schoolMenu=function(){_sm20();if(!S.dmg)return;var box=$('#mbox');if(!box)return;var bt=document.createElement('button');bt.type='button';bt.className='mb pri';bt.innerHTML='🔧 修学校：'+S.dmg.n+'<small>'+S.dmg.c+' 银币 · 修好前学习慢 30%</small>';bt.onclick=function(){closeMenu();dmgMenu()};var f=box.querySelector('button');if(f)box.insertBefore(bt,f.nextSibling);else box.appendChild(bt)};
 var _xr20=extraRows;extraRows=function(o){_xr20(o);if(S.dmg)o.unshift({l:'🔧 学校需要维修',s:S.dmg.n+' · '+S.dmg.c+' 银币',r:'修理',pri:1,keep:1,f:function(){closeMenu();dmgMenu()}})};
+
+/* ============ 建筑里面的学生：按作息一个个进来、一个个出去 ============
+   list：[{i:第几个学生, key:这个地方的标记（school / canteen+id / dorm+id）, x,y:座位或床前的位置}]
+   不在这里的学生走到门口就消失；从中间过道进出。opts.seat(a,o)：到座位后怎么画（比如躺在床上）。 */
+function kidAt(i){var k=(runtime.kids||[])[i];return k?k.at:null}
+function occAgents(sc,list,opts){opts=opts||{};var dpx=[sc.door[0]*TS+8,(sc.h-1)*TS+8],aisle=dpx[0];
+  list.forEach(function(o){var st=S.stu[o.i]||{},inside=kidAt(o.i)===o.key;
+    var a=mkAgent(sc,'kid',inside?o.x:dpx[0],inside?o.y:dpx[1],function(a){if(a.wp&&a.wp.length){var w=a.wp.shift();a.tx=w[0];a.ty=w[1];a.wait=0}else a.wait=1e9},
+      {sp:24,g:st.g||'b',sh:['#3d8a5a','#8a4a9a','#c4742a','#2c7ab8','#d6587a','#3a9a9a'][o.i%6],hr:['#23232e','#6a4a2a','#3a2622'][o.i%3],lines:opts.lines||KIDL,draw:function(a){
+        var ins=kidAt(o.i)===o.key;
+        if(ins!==a.ins){a.ins=ins;a.wp=ins?[[aisle,o.y],[o.x,o.y]]:[[aisle,o.y],[dpx[0],dpx[1]]];a.tx=a.x;a.ty=a.y;a.wait=(o.i%12)*0.25}
+        var atDoor=Math.hypot(a.x-dpx[0],a.y-dpx[1])<3,atSpot=Math.hypot(a.x-o.x,a.y-o.y)<2;
+        if(!ins&&atDoor)return;
+        if(ins&&atSpot&&opts.seat){opts.seat(a,o);return}
+        kidSprite(a,a.mv);if(a.bub)drawBub(a,a.y-camy-20)}});
+    a.ins=inside;a.tx=a.x;a.ty=a.y;a.wait=1e9})}
+/* 教室：12 张课桌（4 列 × 3 排），学生坐在桌子后面 */
+function classKids(sc){var L=[];for(var idx=0;idx<Math.min((S.stu||[]).length,12);idx++){var r=Math.floor(idx/4),c=idx%4;L.push({i:idx,key:'school',x:(2+c*2)*TS+8,y:(11+r)*TS+5})}
+  occAgents(sc,L,{lines:KIDL});
+  sc.drawOver=function(ox,oy){var hr=(S.t/60)%24;if(isNight(hr)&&!schoolLit(hr,21.5)){cx.globalAlpha=0.5;rect(ox,oy,sc.w*TS,sc.h*TS,'#0a1020');cx.globalAlpha=1}}}
+/* 宿舍里面：6 张横着的上下铺（左右各 3 张），12 个床位 */
+var _eb20=enterBuilding;enterBuilding=function(b){if(!b||b.t!=='dorm')return _eb20(b);
+  var sc=newSC('in','dorm',11,11,'学生宿舍 · 内部');sc.bld=b;var key='dorm'+b.id,ds=dorms(),j0=ds.indexOf(b)*DORMCAP,beds=[];
+  sc.hint=function(){var hr=(S.t/60)%24,n=(runtime.kids||[]).filter(function(k){return k.at===key}).length;return n?(isNight(hr)?(b.pw?'熄灯睡觉了，嘘——':'没电，黑漆漆的'):'')+'（'+n+' 人在宿舍）':'学生都去上学了'};
+  [[1,3],[8,3],[1,5],[8,5],[1,7],[8,7]].forEach(function(q,bi){var bx=q[0],by=Math.floor(q[1]);
+    addProp(sc,{x:bx,y:by,w:2,h:1,solid:true,up:14,draw:function(px,py){var ty=py+(q[1]-by)*TS;
+      rect(px+1,ty-12,2,26,'#6b4a8a');rect(px+29,ty-12,2,26,'#6b4a8a');
+      [[-10,0],[2,1]].forEach(function(l){var yy=ty+l[0];rect(px+3,yy,26,6,'#ece6f6');rect(px+3,yy+5,26,2,'#6b4a8a');rect(px+4,yy+1,7,4,'#ffffff')});
+      rect(px+3,ty-12,26,1,'#8a6aaa');rect(px+3,ty-3,1,4,'#8a6aaa');rect(px+28,ty-3,1,4,'#8a6aaa')}});
+    for(var lv=0;lv<2;lv++)beds.push({bx:bx,by:q[1],lv:lv})});
+  var L=[];for(var k=0;k<Math.min(DORMCAP,(S.stu||[]).length-j0);k++){var bd=beds[k];L.push({i:j0+k,key:key,x:(bd.bx+1)*TS,y:(Math.floor(bd.by)+1)*TS+4,bed:bd})}
+  occAgents(sc,L,{lines:['困了……','明天要考试吗？','姜老师晚安！','谁在打呼噜？','我梦见姜老师了。'],seat:function(a,o){var bd=o.bed,px=Math.round(bd.bx*TS-camx),ty=Math.round(bd.by*TS-camy+(bd.lv?-10:2));sleepKid(px,ty,a,o.i)}});
+  /* 天花板的灯 */
+  addProp(sc,{x:5,y:2,w:1,h:1,draw:function(px,py){var on=b.pw;rect(px+7,py-14,2,8,'#8a8aa0');rect(px+3,py-6,10,4,on?'#ffe58a':'#9aa0aa');if(on){cx.globalAlpha=0.25;rect(px-6,py-4,28,12,'#ffe58a');cx.globalAlpha=1}}});
+  sc.drawOver=function(ox,oy){var hr=(S.t/60)%24;if(isNight(hr)&&!b.pw){cx.globalAlpha=0.6;rect(ox,oy,sc.w*TS,sc.h*TS,'#0a1020');cx.globalAlpha=1;
+    cx.globalAlpha=0.18;rect(ox+8*TS,oy+2*TS,2*TS,2*TS,'#c8d8ff');cx.globalAlpha=1}};
+  sc.drawBack=function(ox,oy){var W2=11*TS;cx.font='bold 7px sans-serif';cx.textAlign='center';cx.fillStyle='#fffaf0';rect(ox+W2/2-30,oy+3,60,10,'#00000066');cx.fillText('学生宿舍',ox+W2/2,oy+11);
+    rect(ox+8*TS,oy+4,2*TS,TS+6,'#3a4a7a');rect(ox+8*TS+2,oy+6,2*TS-4,TS+2,isNight((S.t/60)%24)?'#1a2448':'#8fd0f5');rect(ox+9*TS,oy+6,1,TS+2,'#ece6f6')};
+  enterScene(sc)};
+/* 宿舍菜单加“进去看看” */
+var _bm20b=bldMenu;bldMenu=function(b){_bm20b(b);if(b.t!=='dorm')return;var box=$('#mbox');if(!box)return;var bt=document.createElement('button');bt.type='button';bt.className='mb';bt.innerHTML='进去看看<small>看看床位和学生</small>';bt.onclick=function(){closeMenu();enterBuilding(b)};var f=box.querySelector('button');if(f)box.insertBefore(bt,f);else box.appendChild(bt)};
+
+/* 睡觉的小孩：裹成圆圆的一团（像个小饭团），只露出圆脑袋，被子随呼吸一鼓一鼓 */
+function sleepKid(px,ty,a,i){var hx=px+5,hy=ty-2,br=Math.sin(tAnim*1.6+i*1.3)>0?1:0,O='#3a2e4a',bc=a.sh;
+  rect(hx-1,hy+2,9,4,'#ffffff');
+  var bx=px+11,w=16+br,top=ty-4-br,h=10+br;
+  rect(bx+2,top-1,w-4,1,O);rect(bx,top,w,1,O);rect(bx-1,top+1,w+2,h-3,O);rect(bx,top+h-2,w,1,O);
+  rect(bx+2,top,w-4,1,bc);rect(bx,top+1,w,h-3,bc);rect(bx+1,top+h-2,w-2,1,bc);
+  rect(bx+2,top+1,w-6,2,'#ffffff55');rect(bx+1,top+h-3,w-2,1,'#00000025');
+  [[3,3],[8,5],[12,2],[5,7],[11,7]].forEach(function(d){if(d[0]<w-1&&d[1]<h-2)rect(bx+d[0],top+d[1],2,2,'#fff3d8')});
+  rect(hx,hy-1,8,7,O);rect(hx+1,hy-2,6,9,O);
+  rect(hx+1,hy-1,6,7,'#f6d2b0');rect(hx,hy,8,5,'#f6d2b0');
+  rect(hx+1,hy-2,6,2,a.hr);rect(hx,hy-1,2,3,a.hr);rect(hx+6,hy-1,2,2,a.hr);
+  if(a.g==='g'){rect(hx-2,hy+1,2,4,a.hr);rect(hx+5,hy-3,2,2,'#ff7aa8')}
+  rect(hx+2,hy+3,1,1,'#5a3a2a');rect(hx+5,hy+3,1,1,'#5a3a2a');rect(hx+1,hy+4,1,1,'#ff9a9a');rect(hx+6,hy+4,1,1,'#ff9a9a');rect(hx+3,hy+5,2,1,'#e88a8a');
+  if(Math.sin(tAnim*1.2+i*1.7)>0.55){cx.font='bold 6px sans-serif';cx.textAlign='left';cx.fillStyle='#ffffffdd';cx.fillText('z',hx+8,hy-4-Math.round(Math.sin(tAnim*2+i)*2))}}
 </script>
 <script>
 /* 牛马谷 · 18-main.js — 仓库详情、主循环、存档导出导入、网页应用更新、启动 */
 'use strict';
 /* ============ 仓库详情（点右上角） ============ */
-var ICAT=[['原料',['wood','stone','hay','coal','iron','copper','gold']],['加工品',['plank','ingot','gear','goldbar']],['农牧渔',['egg','milk','wool','fish','fruit','veg','fert']],['探险',['herb','kpi','crystal','relic']]];
+var ICAT=[['原料',['wood','stone','hay','coal','iron','copper','gold']],['加工品',['plank','ingot','gear','goldbar']],['农牧渔',['egg','milk','wool','fish','fruit','veg','fert','beef']],['探险',['herb','kpi','crystal','relic']]];
 function invMenu(){
   var c=cap(),tot=0,html='',k;for(k in S.inv)tot+=S.inv[k]||0;
   function bar(n){var p=Math.min(1,n/c);return '<span style="display:inline-block;width:46px;height:5px;background:#0002;border-radius:3px;vertical-align:middle;margin-left:4px"><span style="display:block;width:'+Math.round(p*100)+'%;height:100%;border-radius:3px;background:'+(p>=1?'#e8553a':p>0.8?'#f6c744':'#5cb84a')+'"></span></span>'}

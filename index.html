@@ -56,7 +56,7 @@ window.addEventListener('error',function(e){try{if(window.__nmErr)return;window.
   d.innerHTML='<b>游戏出错了</b>（存档还在，不会丢）<br>请截图发给开发者：<br><small style="word-break:break-all">'+String(e.message||e).slice(0,160)+'<br>'+String(e.filename||'').split('/').pop()+':'+(e.lineno||'')+'</small><br><button type="button" style="margin-top:8px;font-size:15px;padding:6px 12px;border-radius:8px;border:2px solid #5a2a1a;background:#ffe28a">检查有没有修好的新版本</button>';document.body.appendChild(d);
   d.querySelector('button').onclick=function(){var t=this,sw=navigator.serviceWorker;if(!sw||!sw.controller){location.reload();return}t.textContent='正在检查…';
     sw.addEventListener('message',function(m){var x=m.data||{};if(x.type==='nm-update')location.reload();else if(x.type==='nm-none')t.textContent='还没有新版本，过一会儿再点';else if(x.type==='nm-fail')t.textContent='连不上网，检查网络后再点'});sw.controller.postMessage({type:'nm-check'})}}catch(_){}});
-var NMBUILD='0.45'; /* 版本号：每次改游戏都要改这里 */
+var NMBUILD='0.51'; /* 版本号：每次改游戏都要改这里 */
 /* 游戏代码文件，按这个顺序加载。顺序不能乱：后面的文件会用到、甚至改写前面文件里的东西 */
 var NMJS=[];
 </script>
@@ -1703,7 +1703,7 @@ function propSolid(sc,x,y,w,h){for(var j=0;j<h;j++)for(var i=0;i<w;i++)sc.sol[(y
 function addProp(sc,p){sc.props.push(p);if(p.solid)propSolid(sc,p.x,p.y,p.w,p.h);return p}
 function enterScene(sc){closeMenu();SC=sc;PL.path=[];PL.job=null;PL.mv=0;runtime.noFollow=0;$('#trk').style.display='none';sceneBtns();}
 function leaveScene(){var ob=SC&&SC.bld;SC=null;if(ob&&S.bld.indexOf(ob)>=0)standBy(ob);$('#trk').style.display='';$('#scb').style.display='none';S.cx=PL.x;S.cy=PL.y;save()}
-(function(){var d=document.createElement('div');d.id='scb';d.style.cssText='position:absolute;right:8px;top:calc(max(6px,env(safe-area-inset-top)) + 128px);display:none;flex-direction:column;gap:6px;z-index:5';
+(function(){var d=document.createElement('div');d.id='scb';d.style.cssText='position:absolute;right:8px;top:calc(max(6px,env(safe-area-inset-top)) + 168px);display:none;flex-direction:column;gap:6px;z-index:5';
   d.innerHTML='<button type="button" id="scout" class="pill" style="font-size:12px">出去</button><button type="button" id="scfood" class="pill" style="font-size:12px;display:none">补给</button>';document.body.appendChild(d);
   $('#scout').addEventListener('click',function(){if(busy()||!SC)return;if(SC.kind==='adv'){if(SC.nearGate()){leaveAdv()}else toast('离出口太远了（被打趴也能回去，就是要被扣钱）')}else leaveScene()});
   $('#scfood').addEventListener('click',function(){if(busy()||!SC||SC.kind!=='adv')return;foodMenu()})})();
@@ -2584,6 +2584,8 @@ var UPDT='<b>进出口和路上运输</b>取代了运输队；<b>牛马市场</b
 /* ============ 更新公告：每次发新版本，在最上面加一条（v 要和 NMBUILD 一样） ============
    by：这次是听谁的指导；add 新增、chg 调整、fix 修复 */
 var NMLOG=[
+ {v:'0.51',d:'11月14日',by:'姜布利多校长',w:'「保密工作无小事」',chg:['魔法学校改到<b>转正大会之后</b>才开放：转正后的第二天早上，一匹天马送来密信，姜校长把成绩最好的 10 名学生叫进办公室：“你们被选中了，这件事不要告诉唐老师。”','转正之前，东边路口还是去加班荒原；转正之后改通魔法学校，荒原从迷雾林进','魔法学校画面<b>重新画了</b>：城堡有尖顶塔楼、玫瑰窗、钟楼、学院旗帜和大门火把；室内有彩色玻璃窗、照进来的光、火把、护墙板、花纹地毯和石板地'],add:['魔法学校有了<b>春夏秋冬</b>（每 7 天换一季）：春天飘花瓣、夏夜有萤火虫、秋天落叶、<b>冬天下雪</b>，湖面结冰，屋顶和塔尖积雪，树也跟着变']},
+ {v:'0.50',d:'11月14日',by:'姜布利多校长',w:'「开门办学、魔法赋能」',add:['<b>第二张地图：魔法学校</b>（第一部分）。原来去加班荒原的东边路口，现在通往魔法学校；加班荒原改从城堡外的<b>迷雾林</b>进去','在魔法学校里你是<b>姜同学</b>，唐同学一直跟在身后','能去的地方：船坞、城堡外（钟楼庭院、石桥、镜湖、魔法温室、飞行场、魔法牧场、唐老师的小木屋、魔法小卖部）、门厅、礼堂、变幻楼梯大厅、三层走廊、魔咒课教室、地下走廊、魔药教室、金牛院宿舍、变形课教室','每张地图会<b>记住你的位置</b>；右上角“回牛马谷”随时回去，下次从原地接着走','老师全都姓姜、长得一样，只能靠配饰认；宿舍门口的画像要说口令（官话）'],chg:['分院仪式、上课、宵禁巡逻、会转的楼梯、两边资源互通：下一步再做']},
  {v:'0.45',d:'11月14日',by:'姜经理',w:'「人尽其才、物畅其流」',fix:['运货的牛马手上的货<b>送不出去</b>（比如仓库草料满了）就一直扛着不动；现在等一会儿会把多的货<b>半价卖掉</b>，接着干活','运货的牛马<b>点不中</b>（站在进出口上时点到的是建筑）；现在点它身上就能打开它的菜单，拆除模式下点它也能收回']},
  {v:'0.44',d:'11月14日',by:'姜主任',w:'「温暖关怀、细节育人」',chg:['宿舍的床改短了，学生睡觉时<b>裹成圆圆的一团</b>，只露出小脑袋，被子还会随呼吸一鼓一鼓']},
  {v:'0.43',d:'11月14日',by:'姜主任',w:'「改善伙食、关爱学生」',add:['食堂加了一道菜：<b>牛肉</b>🥩。在食堂菜单里<b>采购</b>，每份 12 银币（比外面买饭便宜），吃到牛肉的学生到下一顿学习快 20%'],chg:['宿舍里睡觉的学生改成了<b>可爱的样子</b>：圆脑袋、闭着眼、红脸蛋，盖着小花被子']},
@@ -2911,6 +2913,531 @@ function sleepKid(px,ty,a,i){var hx=px+5,hy=ty-2,br=Math.sin(tAnim*1.6+i*1.3)>0?
   if(a.g==='g'){rect(hx-2,hy+1,2,4,a.hr);rect(hx+5,hy-3,2,2,'#ff7aa8')}
   rect(hx+2,hy+3,1,1,'#5a3a2a');rect(hx+5,hy+3,1,1,'#5a3a2a');rect(hx+1,hy+4,1,1,'#ff9a9a');rect(hx+6,hy+4,1,1,'#ff9a9a');rect(hx+3,hy+5,2,1,'#e88a8a');
   if(Math.sin(tAnim*1.2+i*1.7)>0.55){cx.font='bold 6px sans-serif';cx.textAlign='left';cx.fillStyle='#ffffffdd';cx.fillText('z',hx+8,hy-4-Math.round(Math.sin(tAnim*2+i)*2))}}
+</script>
+<script>
+/* 牛马谷 · 21-magic.js — 第二地图：魔法学校（第 1 步 场景切换系统 + 第 2 步 第一学年的场景）
+   这里玩家操作的是「姜同学」，唐同学跟在身后。原来的打怪地图（加班荒原）现在从城堡外的迷雾林进去。
+   地图怎么加：在 MGMAPS 里写一个 build 函数（画地面、墙、家具、门、人），门写清楚通到哪张图的哪一格。 */
+'use strict';
+/* ---- 地块：0 黑（走不了）1 墙 2 石地 3 草地 4 水 5 石板路 6 土路 7 地毯 8 木地板 9 树 ---- */
+var MGT={VOID:0,WALL:1,STONE:2,GRASS:3,WATER:4,PATH:5,DIRT:6,RUG:7,WOOD:8,TREE:9};
+var MGSOLID={0:1,1:1,4:1,9:1};
+var MGPAL={
+  castle:{wall:'#6a6478',wt:'#8a849a',wb:'#4a4458',fl:['#a8a2b4','#a29cae'],rug:'#8a2a3a',wood:['#9a6a3a','#946436']},
+  dungeon:{wall:'#3a3644',wt:'#4e4a5a',wb:'#24202c',fl:['#5a5666','#56525f'],rug:'#3a5a3a',wood:['#5a4430','#56402c']},
+  warm:{wall:'#8a5a3a',wt:'#a8724a',wb:'#5a3a24',fl:['#b8864a','#b28046'],rug:'#a83a2a',wood:['#a8763e','#a2703a']},
+  glass:{wall:'#9ad0d8',wt:'#c8eef2',wb:'#6aa0a8',fl:['#7a5a3a','#76563a'],rug:'#3a8a4a',wood:['#8a6a40','#84643c']},
+  out:{wall:'#6a6478',wt:'#8a849a',wb:'#4a4458',fl:['#a8a2b4','#a29cae'],rug:'#8a2a3a',wood:['#9a6a3a','#946436']}
+};
+/* ---- 地图定义 ---- */
+var MGMAPS={},MGM={};
+function mgMap(id,name,w,h,pal,build){MGMAPS[id]={id:id,name:name,w:w,h:h,pal:pal,build:build}}
+function mgNew(def){var m={id:def.id,name:def.name,w:def.w,h:def.h,pal:MGPAL[def.pal],g:new Uint8Array(def.w*def.h),props:[],doors:[],npcs:[],deco:[],out:def.pal==='out'};return m}
+function mgFill(m,x0,y0,w,h,t){for(var y=y0;y<y0+h;y++)for(var x=x0;x<x0+w;x++)if(x>=0&&y>=0&&x<m.w&&y<m.h)m.g[y*m.w+x]=t}
+function mgRoom(m,fl){mgFill(m,0,0,m.w,m.h,MGT.WALL);mgFill(m,1,2,m.w-2,m.h-3,fl||MGT.STONE)}
+/* 门：踩上去就换地图。side：门在哪面墙上（画法不同）；lock(fn)：返回 true 才让过 */
+function mgDoor(m,x,y,to,tx,ty,label,opt){opt=opt||{};m.g[y*m.w+x]=opt.tile||MGT.STONE;m.doors.push({x:x,y:y,to:to,tx:tx,ty:ty,label:label,kind:opt.kind||'door',lock:opt.lock,msg:opt.msg})}
+function mgProp(m,x,y,w,h,kind,opt){var p=Object.assign({x:x,y:y,w:w,h:h,kind:kind,solid:true},opt||{});m.props.push(p);return p}
+function mgNpc(m,id,x,y,opt){var n=Object.assign({id:id,x:x*TS+8,y:y*TS+12,hx:x*TS+8,hy:y*TS+12,fx:1,mv:0,wait:Math.random()*3},opt||{});m.npcs.push(n);return n}
+
+/* ======== 姜家老师：同一张脸，靠配饰区分 ======== */
+var JLOOK={
+  head:{n:'姜布利多校长',hair:'#d8dce6',robe:'#5a3a8a',acc:'hat',hatc:'#4a2a7a'},
+  vice:{n:'姜副校长（变形课）',hair:'#3a2622',robe:'#2a5a3a',acc:'glass'},
+  potion:{n:'姜魔药',hair:'#1a1a22',robe:'#1e1e28',acc:'cloak'},
+  herb:{n:'姜草药',hair:'#3a2622',robe:'#6a8a3a',acc:'apron'},
+  fly:{n:'姜飞行',hair:'#3a2622',robe:'#c4742a',acc:'whistle'},
+  def:{n:'姜防御（今年这位）',hair:'#3a2622',robe:'#7a2a2a',acc:'helmet'},
+  bio:{n:'姜生物',hair:'#3a2622',robe:'#5a7a3a',acc:'hatbrim'},
+  star:{n:'姜占卜',hair:'#3a2622',robe:'#3a4a8a',acc:'shawl'},
+  lib:{n:'姜馆长',hair:'#3a2622',robe:'#6a5a4a',acc:'glass'},
+  doc:{n:'姜校医',hair:'#3a2622',robe:'#f0f0f0',acc:'cap'},
+  keeper:{n:'姜管理员',hair:'#3a2622',robe:'#4a4a4a',acc:'cat'},
+  charm:{n:'姜魔咒',hair:'#3a2622',robe:'#3a6a9a',acc:'bow'}
+};
+function drawJiang(n,look,mv){person(n,{shirt:look.robe,hair:look.hair,long:1,glass:look.acc==='glass'},mv);
+  var px=Math.round(n.x-camx),py=Math.round(n.y-camy),hy=py-18,a=look.acc;
+  if(a==='hat'){rect(px-7,hy-1,14,2,look.hatc);rect(px-5,hy-4,10,3,look.hatc);rect(px-3,hy-8,6,4,look.hatc);rect(px-1,hy-11,3,3,look.hatc);rect(px-2,hy-3,5,1,'#ffd34a')}
+  else if(a==='cloak'){rect(px-6,py-11,2,10,'#0a0a10');rect(px+4,py-11,2,10,'#0a0a10')}
+  else if(a==='apron'){rect(px-3,py-9,6,6,'#e8d8b8');rect(px-1,py-11,2,2,'#e8d8b8')}
+  else if(a==='whistle'){rect(px+1,py-10,1,3,'#ffd34a');rect(px+1,py-8,2,2,'#c0c0c8')}
+  else if(a==='helmet'){rect(px-5,hy-2,10,4,'#a8aeb8');rect(px-1,hy-4,2,2,'#d63a3a');rect(px-5,hy+1,10,1,'#7a808a')}
+  else if(a==='hatbrim'){rect(px-7,hy,14,2,'#8a6a3a');rect(px-4,hy-3,8,3,'#8a6a3a')}
+  else if(a==='shawl'){rect(px-5,py-12,10,3,'#c8a0e8');for(var i=0;i<3;i++)rect(px-4+i*3,py-9,1,1,'#ffe58a')}
+  else if(a==='cap'){rect(px-3,hy-3,6,2,'#ffffff');rect(px-1,hy-3,2,2,'#e8403a')}
+  else if(a==='cat'){rect(px+4,py-9,5,4,'#3a3a3a');rect(px+4,py-11,2,2,'#3a3a3a');rect(px+7,py-11,2,2,'#3a3a3a');rect(px+5,py-8,1,1,'#ffd34a')}
+  else if(a==='bow'){rect(px-2,py-12,4,2,'#d63a3a');rect(px-1,py-12,2,2,'#a82a2a')}}
+/* 学生：魔法袍 + 学院围巾颜色 */
+var HOUSES={niu:{n:'金牛院',c:'#c8302a',c2:'#ffd34a'},ma:{n:'天马院',c:'#2a5ac8',c2:'#e8eef6'},quan:{n:'灵犬院',c:'#e8b82a',c2:'#3a2a1a'},mao:{n:'夜猫院',c:'#3a8a4a',c2:'#c0c0c8'}};
+function drawStu(n,hair,long,scarf,mv,glass){person(n,{shirt:'#24242e',hair:hair,long:long,glass:glass},mv);if(scarf){var px=Math.round(n.x-camx),py=Math.round(n.y-camy);rect(px-4,py-12,8,2,scarf[0]);rect(px-3,py-12,2,2,scarf[1]);rect(px+2,py-11,2,4,scarf[0])}}
+function myScarf(){var h=S.mg&&S.mg.house&&HOUSES[S.mg.house];return h?[h.c,h.c2]:null}
+
+/* ======== 地图们 ======== */
+/* 城堡外：城堡、钟楼庭院、石桥、镜湖、船坞、温室、飞行场、魔法牧场和唐老师小屋、迷雾林、魔法小卖部 */
+mgMap('out','城堡外',40,30,'out',function(m){
+  mgFill(m,0,0,40,30,MGT.GRASS);
+  mgFill(m,6,0,28,8,MGT.WALL);mgProp(m,6,0,28,8,'castle',{solid:false});
+  mgFill(m,12,8,16,3,MGT.PATH);
+  for(var x=0;x<40;x++){mgFill(m,x,12,1,2,MGT.WATER)}mgFill(m,19,11,2,4,MGT.PATH);mgProp(m,18,12,4,2,'bridge',{solid:false});
+  for(var y=0;y<30;y++)for(var x2=0;x2<16;x2++){var d=Math.hypot((x2-7)/7.5,(y-23)/5.5);if(d<1)m.g[y*40+x2]=MGT.WATER}
+  mgFill(m,19,15,2,15,MGT.DIRT);mgFill(m,13,18,6,2,MGT.DIRT);mgFill(m,21,18,9,2,MGT.DIRT);mgFill(m,28,10,2,8,MGT.DIRT);mgFill(m,28,10,10,2,MGT.DIRT);
+  for(var y2=4;y2<26;y2++)for(var x3=36;x3<40;x3++)if(!(y2>=10&&y2<=11))m.g[y2*40+x3]=MGT.TREE;
+  [[2,5],[3,8],[1,15],[35,26],[33,3],[36,2],[2,10],[25,27],[16,27],[30,27]].forEach(function(t){m.g[t[1]*40+t[0]]=MGT.TREE});
+  mgFill(m,9,16,4,3,MGT.WALL);mgProp(m,9,16,4,3,'boathouse',{solid:false,label:'船坞'});mgDoor(m,12,18,'boat',6,7,'船坞',{tile:MGT.DIRT});
+  mgFill(m,23,14,5,4,MGT.WALL);mgProp(m,23,14,5,4,'greenhouse',{solid:false,label:'魔法温室'});mgDoor(m,25,17,'green',6,8,'魔法温室',{tile:MGT.DIRT});
+  mgFill(m,30,13,4,3,MGT.WALL);mgProp(m,30,13,4,3,'cabin',{solid:false,label:'唐老师的小木屋'});mgDoor(m,31,15,'cabin',4,6,'唐老师的小木屋',{tile:MGT.DIRT});
+  mgProp(m,30,17,6,3,'pasture',{solid:true,label:'魔法牧场'});
+  mgDoor(m,19,7,'hall',8,10,'城堡大门',{tile:MGT.PATH,kind:'gate'});mgDoor(m,20,7,'hall',8,10,'城堡大门',{tile:MGT.PATH,kind:'gate'});
+  mgDoor(m,39,10,'_adv',0,0,'迷雾林',{tile:MGT.DIRT,kind:'edge'});mgDoor(m,39,11,'_adv',0,0,'迷雾林',{tile:MGT.DIRT,kind:'edge'});
+  mgProp(m,22,20,3,2,'stall',{label:'魔法小卖部',tap:function(){say('魔法小卖部',['牌子上写着：“周末集市，敬请期待。”','（下面还有一行小字：老板姓姜。）'])}});
+  mgProp(m,29,21,7,6,'field',{solid:false,label:'飞行场'});
+  mgProp(m,13,8,1,1,'bell',{label:'钟楼',tap:function(){say('',['钟楼的大钟“当——”地响了一声。','唐同学：“下课了？我们刚来就下课了？”'])}});
+  mgProp(m,22,9,1,1,'sign',{label:'告示',tap:function(){say('告示牌',['“新生请到礼堂参加分院仪式。”','“宵禁后请勿在城堡内游荡。——姜管理员”','“禁止喂魔法牛吃作业。——姜生物”'])}});
+  mgNpc(m,'fly',33,23,{look:'fly',wander:[30,22,35,26],lines:['“哔——！骑天马要先系安全带！”','“飞行课下周开始，先把扫帚……哦不，先把天马喂饱。”','“我是姜飞行，不是门口那位姜老师。我比她多一个哨子。”']});
+  mgNpc(m,'herb',27,19,{look:'herb',wander:[23,18,28,20],lines:['“温室里的曼陀……咳，叫‘尖叫萝卜’的那种，千万别拔。”','“慢慢来，植物和学生一样，急不得。”']});
+  mgNpc(m,'tangT',32,11,{look:'tang',wander:[30,10,34,11],lines:['“姜同学？你怎么也在这？我上一秒还在牛马谷搬砖……”','“他们让我看魔法牧场。我看这些牛跟牛马谷的差不多，就是会飞。”','“这里的老师都姓姜，长得都一样。我已经叫错七次了。”','“我是这里唯一不姓姜的老师。也是唯一不知道自己为什么在这的老师。”']});
+});
+/* 船坞：新生坐船到这里上岸 */
+mgMap('boat','船坞',14,9,'warm',function(m){mgRoom(m,MGT.WOOD);mgFill(m,1,2,12,3,MGT.WATER);
+  [[2,2],[6,2],[10,2]].forEach(function(p){mgProp(m,p[0],p[1],3,2,'rowboat',{solid:false})});
+  mgProp(m,1,5,1,1,'lantern',{solid:false});mgProp(m,12,5,1,1,'lantern',{solid:false});
+  mgProp(m,3,6,2,1,'sign',{label:'新生由此登岸',tap:function(){say('木牌',['“新生由此登岸。行李请自己扛。”','“——牛马谷魔法学校”'])}});
+  mgDoor(m,7,8,'out',13,19,'出去：城堡外');});
+/* 门厅 */
+mgMap('hall','门厅',16,12,'castle',function(m){mgRoom(m,MGT.STONE);mgFill(m,6,3,4,8,MGT.RUG);
+  mgDoor(m,8,11,'out',19,8,'出去：城堡外');
+  mgDoor(m,8,1,'stairs',7,15,'变幻楼梯大厅');
+  mgDoor(m,0,6,'great',20,8,'礼堂',{kind:'side'});
+  mgDoor(m,15,6,'trans',1,5,'变形课教室',{kind:'side'});
+  mgDoor(m,13,1,'dormG',7,8,'金牛院宿舍',{lock:function(){return mgPass('niu')}});
+  mgProp(m,2,2,1,1,'portrait',{solid:false,tap:function(){say('画像（第 7 任姜校长）',['“我是第七任姜校长。”','“第八任？也是我。长得一样而已。”'])}});
+  mgProp(m,4,2,1,1,'portrait',{solid:false,tap:function(){say('画像（第 3 任姜校长）',['“孩子，你知道为什么这里的校长都姓姜吗？”','“……我也不知道。”'])}});
+  mgProp(m,10,2,4,1,'hourglass',{solid:false,label:'学院杯',tap:function(){var p=S.mg.pts;say('学院杯沙漏',['金牛院 '+p.niu+' · 天马院 '+p.ma+' · 灵犬院 '+p.quan+' · 夜猫院 '+p.mao,'（上课、打怪、做任务都能给学院加分）'])}});
+  mgProp(m,2,8,1,2,'statue',{});mgProp(m,13,8,1,2,'statue',{});
+  mgNpc(m,'vice',11,7,{look:'vice',wander:[9,5,13,9],lines:['“我是姜副校长，不是姜校长。也不是你们村的姜主任。”','“新生先去礼堂，左手边那扇门。别走错，城堡的门会记仇。”','“唐同学，你已经第三次叫我‘姜校长’了。”']});});
+/* 礼堂：四张长桌，最上面是老师桌，蜡烛飘在空中 */
+mgMap('great','礼堂',22,16,'castle',function(m){mgRoom(m,MGT.STONE);
+  ['niu','ma','quan','mao'].forEach(function(h,i){mgProp(m,3+i*4,6,2,8,'longtable',{house:h})});
+  mgProp(m,4,4,14,1,'headtable',{});
+  ['niu','ma','quan','mao'].forEach(function(h,i){mgProp(m,3+i*4,1,2,1,'banner',{house:h,solid:false})});
+  for(var i=0;i<14;i++)m.deco.push({kind:'candle',x:(2+Math.random()*18)*TS,y:(3+Math.random()*10)*TS,ph:Math.random()*6});
+  mgDoor(m,21,8,'hall',1,6,'门厅',{kind:'side'});
+  mgNpc(m,'head',11,3,{look:'head',still:1,lines:['“欢迎来到牛马谷魔法学校。我是姜布利多。”','“你说我长得像你们的姜校长？……孩子，世上像的人很多。”','“分院仪式马上开始，先找个位置坐。”']});
+  mgNpc(m,'potion',7,3,{look:'potion',still:1,lines:['“……”','“魔药课在地窖。迟到的，扣分。”']});
+  mgNpc(m,'star',15,3,{look:'star',still:1,lines:['“我看见……你的未来……有很多检讨书。”','“还看见一头会说话的牛。哦，那个在礼堂门口。”']});
+  mgNpc(m,'bio',17,3,{look:'bio',still:1,lines:['“神奇生物课跟唐老师一起上。他人很好，就是老问我是谁。”']});});
+/* 变形课教室 */
+mgMap('trans','变形课教室',14,10,'castle',function(m){mgRoom(m,MGT.WOOD);mgProp(m,4,2,6,1,'board',{solid:false,text:'今日：把茶杯变成牛'});
+  for(var r=0;r<2;r++)for(var c=0;c<3;c++)mgProp(m,3+c*3,5+r*2,2,1,'desk',{});
+  mgDoor(m,0,5,'hall',14,6,'门厅',{kind:'side'});
+  mgNpc(m,'vice2',7,3,{look:'vice',still:1,lines:['“变形课第一条：变出来的牛，要负责到底。”','“上课内容下学期开放——课表还在排，排课的也姓姜。”']});});
+/* 变幻楼梯大厅（楼梯会转动，现在先是固定的） */
+mgMap('stairs','变幻楼梯大厅',14,18,'castle',function(m){mgFill(m,0,0,14,18,MGT.VOID);mgFill(m,0,0,14,2,MGT.WALL);mgFill(m,5,2,4,16,MGT.STONE);mgFill(m,1,7,12,3,MGT.STONE);mgFill(m,0,17,14,1,MGT.WALL);
+  m.g[17*14+7]=MGT.STONE;
+  mgProp(m,2,6,2,1,'stairsUp',{solid:false});mgProp(m,10,6,2,1,'stairsDn',{solid:false});
+  for(var i=0;i<6;i++)m.deco.push({kind:'flystair',x:(1+i*2.2)*TS,y:(3+(i%3)*4)*TS,ph:i});
+  mgDoor(m,7,17,'hall',8,2,'门厅');
+  mgDoor(m,2,7,'f3',1,4,'上楼：三层走廊',{kind:'stair'});mgDoor(m,11,7,'b1',1,4,'下楼：地下走廊',{kind:'stair'});
+  mgProp(m,6,3,2,1,'sign',{label:'楼梯说明',tap:function(){say('墙上的告示',['“本楼梯会不定时转动，请看准时机再上。”','“被送到禁止通行的走廊的同学，请自行写检讨。”'])}});});
+/* 三层走廊 */
+mgMap('f3','三层走廊',18,8,'castle',function(m){mgRoom(m,MGT.STONE);mgFill(m,1,4,16,1,MGT.RUG);
+  mgDoor(m,0,4,'stairs',2,8,'楼梯大厅',{kind:'side'});
+  mgDoor(m,5,1,'charm',7,8,'魔咒课教室');
+  mgDoor(m,11,1,'f3',11,2,'怪物防御课教室',{lock:function(){say('门上贴着纸条',['“怪物防御课：老师还在交接。今年又换了一个姜。”']);return false}});
+  mgDoor(m,17,4,'f3',16,4,'禁止通行的走廊',{kind:'side',lock:function(){say('',['走廊口拉着警戒线：“禁止通行。违者写检讨三份。”','唐同学：“三份？跟唐老师当年一样。”']);return false}});
+  mgProp(m,8,2,1,1,'portrait',{solid:false,tap:function(){say('画像（又一任姜校长）',['“三楼是魔咒和防御课。往右那条走廊，千万别去。”','“我说的是‘千万’，不是‘千万要去’。”'])}});});
+mgMap('charm','魔咒课教室',14,10,'castle',function(m){mgRoom(m,MGT.WOOD);mgProp(m,4,2,6,1,'board',{solid:false,text:'飘浮咒：手腕要稳'});
+  for(var r=0;r<2;r++)for(var c=0;c<3;c++)mgProp(m,3+c*3,5+r*2,2,1,'desk',{feather:1});
+  mgDoor(m,7,9,'f3',5,2,'三层走廊');
+  mgNpc(m,'charm',7,3,{look:'charm',still:1,lines:['“飘浮咒的咒语是‘浮浮浮起来’。念错了会让东西沉下去。”','“迷糊同学上次把自己的作业念到了湖底。”']});});
+/* 地下走廊（地窖） */
+mgMap('b1','地下走廊',18,8,'dungeon',function(m){mgRoom(m,MGT.STONE);
+  mgDoor(m,0,4,'stairs',11,8,'楼梯大厅',{kind:'side'});
+  mgDoor(m,5,1,'potion',7,8,'魔药教室');
+  mgDoor(m,12,1,'b1',12,2,'夜猫院宿舍',{lock:function(){return mgPass('mao')}});
+  mgDoor(m,17,4,'b1',16,4,'厨房',{kind:'side',lock:function(){say('',['门里飘出烤点心的香味。','唐同学：“吃货同学说，挠一挠门上那幅水果画就能进去……下次再试。”']);return false}});
+  mgProp(m,9,2,1,1,'torch',{solid:false});mgProp(m,3,2,1,1,'torch',{solid:false});mgProp(m,15,2,1,1,'torch',{solid:false});});
+mgMap('potion','魔药教室（地窖）',14,10,'dungeon',function(m){mgRoom(m,MGT.STONE);mgProp(m,1,2,12,1,'shelf',{solid:false,jars:1});
+  for(var r=0;r<2;r++)for(var c=0;c<3;c++)mgProp(m,3+c*3,5+r*2,1,1,'cauldron',{});
+  mgDoor(m,7,9,'b1',5,2,'地下走廊');
+  mgNpc(m,'potion2',7,3,{look:'potion',still:1,lines:['“魔药课。不许嬉笑，不许偷吃材料。”','“牛奶、水果、羊毛……这些材料要从牛马谷运来。你认识那边的人吗？”']});});
+/* 魔法温室 */
+mgMap('green','魔法温室',14,10,'glass',function(m){mgRoom(m,MGT.WOOD);for(var r=0;r<2;r++)for(var c=0;c<3;c++)mgProp(m,2+c*4,3+r*3,3,1,'planter',{});
+  mgDoor(m,6,9,'out',25,18,'出去：城堡外');
+  mgNpc(m,'herb2',11,7,{look:'herb',wander:[2,5,11,8],lines:['“这盆是尖叫萝卜，拔它之前先戴耳罩。”','“那盆会咬人，叫它‘姜组长’就不咬了。别问为什么。”']});});
+/* 唐老师的小木屋 */
+mgMap('cabin','唐老师的小木屋',10,8,'warm',function(m){mgRoom(m,MGT.WOOD);mgProp(m,1,2,2,2,'bed',{});mgProp(m,7,2,2,1,'fire',{});mgProp(m,4,4,2,1,'table',{});
+  mgProp(m,6,2,1,1,'portrait',{solid:false,tap:function(){say('墙上的照片',['照片上是牛马谷的仓库，唐老师在旁边比了个耶。','背面写着：“我想回家。”'])}});
+  mgDoor(m,4,7,'out',31,16,'出去：城堡外');
+  mgNpc(m,'tangT2',3,5,{look:'tang',wander:[2,4,7,6],lines:['“坐吧。茶是牛马谷带来的，喝着有家的味道。”','“我每天给魔法牛数数，数到一半它们就飞走了。”','“姜同学，你要是见到姜校长……哦不，姜布利多……反正你见到姓姜的，帮我问问我什么时候能回去。”']});});
+/* 金牛院宿舍（分院后开放；现在先能参观） */
+mgMap('dormG','金牛院宿舍',14,10,'warm',function(m){mgRoom(m,MGT.RUG);for(var i=0;i<4;i++)mgProp(m,1+i*3,2,2,2,'bed4',{c:'#c8302a'});mgProp(m,6,6,2,1,'fire',{});mgProp(m,1,7,2,1,'sofa',{});mgProp(m,10,7,2,1,'sofa',{});
+  mgDoor(m,7,9,'hall',13,2,'门厅');});
+
+/* ---- 宿舍门口的画像要口令（官话） ---- */
+var PASSW=['深入贯彻','根据精神','提质增效','狠抓落实'];
+function mgPass(h){var right=PASSW[(['niu','ma','quan','mao'].indexOf(h)+S.day)%4],opts=PASSW.slice();
+  menu('守门画像','“口令？”'+(S.mg.house&&S.mg.house!==h?'<br><small>（这不是你的学院，但画像好像不太在意）</small>':'')+'<br><small>提示：今天的口令写在礼堂的布告上……开玩笑的，就是官话，猜吧。</small>',opts.map(function(p){return{l:'“'+p+'”',f:function(){if(p===right){toast('画像：“请进。”');mgGo(h==='niu'?'dormG':'dormG',7,8)}else say('守门画像',['“错了。再想想，领导平时怎么说话的？”'])}}}).concat([{l:'算了',f:function(){}}]),true);
+  return false}
+
+/* ======== 进出魔法世界 ======== */
+function mgInit(){S.mg=S.mg||{map:'boat',x:7,y:6,pos:{},pts:{niu:0,ma:0,quan:0,mao:0},seen:0}}
+function mgBuild(id){if(!MGM[id]){var d=MGMAPS[id],m=mgNew(d);d.build(m);MGM[id]=m}return MGM[id]}
+function mgEnter(){mgInit();var first=!S.mg.seen;mgGo(S.mg.map,S.mg.x,S.mg.y,true);
+  if(first){S.mg.seen=1;save();say('',['（一阵眩晕。你睁开眼，发现自己坐在一条没有桨的小船上。）','（你变成了一名新生——姜同学。）'],function(){say('唐同学',['“姜同学！等等我！这船怎么自己会走？”','“我听说城堡里的老师全都姓姜……那不就跟咱们班主任一个姓？”'])})}}
+function mgGo(id,tx,ty,silent){var m=mgBuild(id),sc;
+  if(SC&&SC.kind==='mg'){S.mg.pos[SC.map.id]=[Math.floor(SC.px/TS),Math.floor(SC.py/TS)]}
+  sc={kind:'mg',map:m,w:m.w,h:m.h,px:tx*TS+8,py:ty*TS+12,path:[],job:null,fx:1,mv:0,t:0,trail:[],fl:{x:tx*TS+8,y:(ty+1)*TS+12,fx:1,mv:0},lastDoor:gi2(m,tx,ty),sol:[],ag:[],props:[]};
+  for(var i=0;i<m.w*m.h;i++)sc.sol[i]=!!MGSOLID[m.g[i]];m.props.forEach(function(p){if(p.solid)for(var y=p.y;y<p.y+p.h;y++)for(var x=p.x;x<p.x+p.w;x++)sc.sol[y*m.w+x]=true});
+  m.doors.forEach(function(d){sc.sol[d.y*m.w+d.x]=false});
+  S.mg.map=id;S.mg.x=tx;S.mg.y=ty;
+  if(!SC||SC.kind!=='mg'){enterScene(sc)}else{SC=sc;sceneBtns()}
+  if(!silent)toast(m.name);save()}
+function gi2(m,x,y){return y*m.w+x}
+function mgLeave(){if(SC&&SC.kind==='mg'){S.mg.map=SC.map.id;S.mg.x=Math.floor(SC.px/TS);S.mg.y=Math.floor(SC.py/TS)}leaveScene();PL.x=(W-3)*TS;PL.y=23*TS+10;PL.path=[];S.cx=PL.x;S.cy=PL.y;toast('回到了牛马谷')}
+/* 原来去加班荒原的路口，现在通往魔法学校；荒原从迷雾林进 */
+tryAdv=function(){var n=S.q.tang.n+S.q.jiang.n+S.q.jl.n+S.q.ds.n;
+  if(n<10){toast('路口的牌子：前方是魔法学校，先完成 10 条指令（现在 '+n+'）');PL.x=(W-3)*TS;PL.path=[];PL.job=null;return}
+  PL.path=[];PL.job=null;mgEnter()};
+var _la21=leaveAdv;leaveAdv=function(){if(S.mg){leaveScene();mgGo('out',38,10);toast('从迷雾林回到了城堡外');return}_la21()};
+
+/* ======== 走路、点击、换图 ======== */
+function mgTap(w){var m=SC.map,tx=Math.floor(w.x/TS),ty=Math.floor(w.y/TS);
+  var n=m.npcs.filter(function(n){return Math.hypot(n.x-w.x,n.y-8-w.y)<14})[0];
+  if(n){mgWalkNear(Math.floor(n.x/TS),Math.floor(n.y/TS),function(){mgTalk(n)});return}
+  var p=m.props.filter(function(p){return p.tap&&w.x>=p.x*TS-2&&w.x<=(p.x+p.w)*TS+2&&w.y>=p.y*TS-6&&w.y<=(p.y+p.h)*TS+2})[0];
+  if(p){mgWalkNear(p.x+(p.w>>1),p.y+p.h-1,p.tap);return}
+  if(tx<0||ty<0||tx>=m.w||ty>=m.h)return;
+  if(!SC.sol[ty*m.w+tx])mgWalk(tx,ty);else mgWalkNear(tx,ty)}
+function mgWalk(gx,gy,job){var sx=Math.floor(SC.px/TS),sy=Math.floor(SC.py/TS),p=sbfs(SC,sx,sy,function(x,y){return x===gx&&y===gy});if(!p)return false;SC.path=p;SC.job=job||null;if(!p.length&&job){SC.job=null;job()}return true}
+function mgWalkNear(gx,gy,job){var sx=Math.floor(SC.px/TS),sy=Math.floor(SC.py/TS),p=sbfs(SC,sx,sy,function(x,y){return Math.abs(x-gx)+Math.abs(y-gy)<=1&&!(SC.map.doors.some(function(d){return d.x===x&&d.y===y}))});
+  if(!p){toast('走不过去');return}SC.path=p;SC.job=job||null;if(!p.length&&job){SC.job=null;job()}}
+function mgTalk(n){var look=n.look==='tang'?{n:'唐老师'}:JLOOK[n.look];var L=n.lines||['……'];var i=(n.ti||0)%L.length;n.ti=(n.ti||0)+1;
+  var name=look?look.n:'？',cb=null;
+  if(n.look!=='tang'&&Math.random()<0.3)cb=function(){say('唐同学（小声）',[ppick(['“姜同学，这位是不是刚才门口那位？”','“她们是不是同一个人换了衣服？”','“我刚才叫她姜校长，她瞪了我一眼。”','“这位老师的脸……我好像在牛马谷见过。”'])])};
+  say(name,[L[i]],cb)}
+function mgStep(dt){var m=SC.map;SC.t+=dt;SC.mv=0;
+  if(SC.path.length){var n=SC.path[0],tx=n[0]*TS+8,ty=n[1]*TS+12,dx=tx-SC.px,dy=ty-SC.py,mm=Math.hypot(dx,dy),sp=56*dt*(m.g[gi2(m,n[0],n[1])]===MGT.PATH?1.15:1);
+    if(mm<=sp){SC.px=tx;SC.py=ty;SC.path.shift()}else{SC.px+=dx/mm*sp;SC.py+=dy/mm*sp;SC.mv=1;if(Math.abs(dx)>0.5)SC.fx=dx>0?1:-1}
+    if(!SC.path.length&&SC.job){var j=SC.job;SC.job=null;j()}}
+  /* 踩到门 */
+  var cx0=Math.floor(SC.px/TS),cy0=Math.floor(SC.py/TS),k=gi2(m,cx0,cy0);
+  if(k!==SC.lastDoor){SC.lastDoor=-1;var d=m.doors.filter(function(d){return d.x===cx0&&d.y===cy0})[0];
+    if(d&&!SC.path.length){SC.lastDoor=k;if(d.lock&&!d.lock()){SC.path=[];mgStepBack(d);return}
+      if(d.to==='_adv'){S.mg.pos.out=[37,10];S.mg.map='out';S.mg.x=37;S.mg.y=10;leaveScene();enterAdv();return}
+      mgGo(d.to,d.tx,d.ty);return}}
+  /* 唐同学跟在后面 */
+  SC.trail.push([SC.px,SC.py,SC.fx]);if(SC.trail.length>14)SC.trail.shift();var f=SC.fl,t=SC.trail[0];if(t&&Math.hypot(t[0]-f.x,t[1]-f.y)>1){f.mv=1;f.x+=(t[0]-f.x)*Math.min(1,dt*6);f.y+=(t[1]-f.y)*Math.min(1,dt*6);f.fx=t[2]}else f.mv=0;
+  if(SC.fl.bub){SC.fl.bub.l-=dt;if(SC.fl.bub.l<=0)SC.fl.bub=null}else if(Math.random()<0.0012)SC.fl.bub={t:ppick(TANGQ),l:3.5};
+  /* 老师们溜达 */
+  m.npcs.forEach(function(n){n.mv=0;if(n.bub){n.bub.l-=dt;if(n.bub.l<=0)n.bub=null}if(n.still||!n.wander)return;if(n.wait>0){n.wait-=dt;return}
+    if(n.tx===undefined||Math.hypot(n.tx-n.x,n.ty-n.y)<1){var w0=n.wander;for(var q=0;q<10;q++){var gx=w0[0]+Math.floor(Math.random()*(w0[2]-w0[0]+1)),gy=w0[1]+Math.floor(Math.random()*(w0[3]-w0[1]+1));if(!SC.sol[gi2(m,gx,gy)]){n.tx=gx*TS+8;n.ty=gy*TS+12;break}}n.wait=1+Math.random()*3;return}
+    var dx2=n.tx-n.x,dy2=n.ty-n.y,d2=Math.hypot(dx2,dy2),s2=14*dt;if(d2<=s2){n.x=n.tx;n.y=n.ty}else{n.x+=dx2/d2*s2;n.y+=dy2/d2*s2;n.mv=1;if(Math.abs(dx2)>0.3)n.fx=dx2>0?1:-1}})}
+function mgStepBack(d){var m=SC.map;for(var q=0;q<4;q++){var nx=d.x+DX[q],ny=d.y+DY[q];if(nx>=0&&ny>=0&&nx<m.w&&ny<m.h&&!SC.sol[gi2(m,nx,ny)]&&!m.doors.some(function(e){return e.x===nx&&e.y===ny})){SC.px=nx*TS+8;SC.py=ny*TS+12;SC.lastDoor=-1;return}}}
+var TANGQ=['姜同学，等等我！','这楼梯刚才是不是动了？','我又把姜老师认错了……','好饿，礼堂什么时候开饭？','这城堡比牛马谷的仓库还大。','姜同学，你真的不觉得这里的老师都长一样吗？','我想念食堂的牛肉。'];
+
+/* ======== 画 ======== */
+function mgRender(){var m=SC.map,pal=m.pal,MW=m.w*TS,MH=m.h*TS;
+  camx=MW<=VW?-Math.round((VW-MW)/2):Math.round(Math.max(0,Math.min(MW-VW,SC.px-VW/2)));
+  camy=MH<=VH-40?-Math.round((VH-MH)/2):Math.round(Math.max(-24,Math.min(MH-VH+30,SC.py-VH/2)));
+  rect(0,0,VW,VH,'#10121a');
+  var x0=Math.max(0,Math.floor(camx/TS)),y0=Math.max(0,Math.floor(camy/TS)),x1=Math.min(m.w-1,Math.ceil((camx+VW)/TS)),y1=Math.min(m.h-1,Math.ceil((camy+VH)/TS));
+  for(var y=y0;y<=y1;y++)for(var x=x0;x<=x1;x++)mgTile(m,x,y,x*TS-camx,y*TS-camy,pal);
+  m.doors.forEach(function(d){mgDrawDoor(m,d,d.x*TS-camx,d.y*TS-camy)});
+  var ents=[];
+  m.props.forEach(function(p){ents.push({y:(p.y+p.h)*TS+(p.flatY||0),f:function(){mgDrawProp(m,p,p.x*TS-camx,p.y*TS-camy)}})});
+  m.npcs.forEach(function(n){ents.push({y:n.y,f:function(){if(n.look==='tang')person(n,{shirt:'#3d6fb5',hair:'#23232e',glass:1},n.mv);else drawJiang(n,JLOOK[n.look],n.mv);if(n.bub)drawBub(n,n.y-camy-24)}})});
+  ents.push({y:SC.fl.y,f:function(){drawStu(SC.fl,'#23232e',0,myScarf(),SC.fl.mv,0);if(SC.fl.bub)drawBub(SC.fl,SC.fl.y-camy-24)}});
+  ents.push({y:SC.py,f:function(){drawStu({x:SC.px,y:SC.py,fx:SC.fx},'#3a2622',1,myScarf(),SC.mv,0)}});
+  ents.sort(function(a,b){return a.y-b.y});ents.forEach(function(e){e.f()});
+  m.deco.forEach(function(d){var px=d.x-camx,py=d.y-camy+Math.sin(tAnim*1.5+d.ph)*2;
+    if(d.kind==='candle'){rect(px,py,2,5,'#f4ecd8');rect(px,py-2,2,2,'#ffd34a');cx.globalAlpha=0.3;rect(px-2,py-4,6,6,'#ffe58a');cx.globalAlpha=1}
+    if(d.kind==='flystair'){var a=Math.sin(tAnim*0.5+d.ph);rect(px,py,26+a*4,4,'#7a6a5a');rect(px,py,26+a*4,1,'#9a8a7a');for(var s=0;s<4;s++)rect(px+s*7,py-2,5,2,'#8a7a6a')}});
+  /* 地图名和提示 */
+  cx.font='bold 8px sans-serif';cx.textAlign='center';cx.fillStyle='#fff';rect(VW/2-40,4,80,12,'#00000080');cx.fillText('✨ '+m.name,VW/2,13);
+  var nk=nightK((S.t/60)%24);if(m.out&&nk>0){cx.globalCompositeOperation='multiply';cx.fillStyle='rgb('+Math.round(255-nk*70)+','+Math.round(255-nk*60)+','+Math.round(255-nk*25)+')';cx.fillRect(0,0,VW,VH);cx.globalCompositeOperation='source-over'}
+  vignette()}
+function mgTile(m,x,y,px,py,pal){var t=m.g[y*m.w+x],h=(x*7+y*13)%5;
+  if(t===MGT.VOID){rect(px,py,TS,TS,'#14121c');if(h===0)rect(px+5,py+7,1,1,'#ffffff30');return}
+  if(t===MGT.WALL){rect(px,py,TS,TS,pal.wall);var below=y+1<m.h?m.g[(y+1)*m.w+x]:1;if(below!==MGT.WALL&&below!==MGT.VOID){rect(px,py+TS-4,TS,4,pal.wb);rect(px,py,TS,2,pal.wt)}
+    for(var j=3;j<TS-4;j+=5){rect(px,py+j,TS,1,'#00000022');for(var i=((j/5)|0)%2*4;i<TS;i+=8)rect(px+i,py+j,1,5,'#00000022')}return}
+  if(t===MGT.STONE){rect(px,py,TS,TS,pal.fl[(x+y)%2]);rect(px,py,TS,1,'#00000014');rect(px,py,1,TS,'#00000014');return}
+  if(t===MGT.GRASS){rect(px,py,TS,TS,(x+y)%2?'#6ab84a':'#66b246');if(h===1){rect(px+4,py+6,1,3,'#4a9a3a');rect(px+6,py+5,1,4,'#4a9a3a')}if(h===3)rect(px+10,py+10,2,2,'#f4e05a');return}
+  if(t===MGT.WATER){rect(px,py,TS,TS,'#3a7ab8');var w=Math.floor(tAnim*2+x*0.7+y*0.3)%4;if(w===0)rect(px+3,py+6,6,1,'#8ac0e8');if(w===2)rect(px+8,py+11,5,1,'#8ac0e8');return}
+  if(t===MGT.PATH){rect(px,py,TS,TS,'#a8a2b4');rect(px,py+7,TS,1,'#8a849a');rect(px+(y%2?4:10),py,1,7,'#8a849a');rect(px+(y%2?12:2),py+8,1,8,'#8a849a');return}
+  if(t===MGT.DIRT){rect(px,py,TS,TS,'#c8a070');if(h===2)rect(px+5,py+9,2,1,'#a8804a');return}
+  if(t===MGT.RUG){rect(px,py,TS,TS,pal.rug);rect(px,py,TS,1,'#ffffff18');if(h===0)rect(px+6,py+6,4,4,'#ffd34a30');return}
+  if(t===MGT.WOOD){rect(px,py,TS,TS,pal.wood[(y)%2]);rect(px,py+TS-1,TS,1,'#00000020');rect(px+((y*5)%TS),py,1,TS,'#00000018');return}
+  if(t===MGT.TREE){rect(px,py,TS,TS,'#5aa44a');rect(px+6,py+9,4,7,'#6b4426');rect(px+1,py,14,11,'#2f6a3a');rect(px+3,py-2,10,3,'#3f8a4a');rect(px+3,py+1,5,3,'#4fa25a');return}}
+function mgDrawDoor(m,d,px,py){if(d.kind==='edge'){cx.font='bold 6px sans-serif';cx.textAlign='center';cx.fillStyle='#ffffffcc';cx.fillText(d.label+' ▸',px-6,py-4);return}
+  if(d.kind==='gate'||d.kind==='stair')return;
+  var top=d.y<=1;if(top){rect(px+1,py-14,TS-2,TS+14,'#3a2412');rect(px+3,py-12,TS-6,TS+12,'#6a3a1a');rect(px+3,py-12,TS-6,2,'#8a5a2a');rect(px+TS-6,py-4,2,2,'#ffd34a')}
+  else if(d.kind==='side'){rect(px,py,TS,TS,'#3a2412');rect(px+2,py+1,TS-4,TS-1,'#6a3a1a')}
+  else{rect(px+1,py,TS-2,TS,'#3a2412');rect(px+3,py+2,TS-6,TS-2,'#6a3a1a')}
+  cx.font='bold 5px sans-serif';cx.textAlign='center';cx.fillStyle='#ffe28a';cx.fillText(d.label.replace(/^出去：/,''),px+8,top?py-16:py-2)}
+function mgDrawProp(m,p,px,py){var k=p.kind,W2=p.w*TS,H2=p.h*TS,i,j;
+  switch(k){
+  case 'castle':rect(px,py,W2,H2,'#6a6478');for(i=0;i<W2;i+=16){rect(px+i,py,8,6,'#7a748a')}
+    [[0,4],[W2-40,4],[W2/2-24,0]].forEach(function(t){rect(px+t[0],py-24+t[1],40,40,'#7a748a');gable(px+t[0],py-24+t[1],0,40,-18,20,'#3a4a8a','#2a3a6a');for(var q=0;q<2;q++)rect(px+t[0]+8+q*18,py-10+t[1],6,10,'#ffe58a')});
+    for(i=40;i<W2-40;i+=24)rect(px+i,py+30,8,14,(Math.floor(tAnim+i)%7===0)?'#ffe58a':'#2a3050');
+    rect(px+W2/2-18,py+70,36,58,'#3a2412');rect(px+W2/2-16,py+72,32,56,'#6a3a1a');rect(px+W2/2,py+72,1,56,'#3a2412');cx.font='bold 8px sans-serif';cx.textAlign='center';cx.fillStyle='#ffe28a';cx.fillText('牛马谷魔法学校',px+W2/2,py+62);
+    rect(px+W2-90,py-40,22,60,'#8a849a');rect(px+W2-84,py-30,10,10,'#fffdf4');rect(px+W2-80,py-28,1,4,'#222');rect(px+W2-80,py-25,3,1,'#222');break;
+  case 'bridge':rect(px,py,W2,H2,'#8a849a');rect(px,py,W2,2,'#a8a2b4');rect(px,py+H2-2,W2,2,'#5a5468');for(i=4;i<W2;i+=12)rect(px+i,py-3,2,3,'#6a6478');break;
+  case 'boathouse':rect(px,py+10,W2,H2-10,'#8a5a35');gable(px,py,0,W2,0,16,'#5a3a24','#3a2412');rect(px+4,py+20,8,6,'#8fd0f5');rect(px+W2-12,py+20,8,6,'#8fd0f5');break;
+  case 'greenhouse':rect(px,py+8,W2,H2-8,'#c8eef2');for(i=0;i<W2;i+=10)rect(px+i,py+8,1,H2-8,'#6aa0a8');rect(px,py+8,W2,2,'#6aa0a8');gable(px,py,0,W2,0,12,'#e8fafc','#9ad0d8');for(i=0;i<5;i++)rect(px+6+i*14,py+H2-14,6,6,'#3f8a3a');break;
+  case 'cabin':rect(px,py+10,W2,H2-10,'#9a6a3a');for(i=12;i<H2;i+=5)rect(px,py+i,W2,1,'#7a4a2a');gable(px,py,0,W2,0,16,'#5a3a24','#3a2412');rect(px+W2-14,py-6,6,12,'#6a5a5a');rect(px+6,py+20,8,7,'#ffe58a');cx.globalAlpha=0.6;rect(px+W2-13,py-12-Math.floor(tAnim*6)%6,4,4,'#e8e8e8');cx.globalAlpha=1;break;
+  case 'pasture':rect(px,py,W2,2,'#8a5a35');rect(px,py+H2-2,W2,2,'#8a5a35');rect(px,py,2,H2,'#8a5a35');rect(px+W2-2,py,2,H2,'#8a5a35');
+    var t=tAnim;[[0,'uni'],[1,'fire'],[2,'peg']].forEach(function(a){var ax=px+12+((Math.sin(t*0.4+a[0]*2)+1)/2)*(W2-30),ay=py+18+a[0]*18+Math.sin(t*0.7+a[0])*4,fl=Math.cos(t*0.4+a[0]*2)>0?1:-1;
+      if(a[1]==='uni'){rect(ax-6,ay-8,12,6,'#fffaf4');rect(ax+(fl>0?3:-8),ay-11,5,5,'#fffaf4');rect(ax+(fl>0?6:-7),ay-14,1,3,'#ffd34a');rect(ax-5,ay-2,2,3,'#e8e0d8');rect(ax+3,ay-2,2,3,'#e8e0d8');rect(ax-7,ay-9,2,4,'#e8a8f0')}
+      else if(a[1]==='fire'){rect(ax-6,ay-8,12,6,'#b8742e');rect(ax+(fl>0?3:-8),ay-11,5,5,'#b8742e');rect(ax-5,ay-2,2,3,'#8a5226');rect(ax+3,ay-2,2,3,'#8a5226');if(Math.sin(t*3+a[0])>0.3){rect(ax+(fl>0?9:-12),ay-9,4,2,'#ff8a2a');rect(ax+(fl>0?12:-14),ay-10,2,2,'#ffd34a')}}
+      else{var fy=Math.sin(t*2)*3;rect(ax-6,ay-12+fy,12,6,'#e8eef6');rect(ax+(fl>0?3:-8),ay-15+fy,5,5,'#e8eef6');rect(ax-9,ay-14+fy,6,3,'#ffffff');rect(ax+3,ay-14+fy,6,3,'#ffffff')}});break;
+  case 'stall':rect(px,py+8,W2,H2-8,'#8a5a35');for(i=0;i<W2;i+=6)rect(px+i,py,6,9,i%12?'#fff3d8':'#7a3ad6');rect(px+4,py+12,6,5,'#c8a0e8');rect(px+14,py+12,6,5,'#8ad0e8');rect(px+26,py+12,6,5,'#ffd34a');break;
+  case 'field':for(i=0;i<3;i++){var hx=px+8+i*36;rect(hx+5,py+30,2,40,'#a8a2b4');rect(hx,py+20,12,12,'#ffd34a');rect(hx+3,py+23,6,6,'#66b246')}break;
+  case 'bell':rect(px+6,py-14,4,20,'#6a6478');rect(px+3,py-18,10,6,'#c8a040');break;
+  case 'sign':rect(px+7,py+2,2,12,'#6b4426');rect(px,py-2,W2||16,8,'#a8764a');rect(px,py-2,W2||16,1,'#c8965a');break;
+  case 'rowboat':rect(px+2,py+10,W2-4,8,'#8a5a35');rect(px,py+10,W2,2,'#a8764a');rect(px+6,py+12,W2-12,4,'#6a3a1a');rect(px+W2/2,py+2+Math.sin(tAnim*2)*1,2,10,'#d8cba8');rect(px+W2/2+2,py+4,8,1,'#ffd34a');break;
+  case 'lantern':rect(px+7,py-10,2,14,'#4a3a2a');rect(px+5,py-14,6,5,'#ffd34a');cx.globalAlpha=0.3;rect(px+1,py-18,14,12,'#ffe58a');cx.globalAlpha=1;break;
+  case 'portrait':rect(px+1,py-14,14,14,'#a8802a');rect(px+3,py-12,10,10,'#5a4a6a');rect(px+5,py-10,6,6,'#f1c9a5');rect(px+4,py-11,8,3,'#d8dce6');rect(px+6,py-8,1,1,'#222');rect(px+9,py-8,1,1,'#222');if(Math.sin(tAnim+p.x)>0.8)rect(px+7,py-6,2,1,'#c4442a');break;
+  case 'hourglass':['niu','ma','quan','mao'].forEach(function(h,i){var hx=px+4+i*15,c=HOUSES[h].c,v=Math.min(1,(S.mg.pts[h]||0)/200);rect(hx,py-14,10,2,'#a8802a');rect(hx,py+2,10,2,'#a8802a');rect(hx+1,py-12,8,14,'#ffffff40');rect(hx+2,py+1-Math.round(v*10),6,Math.round(v*10)+1,c)});break;
+  case 'statue':rect(px+2,py+H2-6,12,6,'#8a849a');rect(px+4,py+4,8,H2-10,'#a8a2b4');rect(px+5,py,6,6,'#a8a2b4');rect(px+3,py-2,10,3,'#a8a2b4');break;
+  case 'longtable':rect(px+2,py,W2-4,H2,'#8a5a35');rect(px+2,py,W2-4,2,'#a8764a');for(j=8;j<H2;j+=18){rect(px+6,py+j,6,4,'#f4ecd8');rect(px+20,py+j+6,6,4,'#f4ecd8');rect(px+8,py+j,2,2,['#e8503a','#ffd34a','#b8433a'][((j/18)|0)%3])}rect(px+2,py+H2-2,W2-4,2,'#5a3a24');rect(px,py,2,H2,HOUSES[p.house].c);break;
+  case 'headtable':rect(px,py,W2,H2,'#6a3a1a');rect(px,py,W2,3,'#a8764a');rect(px,py+H2-3,W2,3,'#3a2412');break;
+  case 'banner':var hc=HOUSES[p.house];rect(px+2,py-12,28,26,hc.c);rect(px+2,py+12,28,2,hc.c2);rect(px+12,py-6,8,8,hc.c2);cx.font='bold 5px sans-serif';cx.textAlign='center';cx.fillStyle=hc.c2;cx.fillText(hc.n,px+16,py+10);break;
+  case 'board':rect(px,py-14,W2,18,'#3a2a1a');rect(px+2,py-12,W2-4,14,'#2f5a3a');cx.font='6px sans-serif';cx.textAlign='center';cx.fillStyle='#f2f2e8';cx.fillText(p.text||'',px+W2/2,py-3);break;
+  case 'desk':rect(px+2,py+4,W2-4,8,'#a8702f');rect(px+2,py+4,W2-4,2,'#c98a40');rect(px+4,py+12,2,4,'#6b4426');rect(px+W2-6,py+12,2,4,'#6b4426');if(p.feather){var fy=Math.sin(tAnim*2+p.x)*4;rect(px+W2/2-4,py-4+fy,8,2,'#fffaf0');rect(px+W2/2-4,py-3+fy,1,1,'#3a3a3a')}else{rect(px+6,py+2,6,3,'#f4ecd8')}break;
+  case 'shelf':rect(px,py-14,W2,18,'#4a3424');for(i=4;i<W2;i+=7){var jc=['#7ac06a','#c86ad6','#e8a23a','#6ac0e8'][(i/7|0)%4];rect(px+i,py-12,4,6,jc);rect(px+i,py-4,4,6,['#e8503a','#ffd34a','#6ac0e8'][(i/7|0)%3])}break;
+  case 'cauldron':rect(px+1,py+4,14,10,'#2a2a30');rect(px,py+3,16,3,'#3a3a44');var bc=['#7ad06a','#c86ad6','#6ac0e8'][(p.x+p.y)%3];rect(px+2,py+3,12,2,bc);for(i=0;i<2;i++){var by2=py-((tAnim*8+i*5)%10);rect(px+5+i*4,by2,2,2,bc)}rect(px+3,py+14,2,2,'#ff8a2a');rect(px+11,py+14,2,2,'#ff8a2a');break;
+  case 'planter':rect(px,py+6,W2,10,'#7a5a3a');rect(px,py+6,W2,2,'#9a7a4a');for(i=0;i<W2/8;i++){var sw=Math.round(Math.sin(tAnim*2+i+p.x)*1);rect(px+3+i*8+sw,py-2,3,9,'#3f8a3a');rect(px+2+i*8+sw,py-4,5,3,['#e8503a','#c86ad6','#ffd34a'][(i+p.y)%3])}break;
+  case 'bed':rect(px,py+2,W2,H2-4,'#6b4426');rect(px+2,py+4,W2-4,H2-8,'#e8d8b8');rect(px+2,py+4,W2-4,6,'#ffffff');rect(px+2,py+14,W2-4,H2-18,'#7a6ad6');break;
+  case 'bed4':rect(px,py-10,2,H2+10,'#5a3a24');rect(px+W2-2,py-10,2,H2+10,'#5a3a24');rect(px,py-10,W2,3,p.c);rect(px+2,py+2,W2-4,H2-6,'#f4ecd8');rect(px+2,py+10,W2-4,H2-14,p.c);break;
+  case 'fire':rect(px,py-6,W2,H2+6,'#6a5a5a');rect(px+4,py,W2-8,H2,'#2a1a1a');var fh=Math.floor(tAnim*8)%3;rect(px+8,py+8-fh,W2-16,6+fh,'#ff8a2a');rect(px+11,py+10-fh,W2-22,4,'#ffd34a');cx.globalAlpha=0.25;rect(px-4,py-8,W2+8,H2+12,'#ffb04a');cx.globalAlpha=1;break;
+  case 'table':rect(px+2,py+4,W2-4,8,'#8a5a35');rect(px+2,py+4,W2-4,2,'#a8764a');rect(px+8,py+1,5,4,'#f4ecd8');break;
+  case 'sofa':rect(px,py+2,W2,10,'#a83a2a');rect(px,py+2,W2,3,'#c85a4a');rect(px,py+2,3,12,'#8a2a1a');rect(px+W2-3,py+2,3,12,'#8a2a1a');break;
+  case 'torch':rect(px+7,py-10,2,8,'#4a3424');var tf=Math.floor(tAnim*10)%2;rect(px+6,py-14-tf,4,4,'#ff8a2a');rect(px+7,py-13-tf,2,2,'#ffd34a');cx.globalAlpha=0.25;rect(px-2,py-18,20,16,'#ffb04a');cx.globalAlpha=1;break;
+  case 'stairsUp':case 'stairsDn':for(i=0;i<5;i++)rect(px+(k==='stairsUp'?i*2:8-i*2),py+i*3-6,W2-6,3,i%2?'#8a7a6a':'#9a8a7a');cx.font='bold 6px sans-serif';cx.textAlign='center';cx.fillStyle='#ffe28a';cx.fillText(k==='stairsUp'?'▲ 上楼':'▼ 下楼',px+W2/2,py-10);break;
+  }
+  if(p.label&&k!=='castle'&&k!=='sign'){cx.font='6px sans-serif';cx.textAlign='center';cx.fillStyle='#ffffffdd';cx.fillText(p.label,px+W2/2,py-(k==='pasture'||k==='field'?2:6))}
+  if(p.label&&k==='sign'){cx.font='5px sans-serif';cx.textAlign='center';cx.fillStyle='#3a2412';cx.fillText(p.label,px+(W2||16)/2,py+4)}}
+
+/* ======== 接到现有的场景框架上 ======== */
+var _rs21=renderScene;renderScene=function(){if(SC&&SC.kind==='mg'){cx.setTransform(scale,0,0,scale,0,0);mgRender();return}_rs21()};
+var _ss21=sceneStep;sceneStep=function(dt){if(SC&&SC.kind==='mg'){mgStep(dt);return}_ss21(dt)};
+var _st21=sceneTap;sceneTap=function(w){if(SC&&SC.kind==='mg'){mgTap(w);return}_st21(w)};
+var _sb21=sceneBtns;sceneBtns=function(){_sb21();if(SC&&SC.kind==='mg')$('#scout').textContent='回牛马谷'};
+$('#scout').addEventListener('click',function(e){if(SC&&SC.kind==='mg'&&!busy()){e.stopImmediatePropagation();mgLeave()}},true);
+</script>
+<script>
+/* 牛马谷 · 22-magic-art.js — 魔法学校画面精修（四季、雪、城堡、彩窗、光束）+ 解锁剧情（天马送信） */
+'use strict';
+/* ============ 解锁：转正大会之后，天马送来密信 ============
+   没转正前，东边路口还是去加班荒原（结局要打败加班巨兽）；转正后的第二天早上，天马送信，之后路口通往魔法学校。 */
+tryAdv=function(){var n=S.q.tang.n+S.q.jiang.n+S.q.jl.n+S.q.ds.n;
+  if(S.mgInv){PL.path=[];PL.job=null;mgEnter();return}
+  if(n<10){toast('路口的牌子：前方危险，先完成 10 条指令（现在 '+n+'）');PL.x=(W-3)*TS;PL.path=[];PL.job=null;return}
+  PL.path=[];PL.job=null;enterAdv()};
+var _la22=leaveAdv;leaveAdv=function(){if(S.mgInv&&S.mg){leaveScene();mgGo('out',38,10);toast('从迷雾林回到了城堡外');return}leaveScene();PL.x=(W-3)*TS;PL.y=23*TS+10;PL.path=[];S.cx=PL.x;S.cy=PL.y};
+function mgInviteStep(){if(!S.end||S.mgInv||SC||busy()||runtime.offline)return;var hr=(S.t/60)%24;if(S.day<=(S.endDay||0)||hr<8)return;
+  S.mgInv=1;save();runtime.peg={t:0};
+  say('',['清晨，一匹长着翅膀的天马从天上落下来，停在学校门口。','它嘴里叼着一封信，信封上盖着金色的火漆，写着：“机密”。'],function(){
+   say('',['姜校长看完信，把成绩最好的 10 名学生叫进办公室，关上了门。','窗帘也拉上了。'],function(){
+    say('姜校长',['（压低声音）“你们被选中了。”','“这件事，不要告诉唐老师。”'],function(){
+     say('',['当天夜里，10 个学生被秘密送往了魔法学校。','第二天点名，唐老师发现少了 10 个人。姜校长说：“他们去研学了。”'],function(){
+      say('',['（村子东边的路口，现在通往魔法学校。加班荒原改从魔法学校城堡外的迷雾林进去。）'])})})})})}
+var _g22=game2Step;game2Step=function(dt){_g22(dt);mgInviteStep();if(runtime.peg){runtime.peg.t+=dt;if(runtime.peg.t>9)runtime.peg=null}};
+/* 天马飞过村子 */
+var _rd22=render;render=function(){_rd22();if(runtime.peg&&!SC){var t=runtime.peg.t,x=VW+30-t*70,y=40+Math.sin(t*2)*10;drawPeg(x,y,t)}};
+function drawPeg(x,y,t){var f=Math.floor(t*6)%2;cx.save();cx.setTransform(scale,0,0,scale,0,0);
+  rect(x-8,y-4,16,7,'#f4f6fa');rect(x-8,y-4,16,2,'#ffffff');rect(x-13,y-8,6,6,'#f4f6fa');rect(x-14,y-10,2,3,'#e8eef6');rect(x-12,y-6,1,1,'#222');
+  rect(x+8,y-3,4,2,'#e8e0f0');rect(x+11,y-1,2,3,'#e8e0f0');rect(x-6,y+3,2,4,'#e0e4ec');rect(x+4,y+3,2,4,'#e0e4ec');
+  if(f){rect(x-4,y-14,10,10,'#ffffff');rect(x-2,y-17,8,4,'#f0f4fa')}else{rect(x-4,y-6,12,4,'#ffffff');rect(x+6,y-8,6,3,'#f0f4fa')}
+  rect(x-17,y-6,5,4,'#fff3d8');rect(x-17,y-6,5,1,'#c4442a');cx.restore()}
+
+/* ============ 四季：每 7 天换一季 ============ */
+var SEAN=['春','夏','秋','冬'];
+function season(){return Math.floor(((S.day||1)-1)/7)%4}
+var SGRASS=[['#7cc85a','#76c254'],['#58ac42','#54a63f'],['#bca64a','#b49e44'],['#eef2f6','#e6ecf2']];
+
+/* ============ 地块：更细的石板、木地板、地毯、草地、冰面 ============ */
+function hsh2(x,y){var h=(x*73856093)^(y*19349663);h=(h^(h>>>13))*1274126177;return ((h^(h>>>16))>>>0)%1000}
+var WINC={castle:['#3a5ab8','#c8302a','#e8b82a','#3a8a4a'],dungeon:['#3a6a4a','#2a4a3a','#5a8a5a','#2a3a2a'],warm:['#ffd8a0','#ffe8c0','#ffd8a0','#ffe8c0'],glass:['#c8eef2','#e8fafc','#c8eef2','#e8fafc']};
+mgTile=function(m,x,y,px,py,pal){var t=m.g[y*m.w+x],h=hsh2(x,y),se=season();
+  if(t===MGT.VOID){rect(px,py,TS,TS,'#100e18');if(h<25)rect(px+(h%13)+1,py+(h%11)+2,1,1,'#ffffff40');return}
+  if(t===MGT.WALL){mgWall(m,x,y,px,py,pal,h);return}
+  if(t===MGT.STONE){var bx=x>>1,by=y>>1,v=hsh2(bx,by)%4,base=['#aaa4b6','#a49eb0','#b0aabc','#a29cae'][v];if(pal===MGPAL.dungeon)base=['#5c5868','#58546a','#605c6c','#56526a'][v];if(m.out)base=['#aaa4b6','#a49eb0','#b0aabc','#a29cae'][v];
+    rect(px,py,TS,TS,base);if((x&1)===0)rect(px,py,1,TS,'#00000026');if((y&1)===0)rect(px,py,TS,1,'#00000026');if((x&1)===1)rect(px+TS-1,py,1,TS,'#ffffff12');if((y&1)===1)rect(px,py+TS-1,TS,1,'#ffffff10');
+    if(h<40)rect(px+4+(h%7),py+5+(h%5),3,1,'#00000020');if(h>960)rect(px+6,py+6,2,2,'#7a9a5a60');return}
+  if(t===MGT.WOOD){var c0=pal.wood[0],c1=pal.wood[1];for(var r=0;r<4;r++){var ry=py+r*4;rect(px,ry,TS,4,(r+y)%2?c0:c1);rect(px,ry+3,TS,1,'#00000024');var sx=((y*4+r)*7+x*16)%32-8;if(sx>=0&&sx<TS)rect(px+sx,ry,1,3,'#00000030')}if(h<120)rect(px+(h%12)+2,py+(h%3)*4+1,3,1,'#ffffff18');return}
+  if(t===MGT.RUG){rect(px,py,TS,TS,pal.rug);var up=y>0&&m.g[(y-1)*m.w+x]===MGT.RUG,dn=y<m.h-1&&m.g[(y+1)*m.w+x]===MGT.RUG,lf=x>0&&m.g[y*m.w+x-1]===MGT.RUG,rt=x<m.w-1&&m.g[y*m.w+x+1]===MGT.RUG;
+    if(!up)rect(px,py,TS,3,'#d8a840');if(!dn)rect(px,py+TS-3,TS,3,'#d8a840');if(!lf)rect(px,py,3,TS,'#d8a840');if(!rt)rect(px+TS-3,py,3,TS,'#d8a840');
+    if((x+y)%2===0){rect(px+7,py+4,2,8,'#ffffff20');rect(px+4,py+7,8,2,'#ffffff20');rect(px+7,py+7,2,2,'#e8c86a60')}return}
+  if(t===MGT.GRASS){var g=SGRASS[se];rect(px,py,TS,TS,g[(x+y)%2]);
+    if(se===3){if(h<200)rect(px+(h%12),py+(h%9)+4,4,1,'#c8d8e8');if(h>930){rect(px+5,py+8,1,3,'#7a9080');rect(px+7,py+7,1,4,'#7a9080')}return}
+    if(h<140){rect(px+3+(h%9),py+6+(h%5),1,3,se===2?'#9a8a3a':'#3f8a3a');rect(px+5+(h%9),py+5+(h%5),1,4,se===2?'#9a8a3a':'#3f8a3a')}
+    if(se===0&&h>900)rect(px+(h%11)+2,py+(h%7)+3,2,2,h%2?'#f6a8c8':'#ffffff');
+    if(se===1&&h>930)rect(px+(h%11)+2,py+(h%7)+3,2,2,h%2?'#ffd34a':'#8ac8ff');
+    if(se===2&&h>820){rect(px+(h%11)+2,py+(h%7)+3,2,1,['#e8702a','#c8402a','#f0b030'][h%3]);rect(px+(h%9)+5,py+(h%5)+9,1,2,['#c8402a','#e8702a'][h%2])}return}
+  if(t===MGT.WATER){var near=0;for(var q=0;q<4;q++){var nx=x+DX[q],ny=y+DY[q];if(nx>=0&&ny>=0&&nx<m.w&&ny<m.h&&m.g[ny*m.w+nx]!==MGT.WATER)near=1}
+    if(se===3){rect(px,py,TS,TS,near?'#d8eef8':'#bfe0f0');if(h<90){rect(px+2+(h%8),py+4,5,1,'#ffffff');rect(px+6+(h%8),py+5,1,4,'#ffffff')}if(h>950)rect(px+4,py+10,6,1,'#9ac8e0');return}
+    rect(px,py,TS,TS,near?'#4a8ac4':'#2f6aa8');var w=Math.floor(tAnim*1.5+h*0.01)%5;if(w===0)rect(px+2+(h%8),py+5,5,1,'#9ad0f0');if(w===2)rect(px+7,py+11,4,1,'#9ad0f0');
+    if(near)rect(px,py,TS,1,'#ffffff30');if(se===1&&h>960){rect(px+4,py+6,5,3,'#4a9a4a');rect(px+6,py+6,1,1,'#f6a8c8')}return}
+  if(t===MGT.PATH){rect(px,py,TS,TS,'#8a8498');for(var r2=0;r2<2;r2++)for(var c2=0;c2<2;c2++){var off=(r2+y)%2?4:0,sx2=px+c2*8+off-(c2&&off?8:0);rect(px+((c2*8+off)%16)+1,py+r2*8+1,6,6,(hsh2(x*2+c2,y*2+r2)%3)?'#aaa4b6':'#b4aec0');rect(px+((c2*8+off)%16)+1,py+r2*8+1,6,1,'#ffffff20')}
+    if(se===3&&h<500)rect(px+(h%8),py+(h%10),6,3,'#eef2f6');return}
+  if(t===MGT.DIRT){rect(px,py,TS,TS,se===3?'#d8d4d0':'#c8a070');if(se!==3){if(h<200)rect(px+(h%12)+1,py+(h%10)+3,2,1,'#a8804a');if(h>900)rect(px+5,py+9,1,1,'#8a6a3a')}else{rect(px+3,py,2,TS,'#bab4b0');rect(px+11,py,2,TS,'#bab4b0')}return}
+  if(t===MGT.TREE){var g2=SGRASS[se];rect(px,py,TS,TS,g2[(x+y)%2]);return}};
+/* 墙：上面那排是“正立面”（石块、护墙板、彩窗/火把），侧墙和下墙是厚厚的墙顶 */
+function mgWall(m,x,y,px,py,pal,h){var below=y+1<m.h?m.g[(y+1)*m.w+x]:MGT.WALL,face=below!==MGT.WALL&&below!==MGT.VOID&&y<=2&&!m.out;
+  if(m.out){rect(px,py,TS,TS,'#7a748a');return}
+  if(!face){rect(px,py,TS,TS,'#2c2836');rect(px+1,py+1,TS-2,TS-2,pal.wb);if(y===0)rect(px,py+TS-2,TS,2,'#00000040');return}
+  /* 正立面：画两格高（这一格 + 上面一格） */
+  var top=py-TS;rect(px,top,TS,TS*2,pal.wall);
+  for(var r=0;r<6;r++){var yy=top+r*5+2;rect(px,yy,TS,1,'#00000024');rect(px+((r+x)%2?4:12),yy,1,5,'#00000024')}
+  rect(px,top,TS,3,pal.wt);rect(px,top+3,TS,1,'#00000030');
+  rect(px,py+TS-6,TS,6,pal===MGPAL.dungeon?'#3a3040':'#6a4a2e');rect(px,py+TS-6,TS,1,'#ffffff25');rect(px,py+TS-1,TS,1,'#00000040');if(x%2===0)rect(px,py+TS-6,1,6,'#00000030');
+  var kind=x%4;
+  if(kind===2&&m.pal!==MGPAL.warm){var wc=WINC[m.pal===MGPAL.dungeon?'dungeon':m.pal===MGPAL.glass?'glass':'castle'],nk=nightK((S.t/60)%24);
+    rect(px+3,top+6,10,18,'#3a3446');rect(px+4,top+5,8,1,'#3a3446');rect(px+5,top+4,6,1,'#3a3446');
+    for(var j=0;j<4;j++)for(var i=0;i<2;i++)rect(px+4+i*4,top+7+j*4,4,4,nk>0.5?['#2a3460','#3a2a4a','#4a4020','#2a4030'][(i+j)%4]:wc[(i+j+x)%4]);
+    rect(px+7,top+6,2,17,'#3a3446');rect(px+4,top+14,8,1,'#3a3446');if(season()===3)rect(px+4,top+22,8,2,'#ffffff');}
+  else if(kind===0&&x>0&&x<m.w-1){var fl=Math.floor(tAnim*9+x)%3;rect(px+7,top+14,2,6,'#4a3424');rect(px+5,top+13,6,2,'#6a5a4a');rect(px+6,top+9-fl,4,4,'#ff8a2a');rect(px+7,top+10-fl,2,2,'#ffd34a')}
+  else if(kind===3&&m.id==='great'){rect(px+2,top+6,12,18,'#00000020')}
+  if(m.pal===MGPAL.warm&&kind===2){rect(px+3,top+8,10,10,'#5a3a24');rect(px+4,top+9,8,8,season()===3?'#d8e8f4':'#8fd0f5');rect(px+7,top+9,2,8,'#5a3a24');rect(px+2,top+7,3,13,'#a83a2a');rect(px+11,top+7,3,13,'#a83a2a')}}
+/* 彩窗照进来的光 */
+function mgBeams(m){if(m.out)return;var nk=nightK((S.t/60)%24),col=nk>0.5?'#a8c0ff':'#fff2c8',al=nk>0.5?0.07:0.1;
+  for(var x=1;x<m.w-1;x++){if(x%4!==2||m.g[1*m.w+x]!==MGT.WALL||m.g[2*m.w+x]===MGT.WALL||m.g[2*m.w+x]===MGT.VOID)continue;
+    var px=x*TS-camx,py=2*TS-camy;cx.globalAlpha=al;cx.fillStyle=col;cx.beginPath();cx.moveTo(px+3,py);cx.lineTo(px+13,py);cx.lineTo(px+22,py+3*TS);cx.lineTo(px-2,py+3*TS);cx.closePath();cx.fill();cx.globalAlpha=1}
+  for(var x2=1;x2<m.w-1;x2++){if(x2%4!==0||m.g[1*m.w+x2]!==MGT.WALL)continue;var ppx=x2*TS-camx+8,ppy=TS-camy;cx.globalAlpha=0.16+Math.sin(tAnim*7+x2)*0.03;rect(ppx-10,ppy-8,20,20,'#ffb04a');cx.globalAlpha=1}}
+
+/* ============ 树：落叶树随季节变（春天开花、秋天变黄、冬天光秃秃积雪），松树一年四季绿 ============ */
+function mgTree(x,y){var px=x*TS-camx,py=y*TS-camy,h=hsh2(x,y),se=season(),pine=h%10<4,sw=Math.round(Math.sin(tAnim*1.2+x*0.7)*1);
+  rect(px+2,py+12,13,4,'#00000030');
+  if(pine){rect(px+7,py+9,3,7,'#5a3a24');var c=['#2f6a44','#2a6040','#2f6a44','#2a5040'][se];
+    for(var i=0;i<3;i++){var w=14-i*4,yy=py+6-i*5;rect(px+8-w/2+sw*(i>0?1:0),yy,w,5,c);rect(px+8-w/2+sw*(i>0?1:0),yy,w,1,'#ffffff20');if(se===3)rect(px+9-w/2+sw,yy,w-2,2,'#ffffff')}return}
+  rect(px+6,py+6,4,10,'#6b4426');rect(px+7,py+6,1,10,'#8a6040');
+  if(se===3){rect(px+3,py+1,2,6,'#6b4426');rect(px+11,py,2,7,'#6b4426');rect(px+5,py-2,6,2,'#6b4426');rect(px+3,py,3,1,'#ffffff');rect(px+10,py-1,4,1,'#ffffff');rect(px+5,py-3,6,1,'#ffffff');return}
+  var cc=[['#5ab84a','#7ad06a'],['#2f7a3a','#3f8a4a'],['#d8782a','#e8a03a'],null][se];
+  rect(px-1+sw,py-4,18,12,'#1e3a24');rect(px+sw,py-5,16,12,cc[0]);rect(px+2+sw,py-7,12,3,cc[0]);rect(px+2+sw,py-5,8,4,cc[1]);rect(px+sw,py+6,16,1,'#00000030');
+  if(se===0)for(var k=0;k<5;k++)rect(px+2+((h+k*37)%12)+sw,py-4+((h+k*17)%9),2,2,k%2?'#f6a8c8':'#ffffff');
+  if(se===2)for(var k2=0;k2<4;k2++)rect(px+2+((h+k2*29)%12)+sw,py-3+((h+k2*13)%8),2,2,'#c8402a')}
+
+/* ============ 天气：冬天下雪、春天飘花瓣、秋天落叶、夏天夜里有萤火虫 ============ */
+var MGP=[];
+function mgWeather(){var se=season(),nk=nightK((S.t/60)%24),want=se===3?70:se===0?18:se===2?16:(nk>0.4?14:0);
+  while(MGP.length<want)MGP.push({x:Math.random()*VW,y:Math.random()*VH,v:0.5+Math.random(),ph:Math.random()*6});if(MGP.length>want)MGP.length=want;
+  MGP.forEach(function(p){if(se===3){p.y+=p.v*0.6;p.x+=Math.sin(tAnim+p.ph)*0.3;if(p.y>VH){p.y=-2;p.x=Math.random()*VW}rect(p.x,p.y,p.v>1?2:1,p.v>1?2:1,'#ffffff')}
+    else if(se===0||se===2){p.y+=p.v*0.35;p.x+=Math.sin(tAnim*1.3+p.ph)*0.6+0.2;if(p.y>VH||p.x>VW){p.y=-2;p.x=Math.random()*VW}rect(p.x,p.y,2,1,se===0?'#f6a8c8':['#e8702a','#c8402a','#f0b030'][Math.floor(p.ph)%3]);rect(p.x+1,p.y+1,1,1,se===0?'#ffd0e0':'#a8402a')}
+    else{p.x+=Math.sin(tAnim*0.7+p.ph)*0.3;p.y+=Math.cos(tAnim*0.6+p.ph)*0.25;var a=(Math.sin(tAnim*2+p.ph)+1)/2;cx.globalAlpha=0.4+a*0.6;rect(p.x,p.y,2,2,'#e8ff8a');cx.globalAlpha=a*0.25;rect(p.x-2,p.y-2,6,6,'#e8ff8a');cx.globalAlpha=1}})}
+
+/* ============ 画整张图（替换原来的） ============ */
+mgRender=function(){var m=SC.map,pal=m.pal,MW=m.w*TS,MH=m.h*TS;
+  camx=MW<=VW?-Math.round((VW-MW)/2):Math.round(Math.max(0,Math.min(MW-VW,SC.px-VW/2)));
+  camy=MH<=VH-40?-Math.round((VH-MH)/2):Math.round(Math.max(m.out?-60:-24,Math.min(MH-VH+30,SC.py-VH/2)));
+  rect(0,0,VW,VH,m.out?(season()===3?'#c8d4e4':'#8ab8e8'):'#100e18');
+  if(m.out){var nk0=nightK((S.t/60)%24);if(nk0>0){cx.globalAlpha=nk0;rect(0,0,VW,VH,'#1a2448');cx.globalAlpha=1}}
+  var x0=Math.max(0,Math.floor(camx/TS)-1),y0=Math.max(0,Math.floor(camy/TS)-1),x1=Math.min(m.w-1,Math.ceil((camx+VW)/TS)),y1=Math.min(m.h-1,Math.ceil((camy+VH)/TS)+1);
+  for(var y=y0;y<=y1;y++)for(var x=x0;x<=x1;x++)mgTile(m,x,y,x*TS-camx,y*TS-camy,pal);
+  mgBeams(m);
+  m.doors.forEach(function(d){mgDrawDoor(m,d,d.x*TS-camx,d.y*TS-camy)});
+  var ents=[];
+  for(var y2=y0;y2<=y1;y2++)for(var x2=x0;x2<=x1;x2++)if(m.g[y2*m.w+x2]===MGT.TREE)(function(x,y){ents.push({y:(y+1)*TS-1,f:function(){mgTree(x,y)}})})(x2,y2);
+  m.props.forEach(function(p){ents.push({y:(p.y+p.h)*TS+(p.flatY||0),f:function(){mgDrawProp(m,p,p.x*TS-camx,p.y*TS-camy)}})});
+  m.npcs.forEach(function(n){ents.push({y:n.y,f:function(){if(n.look==='tang')person(n,{shirt:'#3d6fb5',hair:'#23232e',glass:1},n.mv);else drawJiang(n,JLOOK[n.look],n.mv);if(n.bub)drawBub(n,n.y-camy-24)}})});
+  ents.push({y:SC.fl.y,f:function(){drawStu(SC.fl,'#23232e',0,myScarf(),SC.fl.mv,0);if(SC.fl.bub)drawBub(SC.fl,SC.fl.y-camy-24)}});
+  ents.push({y:SC.py,f:function(){drawStu({x:SC.px,y:SC.py,fx:SC.fx},'#3a2622',1,myScarf(),SC.mv,0)}});
+  ents.sort(function(a,b){return a.y-b.y});ents.forEach(function(e){e.f()});
+  m.deco.forEach(function(d){var px=d.x-camx,py=d.y-camy+Math.sin(tAnim*1.5+d.ph)*2;
+    if(d.kind==='candle'){rect(px,py,2,6,'#f4ecd8');rect(px,py+5,2,1,'#c8b898');var f=Math.floor(tAnim*8+d.ph)%2;rect(px,py-2-f,2,2,'#ffd34a');rect(px,py-3-f,1,1,'#fff3b0');cx.globalAlpha=0.22;rect(px-3,py-5,8,8,'#ffe58a');cx.globalAlpha=1}
+    if(d.kind==='flystair'){var a=Math.sin(tAnim*0.5+d.ph);rect(px,py,26+a*4,5,'#6a5a4a');rect(px,py,26+a*4,1,'#9a8a7a');for(var s=0;s<4;s++){rect(px+s*7,py-3,6,3,'#8a7a6a');rect(px+s*7,py-3,6,1,'#a89a8a')}rect(px+2,py+5,2,8,'#4a3a2a');rect(px+22,py+5,2,8,'#4a3a2a')}});
+  if(m.out){var nk=nightK((S.t/60)%24);if(nk>0){cx.globalCompositeOperation='multiply';cx.fillStyle='rgb('+Math.round(255-nk*80)+','+Math.round(255-nk*70)+','+Math.round(255-nk*30)+')';cx.fillRect(0,0,VW,VH);cx.globalCompositeOperation='source-over';
+      /* 城堡窗户的灯 */var cp=m.props.filter(function(p){return p.kind==='castle'})[0];if(cp){var bx=cp.x*TS-camx,by=cp.y*TS-camy;cx.globalAlpha=nk*0.5;(cp.wins||[]).forEach(function(w){rect(bx+w[0]-3,by+w[1]-3,w[2]+6,w[3]+6,'#ffd88a')});cx.globalAlpha=1}}
+    mgWeather()}
+  else{var nk2=nightK((S.t/60)%24);if(nk2>0){cx.globalAlpha=nk2*0.25;rect(0,0,VW,VH,'#0a0c20');cx.globalAlpha=1}}
+  cx.font='bold 8px sans-serif';cx.textAlign='center';cx.fillStyle='#fff';rect(VW/2-48,4,96,12,'#00000080');cx.fillText('✨ '+m.name+(m.out?' · '+SEAN[season()]:''),VW/2,13);
+  vignette()};
+
+/* ============ 城堡和城堡外的建筑：重新画 ============ */
+var _dp22=mgDrawProp;mgDrawProp=function(m,p,px,py){var k=p.kind,W2=p.w*TS,H2=p.h*TS,se=season(),snow=se===3,nk=nightK((S.t/60)%24);
+  if(k==='castle'){drawCastle(p,px,py,W2,H2,se,nk);return}
+  if(k==='bridge'){rect(px-4,py-2,W2+8,H2+4,'#6a6478');for(var i=0;i<W2+8;i+=8){rect(px-4+i,py-2,8,H2+4,(i/8)%2?'#8a8498':'#948ea2');rect(px-4+i,py-2,1,H2+4,'#00000020')}
+    rect(px-4,py-5,W2+8,3,'#a8a2b4');rect(px-4,py+H2+2,W2+8,3,'#5a5468');for(var j=0;j<W2+8;j+=10){rect(px-4+j,py-9,3,5,'#7a748a');rect(px-4+j,py+H2,3,5,'#7a748a')}
+    if(snow){rect(px-4,py-6,W2+8,2,'#ffffff');for(var j2=0;j2<W2+8;j2+=10)rect(px-4+j2,py-10,3,1,'#ffffff')}
+    [[-8,-12],[W2+2,-12]].forEach(function(l){rect(px+l[0]+2,py+l[1],2,12,'#3a3446');rect(px+l[0],py+l[1]-5,6,6,nk>0.2?'#ffd34a':'#d8d0b8');if(nk>0.2){cx.globalAlpha=0.3*nk;rect(px+l[0]-6,py+l[1]-11,18,18,'#ffe58a');cx.globalAlpha=1}});return}
+  _dp22(m,p,px,py);
+  if(snow&&(k==='boathouse'||k==='greenhouse'||k==='cabin'||k==='stall')){rect(px-1,py+(k==='stall'?-1:0),W2+2,3,'#ffffff');rect(px+3,py-2,W2-6,2,'#f4f8fc')}};
+function drawCastle(p,px,py,W2,H2,se,nk){var snow=se===3,lit=nk>0.3,wins=[];p.wins=wins;
+  var stone='#8a8498',stone2='#7a748a',dark='#5a5468',roof='#2f3f8a',roof2='#3f52a8';
+  function blocks(x,y,w,h,c1,c2){rect(px+x,py+y,w,h,c1);for(var yy=y+3;yy<y+h;yy+=6){rect(px+x,py+yy,w,1,'#00000022');for(var xx=x+(((yy-y)/6|0)%2)*5;xx<x+w;xx+=10)rect(px+xx,py+yy,1,6,'#00000022')}rect(px+x,py+y,2,h,'#ffffff14');rect(px+x+w-3,py+y,3,h,'#00000030')}
+  function win(x,y,w,h,big){var c=lit?'#ffd88a':'#2a3460';rect(px+x-1,py+y-1,w+2,h+2,dark);rect(px+x,py+y,w,h,c);rect(px+x+1,py+y-2,w-2,1,dark);if(!lit){rect(px+x+1,py+y+1,1,h-3,'#6a7ab0')}else{rect(px+x+1,py+y+1,w-2,2,'#fff3c8')}if(big)rect(px+x+(w>>1),py+y,1,h,dark);wins.push([x,y,w,h])}
+  function cone(cxp,base,w,hgt){for(var i=0;i<hgt;i++){var ww=Math.max(2,Math.round(w*(1-i/hgt)));rect(px+cxp-(ww>>1),py+base-i,ww,1,i%3===0?roof:roof2);rect(px+cxp-(ww>>1),py+base-i,1,1,'#00000030')}
+    if(snow)for(var j=0;j<hgt*0.55;j++){var w2=Math.max(2,Math.round(w*(1-(hgt-1-j)/hgt))*0.5);rect(px+cxp-w2/2,py+base-hgt+1+j,w2,1,'#ffffff')}
+    rect(px+cxp,py+base-hgt-8,1,8,'#3a3446');var fw=Math.round(Math.sin(tAnim*4+cxp)*1);rect(px+cxp+1,py+base-hgt-8,6+fw,4,'#c8302a');rect(px+cxp+1,py+base-hgt-7,4+fw,1,'#ffd34a')}
+  function batt(x,y,w){for(var i=0;i<w;i+=8){rect(px+x+i,py+y,5,5,stone2);rect(px+x+i,py+y,5,1,'#ffffff20');if(snow)rect(px+x+i,py+y-1,5,2,'#ffffff')}}
+  /* 远处的塔（背景） */
+  rect(px+120,py-18,16,40,'#6a6478');cone(128,-18,20,24);rect(px+W2-136,py-14,14,36,'#6a6478');cone(W2-129,-14,18,22);
+  /* 主墙 */
+  blocks(0,44,W2,H2-44,stone,stone2);batt(0,38,W2);
+  /* 角楼 */
+  [[0,52],[W2-52,52]].forEach(function(t){blocks(t[0],10,t[1],H2-10,stone,stone2);batt(t[0],5,t[1]);cone(t[0]+t[1]/2,6,t[1]+8,40);win(t[0]+20,30,10,14,1);win(t[0]+20,62,10,14,1);win(t[0]+20,92,10,12,1)});
+  /* 中间的塔 */
+  [[86,34],[W2-120,34]].forEach(function(t){blocks(t[0],22,t[1],H2-22,'#948ea2',stone2);batt(t[0],17,t[1]);cone(t[0]+t[1]/2,18,t[1]+6,30);win(t[0]+12,40,10,14,1)});
+  /* 主楼：山墙 + 玫瑰窗 + 钟楼 */
+  var c0=W2/2-70;blocks(c0,26,140,H2-26,'#9a94a8',stone2);
+  for(var i=0;i<30;i++){var w=140-i*4.6;rect(px+W2/2-w/2,py+26-i,w,1,i%3===0?roof:roof2)}if(snow)for(var i2=0;i2<14;i2++){var w3=140-(29-i2)*4.6;rect(px+W2/2-w3/2,py+26-29+i2,w3,1,'#ffffff')}
+  var rc=W2/2,ry=46;rect(px+rc-15,py+ry-15,30,30,dark);var rcol=['#c8302a','#3a5ab8','#e8b82a','#3a8a4a'];for(var a=0;a<8;a++){var ax=Math.round(Math.cos(a*0.785)*8),ay=Math.round(Math.sin(a*0.785)*8);rect(px+rc+ax-3,py+ry+ay-3,6,6,lit?'#ffd88a':rcol[a%4])}rect(px+rc-3,py+ry-3,6,6,lit?'#fff3c8':'#e8e0f0');wins.push([rc-15,ry-15,30,30]);
+  rect(px+rc-12,py-34,24,34,'#a8a2b4');rect(px+rc-12,py-34,2,34,'#ffffff20');cone(rc,-34,30,26);var ccx=px+rc,ccy=py-22;rect(ccx-7,ccy-7,14,14,'#8a6a3a');rect(ccx-6,ccy-6,12,12,'#fffdf4');var mn=S.t%60,hh=(S.t/60)%12;cx.strokeStyle='#23232e';cx.lineWidth=1;cx.beginPath();cx.moveTo(ccx,ccy);cx.lineTo(ccx+Math.sin(mn/60*6.283)*5,ccy-Math.cos(mn/60*6.283)*5);cx.stroke();cx.beginPath();cx.moveTo(ccx,ccy);cx.lineTo(ccx+Math.sin(hh/12*6.283)*3,ccy-Math.cos(hh/12*6.283)*3);cx.stroke();
+  /* 一排排拱窗 */
+  for(var x=c0+10;x<c0+140-10;x+=22){if(Math.abs(x+5-W2/2)<24)continue;win(x,70,10,16,1)}
+  for(var x2=60;x2<W2-60;x2+=26){if(x2>c0-6&&x2<c0+146)continue;win(x2,64,8,14,1)}
+  /* 学院旗帜挂在墙上 */
+  ['niu','ma','quan','mao'].forEach(function(h,i){var bx=[64,100,W2-112,W2-76][i],hc=HOUSES[h];rect(px+bx,py+86,14,22,hc.c);rect(px+bx,py+106,14,2,hc.c2);rect(px+bx+4,py+92,6,6,hc.c2);rect(px+bx,py+108,4,3,hc.c);rect(px+bx+10,py+108,4,3,hc.c)});
+  /* 常春藤 */
+  if(se!==3){var iv=se===2?'#c8402a':'#3f8a3a';[[52,80,10,40],[W2-62,76,10,44],[c0+4,90,8,30]].forEach(function(v){for(var j=0;j<v[3];j+=3)rect(px+v[0]+((j*7)%v[2]),py+v[1]+j,3,3,iv)})}
+  /* 大门 */
+  var gx=W2/2-18;rect(px+gx-4,py+H2-56,44,56,dark);for(var i3=0;i3<10;i3++){var ww=36-Math.abs(i3-0)*0;}
+  rect(px+gx,py+H2-50,36,50,'#2a1a10');rect(px+gx+2,py+H2-54,32,4,'#2a1a10');rect(px+gx+6,py+H2-57,24,3,'#2a1a10');
+  for(var b=0;b<6;b++)rect(px+gx+3+b*6,py+H2-50,1,18,'#8a8498');rect(px+gx,py+H2-34,36,1,'#8a8498');
+  rect(px+gx-10,py+H2-48,10,48,'#6a3a1a');rect(px+gx+36,py+H2-48,10,48,'#6a3a1a');rect(px+gx-9,py+H2-46,8,44,'#8a5a2a');rect(px+gx+37,py+H2-46,8,44,'#8a5a2a');
+  cx.font='bold 8px sans-serif';cx.textAlign='center';cx.fillStyle='#ffe28a';rect(px+W2/2-46,py+H2-70,92,12,'#3a2a5a');cx.fillText('牛马谷魔法学校',px+W2/2,py+H2-61);
+  [[gx-20,H2-40],[gx+52,H2-40]].forEach(function(l){rect(px+l[0]+2,py+l[1],2,10,'#3a3446');var f=Math.floor(tAnim*9+l[0])%2;rect(px+l[0],py+l[1]-5-f,6,5,'#ff8a2a');rect(px+l[0]+1,py+l[1]-4-f,4,3,'#ffd34a');cx.globalAlpha=0.25;rect(px+l[0]-6,py+l[1]-12,18,18,'#ffb04a');cx.globalAlpha=1});
+  if(snow){rect(px,py+42,W2,2,'#ffffff');rect(px,py+8,52,2,'#ffffff');rect(px+W2-52,py+8,52,2,'#ffffff')}}
+
+/* ============ 城堡外加细节：路灯、长椅、花坛、灌木、石头、喷泉；草地不再是棋盘格；湖边有岸 ============ */
+var _mb22=mgBuild;mgBuild=function(id){var fresh=!MGM[id],m=_mb22(id);if(fresh&&id==='out'){
+  mgProp(m,24,8,2,2,'fountain',{label:'许愿喷泉',tap:function(){if(S.money<1){say('',['你摸了摸口袋，一个铜板都没有。'])}else{S.money-=1;say('',['你往喷泉里丢了 1 个银币，许了个愿。','唐同学：“我许的愿是姜老师们别再长一样了。”'])}}});
+  [[18,16],[21,16],[18,21],[21,21],[18,26],[21,26],[12,10],[27,10]].forEach(function(q){if(m.g[q[1]*m.w+q[0]]===MGT.GRASS||m.g[q[1]*m.w+q[0]]===MGT.PATH)mgProp(m,q[0],q[1],1,1,'lamp',{})});
+  [[14,9],[15,9]].forEach(function(q,i){if(i===0)mgProp(m,q[0],q[1],2,1,'bench',{tap:function(){say('',['你在长椅上坐了一会儿。','唐同学靠着你打了个盹。'])}})});
+  [[16,15],[22,15],[15,24],[22,24]].forEach(function(q){mgProp(m,q[0],q[1],2,1,'flowerbed',{})});
+  [[3,9],[8,9],[26,23],[28,25],[16,27],[24,26],[34,8],[2,16],[1,27]].forEach(function(q){var g=m.g[q[1]*m.w+q[0]];if(g===MGT.GRASS)mgProp(m,q[0],q[1],1,1,q[0]%3===0?'rock':'bush',{})})}
+  return m};
+var _dp22b=mgDrawProp;mgDrawProp=function(m,p,px,py){var k=p.kind,se=season(),nk=nightK((S.t/60)%24),W2=p.w*TS;
+  if(k==='fountain'){rect(px-2,py+6,W2+4,22,'#7a748a');rect(px,py+8,W2,18,'#a8a2b4');rect(px+3,py+11,W2-6,12,se===3?'#d8eef8':'#4a8ac4');rect(px+13,py-6,6,18,'#a8a2b4');rect(px+10,py-8,12,3,'#c8c2d4');
+    if(se!==3)for(var i=0;i<4;i++){var t=(tAnim*1.5+i/4)%1;rect(px+15+Math.round(Math.sin(i*1.7)*(t*8)),py-8+t*14,2,2,'#bfe6ff')}else rect(px+10,py-9,12,2,'#ffffff');return}
+  if(k==='lamp'){rect(px+7,py-8,2,22,'#2a2834');rect(px+5,py+12,6,3,'#2a2834');rect(px+4,py-12,8,5,'#2a2834');rect(px+5,py-11,6,3,nk>0.2?'#ffd88a':'#c8c0a0');if(se===3)rect(px+4,py-13,8,1,'#ffffff');if(nk>0.2){cx.globalAlpha=0.28*nk;rect(px-8,py-20,32,28,'#ffe58a');cx.globalAlpha=1}return}
+  if(k==='bench'){rect(px+2,py+4,W2-4,3,'#8a5a35');rect(px+2,py,W2-4,3,'#a8764a');rect(px+3,py+7,2,6,'#3a3446');rect(px+W2-5,py+7,2,6,'#3a3446');if(se===3)rect(px+2,py-1,W2-4,2,'#ffffff');return}
+  if(k==='flowerbed'){rect(px,py+6,W2,9,'#8a8498');rect(px+1,py+7,W2-2,6,se===3?'#eef2f6':'#6a4a2a');if(se===3)return;var fc=[['#f6a8c8','#ffffff','#ffd34a'],['#e8403a','#ffd34a','#8ac8ff'],['#e8702a','#c8402a','#ffd34a']][se];
+    for(var j=0;j<6;j++){var fx=px+3+j*5,sw=Math.round(Math.sin(tAnim*2+j)*0.6);rect(fx+sw,py+2,1,6,'#3f8a3a');rect(fx-1+sw,py,3,3,fc[j%3]);rect(fx+sw,py+1,1,1,'#fff3b0')}return}
+  if(k==='bush'){var bc=[['#5ab84a','#7ad06a'],['#2f7a3a','#3f8a4a'],['#b8682a','#d8882a'],['#d8e4ec','#ffffff']][se];rect(px,py+4,TS,11,'#1e3a24');rect(px+1,py+3,14,11,bc[0]);rect(px+3,py+1,10,3,bc[0]);rect(px+3,py+3,6,4,bc[1]);if(se===0)rect(px+9,py+6,2,2,'#f6a8c8');return}
+  if(k==='rock'){rect(px+2,py+7,12,8,'#6a6478');rect(px+3,py+5,9,4,'#8a8498');rect(px+4,py+5,4,2,'#a8a2b4');if(se===3)rect(px+3,py+4,9,2,'#ffffff');return}
+  if(k==='field'){var H2=p.h*TS;rect(px,py,W2,H2,se===3?'#e8eef4':'#66b246');for(var y=0;y<H2;y+=8)rect(px,py+y,W2,4,se===3?'#f4f8fc':'#5aa63f');
+    for(var x=0;x<W2;x+=8){rect(px+x,py,2,5,'#8a5a35');rect(px+x,py+H2-5,2,5,'#8a5a35')}rect(px,py+1,W2,1,'#a8764a');rect(px,py+H2-3,W2,1,'#a8764a');
+    for(var i2=0;i2<3;i2++){var hx=px+16+i2*34;rect(hx+5,py+28,2,44,'#c8c2d4');rect(hx,py+18,12,12,'#ffd34a');rect(hx+3,py+21,6,6,se===3?'#e8eef4':'#66b246')}
+    ['niu','ma','quan','mao'].forEach(function(h,i){var fx=px+6+i*28,fw=Math.round(Math.sin(tAnim*3+i)*1);rect(fx,py+H2-26,1,20,'#3a3446');rect(fx+1,py+H2-26,7+fw,5,HOUSES[h].c)});return}
+  _dp22b(m,p,px,py)};
+/* 草地：几种相近的颜色随机铺，不再是棋盘格；挨着水的地方有一圈岸边 */
+var _mt22=mgTile;mgTile=function(m,x,y,px,py,pal){var t=m.g[y*m.w+x];
+  if(t===MGT.GRASS||t===MGT.TREE){var se=season(),g=SGRASS[se],h=hsh2(x,y),c=[g[0],g[1],g[0]][h%3];var bump=hsh2(x>>1,y>>1)%3;
+    rect(px,py,TS,TS,c);if(bump===0){cx.globalAlpha=0.08;rect(px,py,TS,TS,'#000000');cx.globalAlpha=1}
+    _mt22Detail(m,x,y,px,py,se,h);
+    for(var q=0;q<4;q++){var nx=x+DX[q],ny=y+DY[q];if(nx<0||ny<0||nx>=m.w||ny>=m.h||m.g[ny*m.w+nx]!==MGT.WATER)continue;var sc2=se===3?'#c8d8e8':'#d8c890';
+      if(q===0)rect(px,py,TS,3,sc2);if(q===2)rect(px,py+TS-3,TS,3,sc2);if(q===3)rect(px,py,3,TS,sc2);if(q===1)rect(px+TS-3,py,3,TS,sc2)}return}
+  _mt22(m,x,y,px,py,pal)};
+function _mt22Detail(m,x,y,px,py,se,h){
+  if(se===3){if(h<200)rect(px+(h%12),py+(h%9)+4,4,1,'#c8d8e8');if(h>930){rect(px+5,py+8,1,3,'#7a9080');rect(px+7,py+7,1,4,'#7a9080')}return}
+  if(h<160){var gc=se===2?'#9a8a3a':'#3f8a3a';rect(px+3+(h%9),py+6+(h%5),1,3,gc);rect(px+5+(h%9),py+5+(h%5),1,4,gc);rect(px+4+(h%9),py+7+(h%5),1,2,gc)}
+  if(se===0&&h>880)rect(px+(h%11)+2,py+(h%7)+3,2,2,h%2?'#f6a8c8':'#ffffff');
+  if(se===1&&h>910)rect(px+(h%11)+2,py+(h%7)+3,2,2,h%2?'#ffd34a':'#8ac8ff');
+  if(se===2&&h>800){rect(px+(h%11)+2,py+(h%7)+3,2,1,['#e8702a','#c8402a','#f0b030'][h%3]);rect(px+(h%9)+5,py+(h%5)+9,1,2,['#c8402a','#e8702a'][h%2])}}
+/* 地图名放到顶部信息栏下面，不被挡住 */
+var _mr22=mgRender;mgRender=function(){var keep=cx.fillText;_mr22();var m=SC.map,y=Math.round(190/scaleCss);cx.font='bold 8px sans-serif';cx.textAlign='center';rect(VW/2-50,y-9,100,12,'#00000090');cx.fillStyle='#fff';cx.fillText('✨ '+m.name+(m.out?' · '+SEAN[season()]+'天':''),VW/2,y)};
 </script>
 <script>
 /* 牛马谷 · 18-main.js — 仓库详情、主循环、存档导出导入、网页应用更新、启动 */
